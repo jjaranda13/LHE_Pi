@@ -1,8 +1,7 @@
-#include LHEenc.h
+#include "LHEenc.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <vector>
-#include <time.h>
+#include <sys/time.h>
 
 //////////////////////////////////////////////
 // Esto tiene que ser movido al .h          //
@@ -13,7 +12,7 @@
 #define pppx 2
 #define pppy 2
 
-vector<uint8_t> scanlines;
+char **scanlines;
 
 /*Función auxiliar para medir tiempos de ejecución*/
 double timeval_diff(struct timeval *a, struct timeval *b) {
@@ -33,9 +32,9 @@ double timeval_diff(struct timeval *a, struct timeval *b) {
 
 static int coder_init(int width, int height) {
 	
-	scanlines.resize(height/pppy);
+	scanlines = (char **)malloc(height/pppy);
 	for (int i=0; i < height/pppy; i++) {
-        scanlines[i] = malloc (width/pppx);
+        scanlines[i] = (char *)malloc (width/pppx);
     }
 
     return 0;
@@ -49,10 +48,10 @@ static int coder_init(int width, int height) {
 
 
 /*Función de downsampling de un scanline*/
-static void down_avg_horiz(uint8_t *imagen_capturada, int linea) {
+static void down_avg_horiz(char **imagen_capturada, int linea) {
 
-	uint8_t suma = 0;
-	for (int i=0; i < imagen_capturada[linea].length()/pppx; i++) {//Esto habra que modificarlo dependiendo de como se almacenen los datos que nos da la camara
+	int suma = 0;
+	for (int i=0; i < sizeof(imagen_capturada[linea])/pppx; i++) {//Esto habra que modificarlo dependiendo de como se almacenen los datos que nos da la camara
 		for (int j=0; j < pppx; j++) {
 			suma += imagen_capturada[linea][(i*pppx)+j];
 		}
@@ -85,8 +84,7 @@ static void coder_entropico() {
 
 
 
-
-static int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
 
 	struct timeval t_ini, t_fin;
 	double secs;
@@ -98,7 +96,7 @@ static int main(int argc, char* argv[]) {
 	secs = timeval_diff(&t_fin, &t_ini);
 	printf("%.16g ms\n", secs * 1000.0);
 
-	printf(scanlines[0][1]);
+	printf("%hhu\n", scanlines[0][1000]);
 	
 
 	return 0;
