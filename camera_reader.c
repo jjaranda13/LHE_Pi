@@ -4,8 +4,8 @@
  * @date July 2017
  * @brief Camera reader reads the camera and outputs the raw data.
  *
- * This module reads the the pi camera using the MMAL library from Raspberry Pi.
- * It outputs the data so the next module can encode the raw information into LHE.
+ * This module reads the the pi camera using the MMAL library from Broadcom. It
+ * sends the video in raw to be further processed.
  *
  * @see https://github.com/jjaranda13/LHE_Pi
  */
@@ -14,7 +14,7 @@
 
 #define MMAL_CAMERA_VIDEO_PORT 0
 
-static MMAL_STATUS_T init_camera(CAMERA_OPTIONS *options, READY_CAMERA *camera)
+static MMAL_COMPONENT_T init_camera(CAMERA_OPTIONS *options, ENCODE_CALLBACK cb)
 {
   MMAL_COMPONENT_T *camera = 0;
   MMAL_ES_FORMAT_T *format;
@@ -22,18 +22,19 @@ static MMAL_STATUS_T init_camera(CAMERA_OPTIONS *options, READY_CAMERA *camera)
   MMAL_STATUS_T status;
   MMAL_POOL_T *pool;
 
-  /* Create the component */
+  // Create the camera component
   status = mmal_component_create(MMAL_COMPONENT_DEFAULT_CAMERA, &camera);
 
   if (status != MMAL_SUCCESS)
   {
-     vcos_log_error("Failed to create camera component");
+     fprintf( stderr, "Failed to create camera component");
      goto error;
   }
 
-  int camera_num = 0; // Sets the cammera number. As we will have only one it is set to 0
+  MMAL_PARAMETER_INT32_T camera_num =
+     {{MMAL_PARAMETER_CAMERA_NUM, sizeof(camera_num)}, options->cameraNum};
 
-  status = mmal_port_parameter_set(camera->control, &camera_num);
+  status = mmal_port_parameter_set(camera->control, &camera_num.hdr);
 
   if (status != MMAL_SUCCESS)
   {
@@ -48,11 +49,20 @@ static MMAL_STATUS_T init_camera(CAMERA_OPTIONS *options, READY_CAMERA *camera)
      goto error;
   }
 
-  status = mmal_port_parameter_set_uint32(camera->control, MMAL_PARAMETER_CAMERA_CUSTOM_SENSOR_CONFIG,1); // Mode is set to 1 @see https://www.raspberrypi.org/documentation/raspbian/applications/camera.md  for camera possible modes.
+  status = mmal_port_parameter_set_uint32(camera->control, MMAL_PARAMETER_CAMERA_CUSTOM_SENSOR_CONFIG,options->sensor_mode); // Mode is set to 1 @see https://www.raspberrypi.org/documentation/raspbian/applications/camera.md  for camera possible modes.
 
   if (status != MMAL_SUCCESS)
   {
      vcos_log_error("Could not set sensor mode : error %d", status);
+     goto error;
+  }
+
+  // Enable the camera, and tell it its control callback function
+  status = mmal_port_enable(camera->control, camera_control_callback);
+
+  if (status != MMAL_SUCCESS)
+  {
+     vcos_log_error("Unable to enable control port : error %d", status);
      goto error;
   }
 
@@ -63,12 +73,12 @@ static MMAL_STATUS_T init_camera(CAMERA_OPTIONS *options, READY_CAMERA *camera)
       MMAL_PARAMETER_CAMERA_CONFIG_T cam_config =
       {
          { MMAL_PARAMETER_CAMERA_CONFIG, sizeof(cam_config) },
-         .max_stills_w = 1920,
-         .max_stills_h = 1080,
+         .max_stills_w = options->width,
+         .max_stills_h = options->height,
          .stills_yuv422 = 0,
          .one_shot_stills = 0,
-         .max_preview_video_w = 1920,
-         .max_preview_video_h = 1080,
+         .max_preview_video_w = options->width,
+         .max_preview_video_h = options->height,
          .num_preview_video_frames = 3,
          .stills_capture_circular_buffer_height = 0,
          .fast_preview_resume = 0,
@@ -77,34 +87,18 @@ static MMAL_STATUS_T init_camera(CAMERA_OPTIONS *options, READY_CAMERA *camera)
       mmal_port_parameter_set(camera->control, &cam_config.hdr);
    }
 
-   // Set the encode format on the video  port
+  format = video_port->format;
 
-   format = video_port->format;
+   format->encoding = MMAL_ENCODING_I420; // @See https://www.fourcc.org/pixel-format/yuv-i420/
+   format->encoding_variant = MMAL_ENCODING_I420; // @See https://www.fourcc.org/pixel-format/yuv-i420/
 
-   if(state->camera_parameters.shutter_speed > 6000000)
-   {
-        MMAL_PARAMETER_FPS_RANGE_T fps_range = {{MMAL_PARAMETER_FPS_RANGE, sizeof(fps_range)},
-                                                     { 50, 1000 }, {166, 1000}};
-        mmal_port_parameter_set(video_port, &fps_range.hdr);
-   }
-   else if(state->camera_parameters.shutter_speed > 1000000)
-   {
-        MMAL_PARAMETER_FPS_RANGE_T fps_range = {{MMAL_PARAMETER_FPS_RANGE, sizeof(fps_range)},
-                                                     { 167, 1000 }, {999, 1000}};
-        mmal_port_parameter_set(video_port, &fps_range.hdr);
-   }
-
-
-   format->encoding = MMAL_ENCODING_I420;
-   format->encoding_variant = MMAL_ENCODING_I420;
-
-   format->es->video.width = VCOS_ALIGN_UP(1920, 32);
-   format->es->video.height = VCOS_ALIGN_UP(1080, 16);
+   format->es->video.width = VCOS_ALIGN_UP(options->width, 32);
+   format->es->video.height = VCOS_ALIGN_UP(options->height, 16);
    format->es->video.crop.x = 0;
    format->es->video.crop.y = 0;
-   format->es->video.crop.width = 1920;
-   format->es->video.crop.height = 1080;
-   format->es->video.frame_rate.num = 30;
+   format->es->video.crop.width = options->width;
+   format->es->video.crop.height = options->height;
+   format->es->video.frame_rate.num = options->framerate;
    format->es->video.frame_rate.den = VIDEO_FRAME_RATE_DEN;
 
    status = mmal_port_format_commit(video_port);
@@ -123,7 +117,37 @@ static MMAL_STATUS_T init_camera(CAMERA_OPTIONS *options, READY_CAMERA *camera)
       goto error;
    }
 
-  return status;
+   // Ensure there are enough buffers to avoid dropping frames
+   if (video_port->buffer_num < VIDEO_OUTPUT_BUFFERS_NUM)
+      video_port->buffer_num = VIDEO_OUTPUT_BUFFERS_NUM;
+
+   status = mmal_port_parameter_set_boolean(video_port, MMAL_PARAMETER_ZERO_COPY, MMAL_TRUE);
+   if (status != MMAL_SUCCESS)
+   {
+      vcos_log_error("Failed to select zero copy");
+      goto error;
+   }
+
+   /* Create pool of buffer headers for the output port to consume */
+   pool = mmal_port_pool_create(video_port, video_port->buffer_num, video_port->buffer_size);
+
+   if (!pool)
+   {
+      vcos_log_error("Failed to create buffer header pool for camera still port %s", video_port->name);
+   }
+
+   camera_video_port->userdata = (struct MMAL_PORT_USERDATA_T *)&cb;
+
+   status = mmal_port_enable(camera_video_port, camera_buffer_callback);
+
+   if (status != MMAL_SUCCESS)
+   {
+      vcos_log_error("Failed to setup camera output");
+      goto error;
+   }
+
+
+  return camera;
 
 error:
 
@@ -131,4 +155,27 @@ error:
      mmal_component_destroy(camera);
 
   return status;
+}
+
+
+static void camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
+{
+   // We do not really need to do anything so just release the buffer
+   mmal_buffer_header_release(buffer);
+}
+
+
+static void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
+{
+
+  port->userdata(buffer->data,buffer->offset, buffer->length,buffer->pts);
+  mmal_buffer_header_release(buffer);
+}
+
+
+int close_camera(camera_object)
+{
+  if (camera_object)
+     mmal_component_destroy(camera_object);
+  return 0;
 }
