@@ -9,54 +9,30 @@
  *
  * @see https://github.com/jjaranda13/LHE_Pi
  */
-/*
 
-
-struct RASPIVIDYUV_STATE_S
+struct CAMERA_OPTIONS
 {
-   int timeout;                        /// Time taken before frame is grabbed and app then shuts down. Units are milliseconds
-   int width;                          /// Requested width of image
-   int height;                         /// requested height of image
-   int framerate;                      /// Requested frame rate (fps)
-   char *filename;                     /// filename of output file
-   int verbose;                        /// !0 if want detailed run information
-   int demoMode;                       /// Run app in demo mode
-   int demoInterval;                   /// Interval between camera settings changes
-   int waitMethod;                     /// Method for switching between pause and capture
+  int timeout;                        /// Time taken before frame is grabbed and app then shuts down. Units are milliseconds
+  int width;                          /// Requested width of image
+  int height;                         /// requested height of image
+  int framerate;                      /// Requested frame rate (fps)
+  int verbose;                        /// !0 if want detailed run information
+  int cameraNum;                       /// Camera number. Set it to 0 as default.
+  int sensor_mode;                     /// Sensor mode. 0=auto. Check docs/forum for modes selected by other values.
+}
 
-   int onTime;                         /// In timed cycle mode, the amount of time the capture is on per cycle
-   int offTime;                        /// In timed cycle mode, the amount of time the capture is off per cycle
+struct CAMERA_BUFFER
+{
+  MMAL_COMPONENT_T camera_component;
+  MMAL_BUFFER_HEADER_T buffer_header;
+}
 
-   int onlyLuma;                       /// Only output the luma / Y plane of the YUV data
-   int useRGB;                         /// Output RGB data rather than YUV
+typedef void(* ENCODE_CALLBACK) (uint8_t* data, uint32_t *offset, uint32_t length, int64_t pts);
 
-   RASPIPREVIEW_PARAMETERS preview_parameters;   /// Preview setup parameters
-   RASPICAM_CAMERA_PARAMETERS camera_parameters; /// Camera setup parameters
+static MMAL_COMPONENT_T init_camera(CAMERA_OPTIONS *options, ENCODE_CALLBACK cb);
 
-   MMAL_COMPONENT_T *camera_component;    /// Pointer to the camera component
-   MMAL_CONNECTION_T *preview_connection; /// Pointer to the connection from camera to preview
+static void camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 
-   MMAL_POOL_T *camera_pool;            /// Pointer to the pool of buffers used by camera video port
+static void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 
-   PORT_USERDATA callback_data;         /// Used to move data to the camera callback
-
-   int bCapturing;                      /// State of capture/pause
-
-   int cameraNum;                       /// Camera number
-   int settings;                        /// Request settings from the camera
-   int sensor_mode;                     /// Sensor mode. 0=auto. Check docs/forum for modes selected by other values.
-
-   int frame;
-   char *pts_filename;
-   int save_pts;
-   int64_t starttime;
-   int64_t lasttime;
-
-   bool netListen;
-};
-
-static MMAL_STATUS_T init_camera(CAMERA_OPTIONS *options, READY_CAMERA *camera);
 int close_camera(camera_object);
-
-
-*/
