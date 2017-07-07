@@ -27,11 +27,11 @@ for (int hop0=0;hop0<=255;hop0++)
 {
  for (int hop1=4; hop1<=10;hop1++)
  {
- //ratio for possitive hops
- double rpos = pow(0.8f*(255-hop0)/hop1,1.0f/3.0f);
+ //ratio for possitive hops. max ratio=3
+ double rpos = min (3.0f,pow(0.8f*(255-hop0)/hop1,1.0f/3.0f));
 
- //ratio for negative hops
- double rneg = pow(0.8f*(hop0)/hop1,1.0f/3.0f);
+ //ratio for negative hops. max ratio=3
+ double rneg = min(3.0f,pow(0.8f*(hop0)/hop1,1.0f/3.0f));
 
  //compute hops 0,1,2,6,7,8
  //hops 3,4,5 are known
@@ -44,8 +44,8 @@ for (int hop0=0;hop0<=255;hop0++)
 
  }//for hop1
 }//for hop0
-}
 
+}// end function
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void quantize_scanline(char **image, int line,int width, char **hops) {
 //this function quantize the luminances or chrominances of one scanline
