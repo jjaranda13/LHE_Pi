@@ -44,12 +44,8 @@ for (int hop0=0;hop0<=255;hop0++)
  double rneg = min(3.0f,pow(0.8f*(hop0)/hop1,1.0f/3.0f));
  rneg=max(1,rneg);
 
- //compute hops 0,1,2,6,7,8
- //hops 3,4,5 are known
-
-
-
-
+ //compute hops 0,1,2,6,7,8 (hops 3,4,5 are known and dont need cache)
+ //-------------------------------------------------------------------
  int h=(int)(hop0-hop1*rneg*rneg*rneg);
  h=min(255,h);h=max(h,0);
  cache_hops[hop0][hop1-4][0] = (unsigned char)h;//(hop0-hop1*rneg*rneg*rneg);
@@ -61,7 +57,6 @@ for (int hop0=0;hop0<=255;hop0++)
  h=(int)(hop0-hop1*rneg);
  h=min(255,h);h=max(h,0);
  cache_hops[hop0][hop1-4][2] = (unsigned char)h;//(hop0-hop1*rneg);
-
 
  h=(int)(hop0+hop1*rpos);
  h=min(255,h);h=max(h,0);
@@ -78,44 +73,7 @@ for (int hop0=0;hop0<=255;hop0++)
  }//for hop1
 }//for hop0
 
-/*
-// cache testing
-//-----------------------
 
-int icache_hops[255][7][6];
-for (int hop0=0;hop0<=255;hop0++)
-{
- for (int hop1=4; hop1<=10;hop1++)
- {
-  //ratio for possitive hops. max ratio=3
- double rpos = min (3.0f,pow(0.8f*(255-hop0)/hop1,1.0f/3.0f));
- rpos=max(1,rpos);
- //ratio for negative hops. max ratio=3
- double rneg = min(3.0f,pow(0.8f*(hop0)/hop1,1.0f/3.0f));
- rneg=max(1,rneg);
- //compute hops 0,1,2,6,7,8
- //hops 3,4,5 are known
-
- icache_hops[hop0][hop1-4][0] = (int)(hop0-hop1*rneg*rneg*rneg);
- icache_hops[hop0][hop1-4][1] = (int)(hop0-hop1*rneg*rneg);
- icache_hops[hop0][hop1-4][2] = (int)(hop0-hop1*rneg);
- icache_hops[hop0][hop1-4][3] = (int)(hop0+hop1*rpos);
- icache_hops[hop0][hop1-4][4] = (int) (hop0+hop1*rpos*rpos);
- icache_hops[hop0][hop1-4][5] = (int)(hop0+hop1*rpos*rpos*rpos);
-
-  for (int j=0;j<6;j++)
-  {
-  //if (icache_hops[hop0][hop1-4][j]>255) printf ("warning 255 \n");
-  //if (icache_hops[hop0][hop1-4][j]<0) printf ("warning <0 \n");
-  //if (j>0 && icache_hops[hop0][hop1-4][j]<icache_hops[hop0][hop1-4][j-1])  printf ("warning <> \n");
-  printf (" %d \n",cache_hops[hop0][hop1-4][j]);
-  }
-
-
- }
-
- }
-*/
 
 }// end function
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
