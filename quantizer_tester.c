@@ -48,10 +48,13 @@ DEBUG=false;
 
 
 
+
 	secs = timeval_diff(&t_fin, &t_ini);
 	printf("%.16g ms\n", secs * 1000.0);
-
+    init_quantizer();
     gettimeofday(&t_ini, NULL);
+
+
 
 
     int width=640/pppx;
