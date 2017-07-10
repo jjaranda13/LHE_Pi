@@ -66,15 +66,15 @@ char max_h1=10;
 char min_h1=4;
 char start_h1=(max_h1+min_h1)<<1;
 char h1=start_h1;
-char last_hop=4;
+
 
 bool last_small_hop=true; //last hop was small
 bool small_hop=true;//current hop is small
-char hop0=0; //prediction
+int hop0=0; //prediction
 char emin=255;//error min
 char error=0;//computed error
 char oc=orig_YUV[y][0];//original color
-char quantum=oc; //quantum value
+unsigned char quantum=oc; //quantum value
 char hop_number=4;
 unsigned char hop_value=0;//data from cache
 
@@ -97,7 +97,7 @@ for (int x=1;x<width;x++)
   if (y>0 && x!=width-1)
     {
 
-    if (last_small_hop) hop0=(result_YUV[y][x-1]+result_YUV[y-1[x]]+result_YUV[y-1][x+1])/3;
+    if (last_small_hop) hop0=(result_YUV[y][x-1]+result_YUV[y-1][x]+result_YUV[y-1][x+1])/3;
     else hop0=(result_YUV[y][x-1]+result_YUV[y-1][x+1])>>1;
 
     }
@@ -194,8 +194,8 @@ for (int x=1;x<width;x++)
   //------------- PHASE 3: assignment of final quantized value --------------------------
   phase3:
 
-  result_YUV[line][x]=quantum;
-  hops[line][x]=hop_number;
+  result_YUV[y][x]=quantum;
+  hops[y][x]=hop_number;
 
   //------------- PHASE 4: h1 logic  --------------------------
   if (hop_number>5 || hop_number<3) small_hop=false; //true by default
