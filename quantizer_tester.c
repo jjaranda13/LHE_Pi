@@ -56,9 +56,13 @@ DEBUG=false;
 
     int width=640/pppx;
     int height=480/pppy;
-	for (int line=0;line<height;line++)
+    int module=8;
+    int line=0;
+	for (int i=0;i<height;i++)
 	{
 	quantize_scanline( scanlines,  line, width, hops_Y,result_Y);
+	line +=module;
+	line=line % height;
 	}
 
 	gettimeofday(&t_fin, NULL);
