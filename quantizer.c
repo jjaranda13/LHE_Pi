@@ -36,11 +36,11 @@ for (int hop0=0;hop0<=255;hop0++)
 {
  for (int hop1=4; hop1<=10;hop1++)
  {
- //ratio for possitive hops. max ratio=3
+ //ratio for possitive hops. max ratio=3 min ratio=1
  double rpos = min (3.0f,pow(0.8f*(255-hop0)/hop1,1.0f/3.0f));
  rpos=max(1,rpos);
 
- //ratio for negative hops. max ratio=3
+ //ratio for negative hops. max ratio=3 min ratio=1
  double rneg = min(3.0f,pow(0.8f*(hop0)/hop1,1.0f/3.0f));
  rneg=max(1,rneg);
 
