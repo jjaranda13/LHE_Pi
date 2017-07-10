@@ -1,6 +1,6 @@
 
 
-bool DEBUG=true;
+bool DEBUG;
 
 char pppx;
 char pppy;
