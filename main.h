@@ -21,5 +21,6 @@ unsigned char**hops_Y;
 unsigned char**hops_U;
 unsigned char**hops_V;
 
-
-
+unsigned char **result_Y;
+unsigned char **result_U;
+unsigned char **result_V;

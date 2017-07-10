@@ -58,8 +58,8 @@ for (int hop0=0;hop0<=255;hop0++)
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void quantize_scanline(char **orig_YUV, int y,int width, char **hops,char **result_YUV) {
 /// this function quantize the luminances or chrominances of one scanline
-/// inputs : orig_YUV, line, width,
-/// outputs: hops, result_YUV
+/// inputs : orig_YUV (which can be result_Y, result_U or result_V), line, width,
+/// outputs: hops, result_YUV (which can be result_Y, result_U or result_V)
 
 if (DEBUG) printf ("enter in quantize_scanline()...");
 char max_h1=10;
