@@ -1,3 +1,7 @@
+
+
+bool DEBUG=true;
+
 char pppx;
 char pppy;
 

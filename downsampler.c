@@ -1,8 +1,9 @@
-#include "main.h"
-#include "downsampler.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <stdbool.h>
+#include "main.h"
+#include "downsampler.h"
 
 /*Función de downsampling de un scanline*/
 void down_avg_horiz(char **imagen_capturada, int linea) {
