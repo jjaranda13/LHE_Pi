@@ -25,6 +25,12 @@
 unsigned char cache_hops[255][7][6]; //10KB cache
 
 
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void compute_delta(char **orig_YUV, int y,int width, unsigned char **delta) {
+
+}
+
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void init_quantizer(){
 ///this function pre computes the cache
