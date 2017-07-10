@@ -19,6 +19,7 @@
 #include "main.h"
 #include "quantizer.h"
 
+#define min(a, b) (((a) < (b)) ? (a) : (b))
 
 // la cache realmente podria ser de 10KB cache_hops[255][7][6]; e incluso de la mitad (5KB) pues es simetrica
 unsigned char cache_hops[255][7][6]; //10KB cache
