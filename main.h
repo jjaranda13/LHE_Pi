@@ -1,12 +1,13 @@
 
 
-bool DEBUG;
+bool DEBUG;//for execution in debug mode and show more traces
 
+//number of original pixels per sampled pixel
 char pppx;
 char pppy;
 
 
-//alto y ancho originales del fotograma
+//alto y ancho originales del fotograma, antes de ser downsampleado
 int img_height_orig;
 int img_width_orig;
 
