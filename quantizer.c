@@ -26,39 +26,6 @@ unsigned char cache_hops[255][7][6]; //10KB cache
 
 
 
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void compute_delta(unsigned char **frame_new,unsigned char **frame_prev, int y,int width, unsigned char **delta){
-/// this function computes delta image for diferential video
-///inputs: frame_new (new frame of video)
-///        frame_prev (rebuilt image but not scaled)
-/// outputs: delta (delta image)
-
-int interval1=24;
-int interval2=186;
-int dif_interval=interval2-interval1;
-int dif=0;
-int sign=1;
-for (int x=0;x<width;x++)
-  {
-  dif=frame_new[y][x]-frame_prev[y][x];
-  if (dif<0) {sign=-1;dif=-dif;}
-
-  if (dif<interval1){}
-  else if (dif<interval2)
-    {
-    dif=dif-interval1;
-    dif=interval1+(dif>>1);
-    }
-  else
-    {
-    dif=dif-interval2;
-    dif=interval1+(dif_interval>>1)+dif/3;
-    }
-
-  delta[y][x]=sign*dif+128;
-  }
-
-}
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void init_quantizer(){
