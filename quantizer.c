@@ -16,7 +16,7 @@
 #include <math.h>
 #include <stdbool.h>
 
-#include "main.h"
+#include "globals.h"
 #include "quantizer.h"
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
