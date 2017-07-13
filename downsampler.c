@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <stdbool.h>
-#include "main.h"
+#include "globals.h"
 #include "downsampler.h"
 
 /*Función de downsampling de un scanline*/
