@@ -65,7 +65,8 @@ DEBUG=false;
 	{
 	quantize_scanline( scanlines,  line, width, hops_Y,result_Y);
 	line +=module;
-	line=line % height;
+	line = line % height; //Actualmente recorre siemre el mismo bloque 0,8,16, etc...
+	//line = ((i+1) % (height/module) == 0) ? ((line % height)+1) : (line % height);// Esta linea hace que se recorran bien los slices
 	}
 
 	gettimeofday(&t_fin, NULL);
