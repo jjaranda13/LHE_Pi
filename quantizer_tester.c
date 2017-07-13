@@ -20,12 +20,12 @@ static int coder_init(int width, int height) {
 
     pppx = 2;
     pppy = 2;
-	scanlines = calloc((height/pppy),sizeof(char *));
+	orig_Y = calloc((height/pppy),sizeof(char *));
 	result_Y = calloc (width/pppy,sizeof(char *));
     hops_Y = calloc (width/pppy,sizeof(char *));
 
 	for (int i=0; i < height/pppy; i++) {
-        scanlines[i] = calloc (width/pppx,sizeof(char));
+        orig_Y[i] = calloc (width/pppx,sizeof(char));
         result_Y[i] = calloc (width/pppx,sizeof(char));
         hops_Y[i] = calloc (width/pppx,sizeof(char));
     }
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 DEBUG=false;
 
     printf("hello world\n");
-
+/*
 	gettimeofday(&t_ini, NULL);
 	coder_init(640, 480);
 	gettimeofday(&t_fin, NULL);
@@ -65,7 +65,7 @@ DEBUG=false;
     for (int j=0;j<1;j++)
 	for (int i=0;i<height;i++)
 	{
-	quantize_scanline( scanlines,  line, width, hops_Y,result_Y);
+	quantize_scanline( orig_Y,  line, width, hops_Y,result_Y);
 	line +=module;
 	line = line % height; //Actualmente recorre siemre el mismo bloque 0,8,16, etc...
 	//line = ((i+1) % (height/module) == 0) ? ((line % height)+1) : (line % height);// Esta linea hace que se recorran bien los slices
@@ -76,8 +76,9 @@ DEBUG=false;
 	secs = timeval_diff(&t_fin, &t_ini);
 	secs=secs/1000;
 	printf("%.16g ms\n", secs * 1000.0);
-
-    test_lena();
+*/
+    //test_lena();
+    encode_frame();
     printf("Creado fichero ");
 
 	}

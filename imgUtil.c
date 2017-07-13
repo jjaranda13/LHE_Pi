@@ -20,6 +20,7 @@ https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void load_frame(char const* filename)
 {
+printf("loading...");
 //orig_Y=stbi_load("../LHE_Pi/img/lena.bmp", &width_orig, &height_orig, &channels, 0);
 rgb=stbi_load(filename, &width_orig, &height_orig, &rgb_channels, 0);
 
@@ -29,14 +30,14 @@ rgb=stbi_load(filename, &width_orig, &height_orig, &rgb_channels, 0);
 //stbi_image_free( orig_Y );
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void save_frame(char const* filename)
+void save_frame(char const* filename, int width, int height, int channels, unsigned char *data)
 {
 //int i = stbi_write_bmp("../LHE_Pi/img/kk.bmp", width_orig, height_orig, channels, orig_Y);
-int i = stbi_write_bmp(filename, width_orig, height_orig, channels, orig_Y);
+int i = stbi_write_bmp(filename, width, height, channels, data);
 
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void rgb2yuv(unsigned char *rgb, unsigned char *y,unsigned char *u, unsigned char *v, int rgb_channels)
+void rgb2yuv(unsigned char *rgb, unsigned char **y,unsigned char **u, unsigned char **v, int rgb_channels)
 {
 
 orig_Y=malloc(width_orig*height_orig);
@@ -52,5 +53,6 @@ for (int i=0;i<height_orig;i++)
 
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void yuv2rgb() {
 
-
+}

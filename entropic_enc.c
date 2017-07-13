@@ -10,11 +10,11 @@
 #define testBit(A,k) ((A & (1<<(k)))>>k)
 unsigned char *huff_table;
 unsigned char rlc_length, condition_length;
-
+/*
 double timeval_diff(struct timeval *a, struct timeval *b) {
 	return ((double)(a->tv_sec +(double)a->tv_usec/1000000)-(double)(b->tv_sec + (double)b->tv_usec/1000000));
 }
-
+*/
 void init_huffmann_table() {
 
 	huff_table = malloc(9);
@@ -79,7 +79,7 @@ void entropic_enc(char **hops, int line) {
 	}
 
 }
-
+/*
 int main(int argc, char* argv[]) {
 
 	struct timeval t_ini, t_fin;
@@ -100,8 +100,9 @@ int main(int argc, char* argv[]) {
 
 	gettimeofday(&t_fin, NULL);
 
-	secs = timeval_diff(&t_fin, &t_ini)/10000;
+	//secs = timeval_diff(&t_fin, &t_ini)/10000;
 	printf("%.16g ms\n", secs * 1000.0);
 
 	return 0;
 }
+*/

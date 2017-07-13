@@ -10,26 +10,29 @@ char pppy;
 //alto y ancho originales del fotograma, antes de ser downsampleado
 int height_orig;
 int width_orig;
-
-//joseja: yo creo que una imagen debe ser char **img_Y, char** img_U y char**img_V. poner la palabra scanlines lleva a confusion, ya que una scanline es scanlines[i]
-//pero no estoy seguro de cual deberia ser la mejor nomenclatura
-//ademas creo que debemos poner unsigned char
-char **scanlines;
+int height_down_Y;
+int height_down_UV;
+int width_down_Y;
+int width_down_UV;
 
 //aray de imagen RGB con 1-4 bytes per pixel
-unsigned char * rgb;
+unsigned char *rgb;
 int rgb_channels;
 
 //arrays de frame original
-unsigned char* orig_Y;
-unsigned char* orig_U;
-unsigned char* orig_V;
+unsigned char** orig_Y;
+unsigned char** orig_U;
+unsigned char** orig_V;
 
+//arrays downsampleados
+unsigned char **orig_down_Y;
+unsigned char **orig_down_U;
+unsigned char **orig_down_V;
 
 //arays de imagen delta para video diferencial
-unsigned char**delta_Y;
-unsigned char**delta_U;
-unsigned char**delta_V;
+unsigned char **delta_Y;
+unsigned char **delta_U;
+unsigned char **delta_V;
 
 //arrays de hops resultantes del cuantizador
 unsigned char**hops_Y;

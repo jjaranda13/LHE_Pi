@@ -1,1 +1,1 @@
-void down_avg_horiz(char **imagen_capturada, int linea);
+void down_avg_horiz(unsigned char **orig, unsigned char** dest,int line,int pppx);
