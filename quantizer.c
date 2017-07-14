@@ -75,16 +75,50 @@ for (int hop0=0;hop0<=255;hop0++)
  }//for hop1
 }//for hop0
 
+
+//memory allocation for result and hops
+//---------------------------------------
+width_down_Y=width_orig/pppy;
+height_down_Y=height_orig/pppx;
+
+//aqui hay que comprobar el modelo de color con la variable yuv_model
+//-----------------------------------------
+width_down_UV=width_down_Y/2;
+height_down_UV=height_down_Y/2;
+
+hops_Y=malloc(height_down_Y*sizeof (unsigned char *));
+hops_U=malloc(height_down_UV*sizeof (unsigned char *));
+hops_V=malloc(height_down_UV*sizeof (unsigned char *));
+
+result_Y=malloc(height_down_Y*sizeof (unsigned char *));
+result_U=malloc(height_down_UV*sizeof (unsigned char *));
+result_V=malloc(height_down_UV*sizeof (unsigned char *));
+
+
+for (int i=0;i<height_orig;i++)
+{
+hops_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
+hops_U[i]=malloc(width_down_UV* sizeof (unsigned char));
+hops_V[i]=malloc(width_down_UV* sizeof (unsigned char));
+
+result_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
+result_U[i]=malloc(width_down_UV* sizeof (unsigned char));
+result_V[i]=malloc(width_down_UV* sizeof (unsigned char));
+
+
+}
+
+
 quantizer_initialized=true;
 
 }// end function
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void quantize_scanline(char **orig_YUV, int y,int width, unsigned char **hops,unsigned char **result_YUV) {
+void quantize_scanline(unsigned char **orig_YUV, int y,int width, unsigned char **hops,unsigned char **result_YUV) {
 /// this function quantize the luminances or chrominances of one scanline
 /// inputs : orig_YUV (which can be result_Y, result_U or result_V), line, width,
 /// outputs: hops, result_YUV (which can be result_Y, result_U or result_V)
 
-if (DEBUG) printf ("ENTER in quantize_scanline()...\n");
+if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
 
  const char max_h1=10;
  const char min_h1=4;
@@ -115,7 +149,7 @@ for (int x=1;x<width;x++)
   // --------------------- PHASE 1: PREDICTION---------------------------------------------------------
   //original color
   oc=orig_YUV[y][x];
-
+  //oc=orig_down_Y[y][x];
   if (y>0 && x!=width-1)
     {
 
@@ -125,7 +159,7 @@ for (int x=1;x<width;x++)
     hop0=(result_YUV[y][x-1]+result_YUV[y-1][x+1])>>1;
 
     }
-  else if (y>0)//x=width
+  else if (y>0)//x=width-1
     {
     hop0=(result_YUV[y][x-1]+result_YUV[y-1][x])>>1;
     }
@@ -149,13 +183,15 @@ for (int x=1;x<width;x++)
      if (emin<4) goto phase3;// only enter in computation if emin>=4
 
      //case hop1 (frequent)
+     //if (quantum+h1<255)
      error=emin-h1;
      if (error<0) error=-error;
      if (error<emin)
        {
        hop_number=5;
        emin=error;
-       quantum+=h1;
+       if (quantum+h1<=255) quantum+=h1;
+
        if (emin<4) goto phase3;
        }
 
@@ -192,7 +228,7 @@ for (int x=1;x<width;x++)
        {
        hop_number=3;
        emin=error;
-       quantum+=h1;
+       if (quantum-h1>=0) quantum+=h1;
        if (emin<4) goto phase3;
        }
 
@@ -234,4 +270,6 @@ for (int x=1;x<width;x++)
     }
   last_small_hop=small_hop;
   }
+
+
 }

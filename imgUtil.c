@@ -62,7 +62,7 @@ for (int line=0;line < height;line++)
 {
  for (int x=0;x<width;x++)
  {
- data[line*width+x]=orig_down_Y[line][x];
+ data[line*width+x]=Y[line][x];
  }
 }
 

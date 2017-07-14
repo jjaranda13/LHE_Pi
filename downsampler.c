@@ -33,17 +33,6 @@ orig_down_V[i]=malloc(width_down_UV* sizeof (unsigned char));
 }
 
 
-
-//inicializacion de prueba
-int cosa=0;
-for (int line=0;line<height_down_Y;line++)
-{
-for (int x=0;x<width_down_Y;x++)
-{
- orig_down_Y[line][x]=1;
- cosa+=orig_down_Y[line][x];
-}
-}
 downsampler_initialized=true;
 if (DEBUG) printf(" downsampler initialized succesfully \n");
 
