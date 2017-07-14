@@ -22,8 +22,8 @@
 void init_downsampler()
 {
 if (DEBUG) printf("ENTER in init_downsampler...\n");
-
 if (DEBUG) printf ("pppx=%d, pppy=%d \n ",pppx,pppy);
+
 width_down_Y=width_orig/pppy;
 height_down_Y=height_orig/pppx;
 
@@ -39,14 +39,14 @@ orig_down_U=malloc(height_down_UV*sizeof (unsigned char *));
 orig_down_V=malloc(height_down_UV*sizeof (unsigned char *));
 
 for (int i=0;i<height_down_Y;i++)
-{
-orig_down_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
-}
+  {
+  orig_down_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
+  }
 for (int i=0;i<height_down_UV;i++)
-{
-orig_down_U[i]=malloc(width_down_UV* sizeof (unsigned char));
-orig_down_V[i]=malloc(width_down_UV* sizeof (unsigned char));
-}
+  {
+  orig_down_U[i]=malloc(width_down_UV* sizeof (unsigned char));
+  orig_down_V[i]=malloc(width_down_UV* sizeof (unsigned char));
+  }
 
 
 downsampler_initialized=true;
