@@ -85,21 +85,20 @@ void quantize_scanline(char **orig_YUV, int y,int width, unsigned char **hops,un
 /// outputs: hops, result_YUV (which can be result_Y, result_U or result_V)
 
 if (DEBUG) printf ("enter in quantize_scanline()...");
-char max_h1=10;
-char min_h1=4;
-char start_h1=(max_h1+min_h1)<<1;
-char h1=start_h1;
 
-
-bool last_small_hop=true; //last hop was small
-bool small_hop=true;//current hop is small
-int hop0=0; //prediction
-char emin=255;//error min
-char error=0;//computed error
-char oc=orig_YUV[y][0];//original color
-unsigned char quantum=oc; //quantum value
-char hop_number=4;
-unsigned char hop_value=0;//data from cache
+ const char max_h1=10;
+ const char min_h1=4;
+ const char start_h1=(max_h1+min_h1)<<1;
+ char h1=start_h1;
+ bool last_small_hop=true; //last hop was small
+ bool small_hop=true;//current hop is small
+ int hop0=0; //prediction
+ char emin=255;//error min
+ char error=0;//computed error
+ char oc=orig_YUV[y][0];//original color
+ unsigned char quantum=oc; //quantum value
+ char hop_number=4;
+ unsigned char hop_value=0;//data from cache
 
 
 //first hop is original signal value, and also result_YUV
@@ -120,8 +119,10 @@ for (int x=1;x<width;x++)
   if (y>0 && x!=width-1)
     {
 
-    if (last_small_hop) hop0=(result_YUV[y][x-1]+result_YUV[y-1][x]+result_YUV[y-1][x+1])/3;
-    else hop0=(result_YUV[y][x-1]+result_YUV[y-1][x+1])>>1;
+    //if (last_small_hop) hop0=(result_YUV[y][x-1]+result_YUV[y-1][x]+result_YUV[y-1][x+1])/3;
+    //else
+    //si solo hacemos la prediccion normal, bajamos a 2.6ms desde 3ms
+    hop0=(result_YUV[y][x-1]+result_YUV[y-1][x+1])>>1;
 
     }
   else if (y>0)//x=width

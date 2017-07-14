@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 DEBUG=false;
 
     printf("hello world\n");
-/*
+
 	gettimeofday(&t_ini, NULL);
 	coder_init(640, 480);
 	gettimeofday(&t_fin, NULL);
@@ -62,7 +62,7 @@ DEBUG=false;
     int height=480/pppy;
     int module=8;
     int line=0;
-    for (int j=0;j<1;j++)
+    for (int j=0;j<1000;j++)
 	for (int i=0;i<height;i++)
 	{
 	quantize_scanline( orig_Y,  line, width, hops_Y,result_Y);
@@ -76,9 +76,9 @@ DEBUG=false;
 	secs = timeval_diff(&t_fin, &t_ini);
 	secs=secs/1000;
 	printf("%.16g ms\n", secs * 1000.0);
-*/
+
     //test_lena();
-    encode_frame();
+   // encode_frame();
     printf("Creado fichero ");
 
 	}
