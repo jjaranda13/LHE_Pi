@@ -25,9 +25,12 @@ orig_down_Y=malloc(height_down_Y*sizeof (unsigned char *));
 orig_down_U=malloc(height_down_UV*sizeof (unsigned char *));
 orig_down_V=malloc(height_down_UV*sizeof (unsigned char *));
 
-for (int i=0;i<height_orig;i++)
+for (int i=0;i<height_down_Y;i++)
 {
 orig_down_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
+}
+for (int i=0;i<height_down_UV;i++)
+{
 orig_down_U[i]=malloc(width_down_UV* sizeof (unsigned char));
 orig_down_V[i]=malloc(width_down_UV* sizeof (unsigned char));
 }

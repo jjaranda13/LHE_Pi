@@ -95,18 +95,24 @@ result_U=malloc(height_down_UV*sizeof (unsigned char *));
 result_V=malloc(height_down_UV*sizeof (unsigned char *));
 
 
-for (int i=0;i<height_orig;i++)
+for (int i=0;i<height_down_Y;i++)
 {
 hops_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
+result_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
+}
+
+for (int i=0;i<height_down_UV;i++)
+{
+
 hops_U[i]=malloc(width_down_UV* sizeof (unsigned char));
 hops_V[i]=malloc(width_down_UV* sizeof (unsigned char));
 
-result_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
+
 result_U[i]=malloc(width_down_UV* sizeof (unsigned char));
 result_V[i]=malloc(width_down_UV* sizeof (unsigned char));
-
-
 }
+
+
 
 
 quantizer_initialized=true;

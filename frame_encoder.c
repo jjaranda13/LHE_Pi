@@ -30,7 +30,6 @@ void framecoder_init(int width, int height,int px, int py)
     init_downsampler();
     init_quantizer();
 
-
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -93,13 +92,16 @@ printf("%.16g ms\n", secs * 1000.0);
 //save_frame("../LHE_Pi/img/kk.bmp", width_down_Y, height_down_Y, 1, orig_down_Y,orig_down_U,orig_down_V);
 
 //hago esto como prueba. no se donde esta el error. si en save frame pongo orig_down_Y funciona bien
+printf ("width_down_Y %d heigh down %d\n", width_down_Y,height_down_Y);
 for (int y=0;y<height_down_Y;y++)
 {
 for (int x=0;x<width_down_Y;x++)
   {
-  //result_Y[y][x]=orig_down_Y[y][x];
+ // result_Y[y][x]=orig_down_Y[y][x];
 }
 }
+//result_Y=orig_down_Y;
+
 save_frame("../LHE_Pi/img/kk.bmp", width_down_Y, height_down_Y, 1, result_Y,result_U,result_V);
 printf("save done \n");
 
