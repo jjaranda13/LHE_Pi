@@ -52,27 +52,28 @@ if (DEBUG) printf (" saving frame width=%d, height=%d channels=%d \n",width, hei
 //cargamos el array
 unsigned char *data=malloc (channels*width*height);
 
-char cosa= orig_Y[244][4];
+
 
 if (channels==1)
 {
-int line=0; int x=0;
-for (int i=0;i<width*height;i+=1)
- {
- printf("line: %d, %d \n",line,x) ;
+int pix=0;
 
- cosa=i%255;//orig_Y[line][x];
- data[i]=cosa;
- x++;
- if (x>=width) {line++;x=0;printf("line %d \n",line);}
+for (int line=0;line < height;line++)
+{
+ for (int x=0;x<width;x++)
+ {
+ data[line*width+x]=orig_down_Y[line][x];
  }
+}
+
+
 }
 int i = stbi_write_bmp(filename, width, height, channels, data);
 if (DEBUG) printf ("resultado save file = %d \n",i);
 
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void rgb2yuv(unsigned char *rgb, unsigned char **y,unsigned char **u, unsigned char **v, int rgb_channels)
+void rgb2yuv(unsigned char *rgb,  int rgb_channels)
 {
 /// this function transform an input image stored in *rgb into YUV image stored in 3 arrays
 if (DEBUG) printf ("ENTER in rgb2yuv()...\n");
@@ -80,13 +81,13 @@ if (DEBUG) printf ("ENTER in rgb2yuv()...\n");
 
 //memory allocation for yuv storage (de momento solo la Y)
 //----------------------------------
-y=malloc(height_orig*sizeof (unsigned char *));
+orig_Y=malloc(height_orig*sizeof (unsigned char *));
 for (int i=0;i<height_orig;i++)
 {
-y[i]=malloc(width_orig* sizeof (unsigned char));
+orig_Y[i]=malloc(width_orig* sizeof (unsigned char));
 }
 
-//data conversion (de momento es fake)
+//data conversion (de momento es fake, pilla canal R y listo)
 //-----------------------------------------
 for (int line=0;line<height_orig;line++)
 {
@@ -94,7 +95,7 @@ for (int line=0;line<height_orig;line++)
  for (int j=0;j<width_orig*rgb_channels;j+=rgb_channels)
  {
    //printf("   line: %d, pix:%d  \n",line,k);
-   y[line][k]=rgb[line*width_orig*rgb_channels+j];
+   orig_Y[line][k]=rgb[line*width_orig*rgb_channels+j];
    k++;//next pixel
 
 

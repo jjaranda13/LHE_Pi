@@ -58,20 +58,26 @@ void down_avg_horiz(unsigned char **orig, unsigned char** dest,int line,int pppx
 if (DEBUG) printf("ENTER in down_avg_horiz...%d \n",line);
 
 int line_down=line/pppy;
+int pix=0;
 //printf ("Linedown= %d",line_down);
 	switch(pppx){
 		case 2:
 
 			for (int i=0; i < width_orig; i+=2) {
-				//dest[line_down][i]
-				printf ("pix= %d \n",i+1);
-                char cosa=  (orig[line][i]+orig[line][i+1]) >>1; //px[1]+px[2]/2
+				dest[line_down][pix]=(orig[line][i]+orig[line][i+1]) >>1; //px[1]+px[2]/2
+				pix++;
+
 			}
+            break;
+
+
         case 4:
 
 			for (int i=0; i < width_orig; i+=4) {
 				dest[line_down][i] =  (orig[line][i]+orig[line][i+1]+orig[line][i+2]+orig[line][i+3]) >>2; //px[1]+px[2]/2
 			}
+			break;
+
 		default:
 
 		    for (int i=0; i < width_orig; i+=pppx) {
@@ -81,7 +87,8 @@ int line_down=line/pppy;
 		    	}
 	    		dest[line_down][i]=dest[line_down][i]/pppx;
 			}
-	}
+			break;
+        }
 
 	if (DEBUG) printf("EXIT in down_avg_horiz...%d \n",line);
 

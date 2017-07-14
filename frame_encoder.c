@@ -20,7 +20,7 @@ if (DEBUG) printf("ENTER in encode_frame... \n");
 load_frame("../LHE_Pi/img/lena.bmp");
 printf("frame loaded  \n");
 
-rgb2yuv(rgb,orig_Y,orig_U,orig_V,rgb_channels);
+rgb2yuv(rgb,rgb_channels);
 printf("rgb2yuv done \n");
 
 pppx=2;pppy=2;
