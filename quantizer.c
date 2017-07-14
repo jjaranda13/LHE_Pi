@@ -32,7 +32,7 @@ void init_quantizer(){
 ///this function pre computes the cache
 ///la cache es cache[hop0][h1][hop] = 10.000 bytes = 10 KB
 
-if (DEBUG) printf ("enter in init_quantizer()...");
+if (DEBUG) printf ("ENTER in init_quantizer()...\n");
 
 for (int hop0=0;hop0<=255;hop0++)
 {
@@ -75,7 +75,7 @@ for (int hop0=0;hop0<=255;hop0++)
  }//for hop1
 }//for hop0
 
-
+quantizer_initialized=true;
 
 }// end function
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,7 +84,7 @@ void quantize_scanline(char **orig_YUV, int y,int width, unsigned char **hops,un
 /// inputs : orig_YUV (which can be result_Y, result_U or result_V), line, width,
 /// outputs: hops, result_YUV (which can be result_Y, result_U or result_V)
 
-if (DEBUG) printf ("enter in quantize_scanline()...");
+if (DEBUG) printf ("ENTER in quantize_scanline()...\n");
 
  const char max_h1=10;
  const char min_h1=4;

@@ -2,10 +2,19 @@
 
 bool DEBUG;//for execution in debug mode and show more traces
 
+bool downsampler_initialized;
+bool quantizer_initialized;
+
+
+//#define MODULE 8;//default value is 8. used for scanlines processing order
+
 //number of original pixels per sampled pixel
 char pppx;
 char pppy;
 
+
+//yuv model
+int yuv_model; // 0=444, 1=422, 2=420
 
 //alto y ancho originales del fotograma, antes de ser downsampleado
 int height_orig;
@@ -35,9 +44,9 @@ unsigned char **delta_U;
 unsigned char **delta_V;
 
 //arrays de hops resultantes del cuantizador
-unsigned char**hops_Y;
-unsigned char**hops_U;
-unsigned char**hops_V;
+unsigned char **hops_Y;
+unsigned char **hops_U;
+unsigned char **hops_V;
 
 //arays de imagen resultante tras cuantizar (necesaria para la prediccion de LHE) y para calcular el siguiente delta
 unsigned char **result_Y;
