@@ -1,3 +1,16 @@
+/**
+ * @file downsampler.c
+ * @author MAG,JJGA
+ * @date July 2017
+ * @brief downsample one scanline.
+ *
+ * This module reads the image signal (Y,U,V) and transform one scanline into smaller one.
+ *
+ * @see https://github.com/jjaranda13/LHE_Pi
+ */
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
