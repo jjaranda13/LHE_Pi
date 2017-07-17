@@ -112,7 +112,7 @@ for (int i=0;i<height_down_UV;i++)
   result_V[i]=malloc(width_down_UV* sizeof (unsigned char));
   }
 
-
+quant_ent_flag=malloc(height_down_Y* sizeof (unsigned char));
 
 
 quantizer_initialized=true;

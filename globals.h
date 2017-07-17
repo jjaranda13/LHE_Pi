@@ -46,12 +46,20 @@ unsigned char **orig_down_Y;
 unsigned char **orig_down_U;
 unsigned char **orig_down_V;
 
+//Semaforo para iniciar el downsampler de la imagen capturada
+unsigned char cam_down_sem;
+
+//Variable condicional para iniciar la cuantización de las scanlines(hace broadcast cuando se tenga una slice)
+unsigned char down_quant_sem;
+
 //comunicacion down y quantizer
 unsigned char *down_quant_flag;
 
-//comunicacion quant y entropic
-unsigned char *quant_ent_flag;
+//Flags de lineas ent y stream
+unsigned char *ent_stream_flag;
 
+//Semaforo para comprobar la transmision y enviar si se puede
+unsigned char ent_stream_sem;
 
 //arays de imagen delta para video diferencial
 unsigned char **delta_Y;
