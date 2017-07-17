@@ -12,13 +12,21 @@ bool quantizer_initialized;
 char pppx;
 char pppy;
 
+//GOP size (group of pictures)
+char gop_size;
+char gop_frame;
 
 //yuv model
 int yuv_model; // 0=444, 1=422, 2=420
 
 //alto y ancho originales del fotograma, antes de ser downsampleado
-int height_orig;
-int width_orig;
+int height_orig_Y;
+int width_orig_Y;
+
+int height_orig_UV;
+int width_orig_UV;
+
+//ancho y alto de imagen downsampleada
 int height_down_Y;
 int height_down_UV;
 int width_down_Y;
@@ -37,6 +45,13 @@ unsigned char** orig_V;
 unsigned char **orig_down_Y;
 unsigned char **orig_down_U;
 unsigned char **orig_down_V;
+
+//comunicacion down y quantizer
+unsigned char *down_quant_flag;
+
+//comunicacion quant y entropic
+unsigned char *quant_ent_flag;
+
 
 //arays de imagen delta para video diferencial
 unsigned char **delta_Y;

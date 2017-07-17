@@ -49,6 +49,8 @@ for (int i=0;i<height_down_UV;i++)
   }
 
 
+down_quant_flag=malloc(height_down_Y* sizeof (unsigned char));
+
 downsampler_initialized=true;
 if (DEBUG) printf(" downsampler initialized succesfully \n");
 
