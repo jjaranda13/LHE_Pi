@@ -40,12 +40,13 @@ for (int hop0=0;hop0<=255;hop0++)
  {
  //ratio for possitive hops. max ratio=3 min ratio=1
  float maxr=3.0f;
- double rpos = min (maxr,pow(0.8f*(255-hop0)/hop1,1.0f/3.0f));
- rpos=max(1,rpos);
+ float minr=1.0f;//si fuese menor, un hop mayor podria ser inferior a un hop menor
+ double rpos = min (maxr,pow(0.8f*((255-hop0)/hop1),1.0f/3.0f));
+ rpos=max(minr,rpos);
 
  //ratio for negative hops. max ratio=3 min ratio=1
- double rneg = min(maxr,pow(0.8f*(hop0)/hop1,1.0f/3.0f));
- rneg=max(1,rneg);
+ double rneg = min(maxr,pow(0.8f*(hop0/hop1),1.0f/3.0f));
+ rneg=max(minr,rneg);
 
  //compute hops 0,1,2,6,7,8 (hops 3,4,5 are known and dont need cache)
  //-------------------------------------------------------------------
@@ -162,7 +163,7 @@ for (int x=1;x<width;x++)
 
     if (last_small_hop) hop0=(result_YUV[y][x-1]+result_YUV[y-1][x]+result_YUV[y-1][x+1])/3;
     else
-    //si solo hacemos la prediccion normal, bajamos a 3.18   desde 3.6ms . no es muy costoso
+    //si solo hacemos la prediccion normal, bajamos a 2.49   desde 2.86ms . no es muy costoso
     hop0=(result_YUV[y][x-1]+result_YUV[y-1][x+1])>>1;
 
     }
@@ -181,13 +182,14 @@ for (int x=1;x<width;x++)
   quantum=hop0;
   //small_hop=true;
 
+h1=4;
   //positive hops
   //--------------
   if (oc>=hop0)
     {
      //case hop0 (most frequent)
      emin=oc-hop0 ;
-     if (emin<4 || quantum+h1>255) goto phase3;// only enter in computation if emin>=4
+     if (emin<4 || (quantum+h1>255)) goto phase3;// only enter in computation if emin>=4
 
      //case hop1 (frequent)
      //---------------------
@@ -202,6 +204,7 @@ for (int x=1;x<width;x++)
 
        if (emin<4) goto phase3;
        }
+     else goto phase3;
 
       // case hops 6 to 8 (less frequent)
       for (int i=3;i<6;i++)
@@ -217,6 +220,7 @@ for (int x=1;x<width;x++)
 
           if (emin<4) break;// go to phase 3
           }
+         else break;
         }
 
     }
@@ -227,7 +231,7 @@ for (int x=1;x<width;x++)
     {
     //case hop0 (most frequent)
      emin=hop0-oc;
-     if (emin<4 || quantum -h1<0) goto phase3;// only enter in computation if emin>=4
+     if (emin<4 || (quantum -h1<0)) goto phase3;// only enter in computation if emin>=4
 
      //case hop1 (frequent)
      //-------------------
@@ -241,12 +245,13 @@ for (int x=1;x<width;x++)
        quantum-=h1;
        if (emin<4) goto phase3;
        }
+      else goto phase3;
 
       // case hops 2 to 0 (less frequent)
       for (int i=2;i>=0;i--)
         {
         hop_value=cache_hops[hop0][h1-4][i];//indexes are 2 to 0
-        error=oc-hop_value;
+        error=hop_value-oc;
         if (error<0) error=-error;
         if (error<emin)
           {
@@ -255,6 +260,7 @@ for (int x=1;x<width;x++)
           quantum=hop_value;
           if (emin<4) break;// go to phase 3
           }
+         else break;
         }
     }
 
@@ -275,7 +281,7 @@ for (int x=1;x<width;x++)
     {
     if (h1>min_h1) h1--;
     }
-  else
+  else if (hop_number>6 || hop_number<2) //he tenido que meter este if
     {
     h1=max_h1;
     }
