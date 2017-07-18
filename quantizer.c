@@ -39,11 +39,12 @@ for (int hop0=0;hop0<=255;hop0++)
  for (int hop1=4; hop1<=10;hop1++)
  {
  //ratio for possitive hops. max ratio=3 min ratio=1
- double rpos = min (3.0f,pow(0.8f*(255-hop0)/hop1,1.0f/3.0f));
+ float maxr=3.0f;
+ double rpos = min (maxr,pow(0.8f*(255-hop0)/hop1,1.0f/3.0f));
  rpos=max(1,rpos);
 
  //ratio for negative hops. max ratio=3 min ratio=1
- double rneg = min(3.0f,pow(0.8f*(hop0)/hop1,1.0f/3.0f));
+ double rneg = min(maxr,pow(0.8f*(hop0)/hop1,1.0f/3.0f));
  rneg=max(1,rneg);
 
  //compute hops 0,1,2,6,7,8 (hops 3,4,5 are known and dont need cache)
@@ -78,8 +79,8 @@ for (int hop0=0;hop0<=255;hop0++)
 
 //memory allocation for result and hops
 //---------------------------------------
-width_down_Y=width_orig/pppy;
-height_down_Y=height_orig/pppx;
+width_down_Y=width_orig_Y/pppy;
+height_down_Y=height_orig_Y/pppx;
 
 //aqui hay que comprobar el modelo de color con la variable yuv_model
 //-----------------------------------------
@@ -112,7 +113,7 @@ for (int i=0;i<height_down_UV;i++)
   result_V[i]=malloc(width_down_UV* sizeof (unsigned char));
   }
 
-quant_ent_flag=malloc(height_down_Y* sizeof (unsigned char));
+ent_stream_flag=malloc(height_down_Y* sizeof (unsigned char));
 
 
 quantizer_initialized=true;
@@ -133,8 +134,8 @@ if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
  bool last_small_hop=true; //last hop was small
  bool small_hop=true;//current hop is small
  int hop0=0; //prediction
- char emin=255;//error min
- char error=0;//computed error
+ int emin=255;//error min
+ int error=0;//computed error
  char oc=orig_YUV[y][0];//original color
  unsigned char quantum=oc; //quantum value
  char hop_number=4;
@@ -159,9 +160,9 @@ for (int x=1;x<width;x++)
   if (y>0 && x!=width-1)
     {
 
-    //if (last_small_hop) hop0=(result_YUV[y][x-1]+result_YUV[y-1][x]+result_YUV[y-1][x+1])/3;
-    //else
-    //si solo hacemos la prediccion normal, bajamos a 2.6ms desde 3ms
+    if (last_small_hop) hop0=(result_YUV[y][x-1]+result_YUV[y-1][x]+result_YUV[y-1][x+1])/3;
+    else
+    //si solo hacemos la prediccion normal, bajamos a 3.18   desde 3.6ms . no es muy costoso
     hop0=(result_YUV[y][x-1]+result_YUV[y-1][x+1])>>1;
 
     }
@@ -178,7 +179,7 @@ for (int x=1;x<width;x++)
   //-------------------------PHASE 2: HOPS COMPUTATION-------------------------------
   hop_number=4;
   quantum=hop0;
-  small_hop=true;
+  //small_hop=true;
 
   //positive hops
   //--------------
@@ -186,17 +187,18 @@ for (int x=1;x<width;x++)
     {
      //case hop0 (most frequent)
      emin=oc-hop0 ;
-     if (emin<4) goto phase3;// only enter in computation if emin>=4
+     if (emin<4 || quantum+h1>255) goto phase3;// only enter in computation if emin>=4
 
      //case hop1 (frequent)
-     //if (quantum+h1<255)
+     //---------------------
      error=emin-h1;
+
      if (error<0) error=-error;
      if (error<emin)
        {
        hop_number=5;
        emin=error;
-       if (quantum+h1<=255) quantum+=h1;
+       quantum+=h1;
 
        if (emin<4) goto phase3;
        }
@@ -204,7 +206,7 @@ for (int x=1;x<width;x++)
       // case hops 6 to 8 (less frequent)
       for (int i=3;i<6;i++)
         {
-        hop_value=cache_hops[hop0][h1-4][i];//indexes are 3 to 5
+        hop_value=cache_hops[hop0][h1-4][i];//indexes(i) are 3 to 5
         error=oc-hop_value;
         if (error<0) error=-error;
         if (error<emin)
@@ -225,16 +227,18 @@ for (int x=1;x<width;x++)
     {
     //case hop0 (most frequent)
      emin=hop0-oc;
-     if (emin<4) goto phase3;// only enter in computation if emin>=4
+     if (emin<4 || quantum -h1<0) goto phase3;// only enter in computation if emin>=4
 
      //case hop1 (frequent)
+     //-------------------
      error=emin-h1;
+     //error=hop0-h1-oc;
      if (error<0) error=-error;
      if (error<emin)
        {
        hop_number=3;
        emin=error;
-       if (quantum-h1>=0) quantum+=h1;
+       quantum-=h1;
        if (emin<4) goto phase3;
        }
 
@@ -265,6 +269,7 @@ for (int x=1;x<width;x++)
 
   //------------- PHASE 4: h1 logic  --------------------------
   if (hop_number>5 || hop_number<3) small_hop=false; //true by default
+  else small_hop=true;
 
   if (small_hop && last_small_hop)
     {
@@ -275,6 +280,7 @@ for (int x=1;x<width;x++)
     h1=max_h1;
     }
   last_small_hop=small_hop;
+  //printf("%d",h1);
   }
 
 

@@ -24,8 +24,8 @@ void framecoder_init(int width, int height,int px, int py)
     quantizer_initialized=false;
     pppx = px;
     pppy = py;
-    width_orig=width;
-    height_orig=height;
+    width_orig_Y=width;
+    height_orig_Y=height;
 
     init_downsampler();
     init_quantizer();
@@ -55,6 +55,7 @@ void quantize_frame()
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void encode_frame_fromfile()
 {
+//DEBUG=true;
 if (DEBUG) printf("ENTER in encode_frame... \n");
 struct timeval t_ini, t_fin;
 double secs;
@@ -65,7 +66,7 @@ printf("frame loaded  \n");
 
 pppx=2;
 pppy=2;
-framecoder_init(width_orig,height_orig,pppx,pppy);
+framecoder_init(width_orig_Y,height_orig_Y,pppx,pppy);
 
 rgb2yuv(rgb,rgb_channels);
 printf("rgb2yuv done \n");
@@ -73,24 +74,26 @@ printf("rgb2yuv done \n");
 
 
 
-pppx=2;pppy=2;
+
 downsample_frame(pppx,pppy);
 
 
 printf("down done\n");
 
 gettimeofday(&t_ini, NULL);
+int veces=1;
+for (int i=0 ;i<veces;i++)
 quantize_frame();
 gettimeofday(&t_fin, NULL);
 printf("quantization done\n");
-secs = timeval_diff(&t_fin, &t_ini);
+secs = timeval_diff(&t_fin, &t_ini)/veces;
 
-printf("%.16g ms\n", secs * 1000.0);
+printf("quantization in %.16g ms\n", secs * 1000.0);
 //char *data;
 //yuv2rgb(orig_down_Y,orig_down_U,orig_down_V,1,width_down_Y,height_down_Y, data);
 
-//save_frame("../LHE_Pi/img/kk.bmp", width_down_Y, height_down_Y, 1, orig_down_Y,orig_down_U,orig_down_V);
-save_frame("../LHE_Pi/img/kk.bmp", width_down_Y, height_down_Y, 1, result_Y,result_U,result_V);
+save_frame("../LHE_Pi/img/orig_Y.bmp", width_down_Y, height_down_Y, 1, orig_down_Y,orig_down_U,orig_down_V);
+save_frame("../LHE_Pi/img/LHE_Y.bmp", width_down_Y, height_down_Y, 1, result_Y,result_U,result_V);
 printf("save done \n");
 
 
@@ -113,7 +116,7 @@ if (downsampler_initialized==false) init_downsampler();
 
 
 //esto debe ser coregido para que recorra las scanlines salteadas modulo 8
-for (int line=0;line<height_orig;line+=pppy)
+for (int line=0;line<height_orig_Y;line+=pppy)
 	{
 	//printf( "downsampling line %d \n",line);
 	down_avg_horiz(orig_Y,orig_down_Y,line,pppx,pppy);

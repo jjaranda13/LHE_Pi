@@ -24,8 +24,8 @@ void init_downsampler()
 if (DEBUG) printf("ENTER in init_downsampler...\n");
 if (DEBUG) printf ("pppx=%d, pppy=%d \n ",pppx,pppy);
 
-width_down_Y=width_orig/pppy;
-height_down_Y=height_orig/pppx;
+width_down_Y=width_orig_Y/pppy;
+height_down_Y=height_orig_Y/pppx;
 
 //aqui hay que comprobar el modelo de color con la variable yuv_model
 //-----------------------------------------
@@ -70,7 +70,7 @@ int pix=0;
 	switch(pppx){
 		case 2:
 
-			for (int i=0; i < width_orig; i+=2) {
+			for (int i=0; i < width_orig_Y; i+=2) {
 				dest[line_down][pix]=(orig[line][i]+orig[line][i+1]) >>1; //px[1]+px[2]/2
 				pix++;
 
@@ -80,14 +80,14 @@ int pix=0;
 
         case 4:
 
-			for (int i=0; i < width_orig; i+=4) {
+			for (int i=0; i < width_orig_Y; i+=4) {
 				dest[line_down][i] =  (orig[line][i]+orig[line][i+1]+orig[line][i+2]+orig[line][i+3]) >>2; //px[1]+px[2]/2
 			}
 			break;
 
 		default:
 
-		    for (int i=0; i < width_orig; i+=pppx) {
+		    for (int i=0; i < width_orig_Y; i+=pppx) {
 		    	dest[line_down][i] = 0;
 		    	for (int j=0; j < pppx; j++) {
 					dest[line_down][i] += orig[line][(i+j)];

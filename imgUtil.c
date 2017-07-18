@@ -32,9 +32,9 @@ void load_frame(char const* filename)
 {
 if (DEBUG) printf("ENTER in load frame...\n");
 //orig_Y=stbi_load("../LHE_Pi/img/lena.bmp", &width_orig, &height_orig, &channels, 0);
-rgb=stbi_load(filename, &width_orig, &height_orig, &rgb_channels, 0);
+rgb=stbi_load(filename, &width_orig_Y, &height_orig_Y, &rgb_channels, 0);
 
-if (DEBUG) printf(" image loaded. width=%d, height=%d",width_orig,height_orig);
+if (DEBUG) printf(" image loaded. width=%d, height=%d",width_orig_Y,height_orig_Y);
 
 //int i = stbi_write_bmp("../LHE_Pi/img/kk.bmp", width_orig, height_orig, channels, orig_Y);
 
@@ -81,21 +81,37 @@ if (DEBUG) printf ("ENTER in rgb2yuv()...\n");
 
 //memory allocation for yuv storage (de momento solo la Y)
 //----------------------------------
-orig_Y=malloc(height_orig*sizeof (unsigned char *));
-for (int i=0;i<height_orig;i++)
+orig_Y=malloc(height_orig_Y*sizeof (unsigned char *));
+orig_U=malloc(height_orig_Y*sizeof (unsigned char *));
+orig_V=malloc(height_orig_Y*sizeof (unsigned char *));
+
+for (int i=0;i<height_orig_Y;i++)
 {
-orig_Y[i]=malloc(width_orig* sizeof (unsigned char));
+orig_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
+orig_U[i]=malloc(width_orig_Y* sizeof (unsigned char));
+orig_V[i]=malloc(width_orig_Y* sizeof (unsigned char));
+
 }
 
 //data conversion (de momento es fake, pilla canal R y listo)
 //-----------------------------------------
-for (int line=0;line<height_orig;line++)
+int r=0;
+int g=0;
+int b=0;
+
+for (int line=0;line<height_orig_Y;line++)
 {
  int k=0;
- for (int j=0;j<width_orig*rgb_channels;j+=rgb_channels)
+ for (int j=0;j<width_orig_Y*rgb_channels;j+=rgb_channels)
  {
-   //printf("   line: %d, pix:%d  \n",line,k);
-   orig_Y[line][k]=rgb[line*width_orig*rgb_channels+j];
+    r=rgb[line*width_orig_Y*rgb_channels+j];
+    g=rgb[line*width_orig_Y*rgb_channels+j+1];
+    b=rgb[line*width_orig_Y*rgb_channels+j+2];
+
+   orig_Y[line][k]=(r*299+g*587+b*114)/1000;
+   orig_U[line][k]=128+ ((-r*168+g*331+b*500)/1000);
+   orig_V[line][k]=128+ ((r*500-g*418-b*81)/1000);
+
    k++;//next pixel
 
 
