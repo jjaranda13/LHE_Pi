@@ -68,6 +68,7 @@ pppx=2;
 pppy=2;
 framecoder_init(width_orig_Y,height_orig_Y,pppx,pppy);
 
+printf ("init ok");
 rgb2yuv(rgb,rgb_channels);
 printf("rgb2yuv done \n");
 

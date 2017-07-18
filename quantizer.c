@@ -22,7 +22,7 @@
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 // la cache realmente podria ser de 10KB cache_hops[255][7][6]; e incluso de la mitad (5KB) pues es simetrica
-unsigned char cache_hops[255][7][6]; //10KB cache
+unsigned char cache_hops[256][7][6]; //10KB cache [Y][h1][hop_number]
 
 
 
@@ -180,9 +180,9 @@ for (int x=1;x<width;x++)
   //-------------------------PHASE 2: HOPS COMPUTATION-------------------------------
   hop_number=4;
   quantum=hop0;
-  //small_hop=true;
+  small_hop=true;
 
-h1=4;
+//h1=4;
   //positive hops
   //--------------
   if (oc>=hop0)
@@ -273,20 +273,28 @@ h1=4;
   result_YUV[y][x]=quantum;
   hops[y][x]=hop_number;
 
+
   //------------- PHASE 4: h1 logic  --------------------------
   if (hop_number>5 || hop_number<3) small_hop=false; //true by default
-  else small_hop=true;
+
+  //else small_hop=true;
+
+  //if (hop_number>=3 && hop_number<=5) small_hop=true;
+  //else small_hop=false;
 
   if (small_hop && last_small_hop)
     {
     if (h1>min_h1) h1--;
     }
-  else if (hop_number>6 || hop_number<2) //he tenido que meter este if
+  else //if (hop_number>7 || hop_number<1) //he tenido que meter este if
     {
     h1=max_h1;
     }
   last_small_hop=small_hop;
   //printf("%d",h1);
+
+
+
   }
 
 
