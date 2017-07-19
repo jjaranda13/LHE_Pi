@@ -50,27 +50,29 @@ for (int hop0=0;hop0<=255;hop0++){
  //compute hops 0,1,2,6,7,8 (hops 3,4,5 are known and dont need cache)
  //-------------------------------------------------------------------
  int h=(int)(hop0-hop1*rneg*rneg*rneg);
- h=min(255,h);h=max(h,0);
+ int hop_min=0;
+ int hop_max=255-hop_min;
+ h=min(hop_max,h);h=max(h,hop_min);
  cache_hops[hop0][hop1-4][0] = (unsigned char)h;//(hop0-hop1*rneg*rneg*rneg);
 
  h=(int)(hop0-hop1*rneg*rneg);
- h=min(255,h);h=max(h,0);
+ h=min(hop_max,h);h=max(h,hop_min);
  cache_hops[hop0][hop1-4][1] = (unsigned char)h;//(hop0-hop1*rneg*rneg);
 
  h=(int)(hop0-hop1*rneg);
- h=min(255,h);h=max(h,0);
+ h=min(hop_max,h);h=max(h,hop_min);
  cache_hops[hop0][hop1-4][2] = (unsigned char)h;//(hop0-hop1*rneg);
 
  h=(int)(hop0+hop1*rpos);
- h=min(255,h);h=max(h,0);
+ h=min(hop_max,h);h=max(h,hop_min);
  cache_hops[hop0][hop1-4][3] = (unsigned char)h;//(hop0+hop1*rpos);
 
  h=(int)(hop0+hop1*rpos*rpos);
- h=min(255,h);h=max(h,0);
+ h=min(hop_max,h);h=max(h,hop_min);
  cache_hops[hop0][hop1-4][4] = (unsigned char) h;//(hop0+hop1*rpos*rpos);
 
  h=(int)(hop0+hop1*rpos*rpos*rpos);
- h=min(255,h);h=max(h,0);
+ h=min(hop_max,h);h=max(h,hop_min);
  cache_hops[hop0][hop1-4][5] = (unsigned char)h;//(hop0+hop1*rpos*rpos*rpos);
 
  }//endfor hop1
@@ -206,10 +208,10 @@ for (int x=0;x<width;x++)
   hop_number=4;// prediction corresponds with hop_number=4
   quantum=hop0;//this is the initial predicted quantum, the value of prediction
   small_hop=true;//i supossed initially that hop will be small (3,4,5)
-  emin=oc-hop0 ; if (emin<0) emin=-emin;
+  emin=oc-hop0 ; if (emin<0) emin=-emin;//minimum error achieved
 
-if (emin>h1/2) //only enter in computation if emin>threshold
-{
+  if (emin>h1/2){ //only enter in computation if emin>threshold
+
   //positive hops
   //--------------
   if (oc>hop0)
@@ -225,8 +227,8 @@ if (emin>h1/2) //only enter in computation if emin>threshold
 
      if (error<0) error=-error;
 
-     if (error<emin)
-       {
+     if (error<emin){
+
        hop_number=5;
        emin=error;
        quantum+=h1;
@@ -238,13 +240,13 @@ if (emin>h1/2) //only enter in computation if emin>threshold
 
       // case hops 6 to 8 (less frequent)
       // --------------------------------
-      for (int i=3;i<6;i++)
-        {
+      for (int i=3;i<6;i++){
+
         hop_value=cache_hops[hop0][h1-4][i];//indexes(i) are 3 to 5
         error=oc-hop_value;
         if (error<0) error=-error;
-        if (error<emin)
-          {
+        if (error<emin){
+
           hop_number=i+3;
           emin=error;
           quantum=hop_value;
@@ -258,8 +260,8 @@ if (emin>h1/2) //only enter in computation if emin>threshold
 
   //negative hops
   //--------------
-  else
-    {
+  else{
+
 
     //case hop0 (most frequent)
     //--------------------------
@@ -270,8 +272,8 @@ if (emin>h1/2) //only enter in computation if emin>threshold
      error=emin-h1;
      if (error<0) error=-error;
 
-     if (error<emin)
-       {
+     if (error<emin){
+
        hop_number=3;
        emin=error;
        quantum-=h1;
@@ -281,13 +283,13 @@ if (emin>h1/2) //only enter in computation if emin>threshold
 
       // case hops 2 to 0 (less frequent)
       // --------------------------------
-      for (int i=2;i>=0;i--)
-        {
+      for (int i=2;i>=0;i--){
+
         hop_value=cache_hops[hop0][h1-4][i];//indexes are 2 to 0
         error=hop_value-oc;
         if (error<0) error=-error;
-        if (error<emin)
-          {
+        if (error<emin){
+
           hop_number=i;
           emin=error;
           quantum=hop_value;
@@ -309,12 +311,12 @@ if (emin>h1/2) //only enter in computation if emin>threshold
   //------------- PHASE 4: h1 logic  --------------------------
   if (hop_number>5 || hop_number<3) small_hop=false; //true by default
 
-  if (small_hop==true && last_small_hop==true)
-    {
+  if (small_hop==true && last_small_hop==true){
+
     if (h1>min_h1) h1--;
     }
-  else
-    {
+  else{
+
     h1=max_h1;
     }
 
