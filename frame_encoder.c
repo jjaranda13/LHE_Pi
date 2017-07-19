@@ -65,8 +65,8 @@ load_frame("../LHE_Pi/img/lena.bmp");
 //load_frame("../LHE_Pi/img/baboon.bmp");
 printf("frame loaded  \n");
 
-pppx=2;
-pppy=2;
+pppx=1;
+pppy=1;
 framecoder_init(width_orig_Y,height_orig_Y,pppx,pppy);
 
 printf ("init ok");
@@ -83,7 +83,7 @@ downsample_frame(pppx,pppy);
 printf("down done\n");
 
 gettimeofday(&t_ini, NULL);
-int veces=100;
+int veces=1;
 for (int i=0 ;i<veces;i++)
 quantize_frame();
 gettimeofday(&t_fin, NULL);

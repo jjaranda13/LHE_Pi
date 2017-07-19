@@ -37,13 +37,14 @@ if (DEBUG) printf ("ENTER in init_quantizer()...\n");
 for (int hop0=0;hop0<=255;hop0++){
  for (int hop1=4; hop1<=10;hop1++) {
  //ratio for possitive hops. max ratio=3 min ratio=1
- float maxr=3.0f;
+ float maxr=2.7f;
  float minr=1.0f;//si fuese menor, un hop mayor podria ser inferior a un hop menor
- double rpos = min (maxr,pow(0.8f*((255-hop0)/hop1),1.0f/3.0f));
+ const float margen=0.8f;
+ double rpos = min (maxr,pow(margen*((255-hop0)/hop1),1.0f/3.0f));
  rpos=max(minr,rpos);
 
  //ratio for negative hops. max ratio=3 min ratio=1
- double rneg = min(maxr,pow(0.8f*(hop0/hop1),1.0f/3.0f));
+ double rneg = min(maxr,pow(margen*(hop0/hop1),1.0f/3.0f));
  rneg=max(minr,rneg);
 
  //compute hops 0,1,2,6,7,8 (hops 3,4,5 are known and dont need cache)
@@ -229,6 +230,7 @@ if (emin>h1/2) //only enter in computation if emin>threshold
        hop_number=5;
        emin=error;
        quantum+=h1;
+
        if (emin<4) goto phase3;
        }
      else goto phase3;
