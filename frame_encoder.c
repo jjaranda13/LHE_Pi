@@ -33,15 +33,16 @@ void quantize_frame()
 {
  if (DEBUG) printf ("ENTER in quantizeframe... \n");
 
-    //int module=8;
-    //int line=0;
-
-	for (int line=0;line<height_down_Y;line++)
-	{
-	quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
-	//line +=module;
-	//line = line % height_down_Y; //Actualmente recorre siemre el mismo bloque 0,8,16, etc...
-	//line = ((i+1) % (height/module) == 0) ? ((line % height)+1) : (line % height);// Esta linea hace que se recorran bien los slices
+    //luminance components
+    //--------------------
+	for (int line=0;line<height_down_Y;line++){
+      quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
+	}
+	//chrominance components
+	//-----------------------
+	for (int line=0;line<height_down_UV;line++){
+      quantize_scanline( orig_down_U,  line, width_down_UV, hops_U,result_U);
+      quantize_scanline( orig_down_V,  line, width_down_UV, hops_V,result_V);
 	}
 
 
@@ -125,15 +126,19 @@ if (downsampler_initialized==false) init_downsampler();
 
 //downsampling by scanlines
 //--------------------------
-
-
 //esto debe ser coregido para que recorra las scanlines salteadas modulo 8
-for (int line=0;line<height_orig_Y;line+=pppy)
-	{
-	//printf( "downsampling line %d \n",line);
+
+// component Y
+// ------------
+for (int line=0;line<height_orig_Y;line+=pppy){
 	down_avg_horiz(orig_Y,orig_down_Y,line,pppx,pppy);
-	//line =((line + (MODULE) ) % height_orig) ;
-	//line++;
+	}
+
+// components U, V
+// ----------------
+for (int line=0;line<height_orig_UV;line+=pppy){
+	down_avg_horiz(orig_U,orig_down_U,line,pppx,pppy);
+	down_avg_horiz(orig_U,orig_down_V,line,pppx,pppy);
 	}
 
 
