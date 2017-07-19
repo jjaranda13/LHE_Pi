@@ -4,18 +4,18 @@
 #include <stdbool.h>
 #include <math.h>
 //#include <limits.h>
-#include "main.h"
+#include "globals.h"
 #include "entropic_enc.h"
 
 #define testBit(A,k) ((A & (1<<(k)))>>k)
-unsigned char *huff_table;
-unsigned char rlc_length, condition_length;
+
 /*
 double timeval_diff(struct timeval *a, struct timeval *b) {
 	return ((double)(a->tv_sec +(double)a->tv_usec/1000000)-(double)(b->tv_sec + (double)b->tv_usec/1000000));
 }
 */
-void init_huffmann_table() {
+
+void init_huffman_table() {
 
 	huff_table = malloc(9);
 	huff_table[0] = 0b00000000;
@@ -30,29 +30,45 @@ void init_huffmann_table() {
 
 }
 
-/*
-		switch (hops[line][i]) {
-			case 4:
+void init_entropic_enc(){
 
-		}
-*/
+	init_huffman_table();
 
+	bits_Y = calloc(height_down_Y,sizeof(unsigned char *));
 
+	for (int i=0;i<height_down_Y;i++) {
+		bits_Y[i]=calloc(width_down_Y, sizeof (unsigned char));
+	}
 
+	bits_U = calloc(height_down_UV,sizeof(unsigned char *));
 
-void entropic_enc(char **hops, int line) {
+	for (int i=0;i<height_down_UV;i++) {
+		bits_U[i]=calloc(width_down_UV, sizeof (unsigned char));
+	}
+
+	bits_V = calloc(height_down_UV,sizeof(unsigned char *));
+
+	for (int i=0;i<height_down_UV;i++) {
+		bits_V[i]=calloc(width_down_UV, sizeof (unsigned char));
+	}
+} //Los pongo a cero porque voy a usar máscaras para colocar los bits
+
+void entropic_enc(unsigned char **hops, unsigned char **bits, int line) {
 
 	unsigned int counterh0 = 0;
 	unsigned int counterh0_prev = 0;
-	unsigned char mode = 0;
+	unsigned char mode = 0; //0=huffman, 1=rlc
 	unsigned char mode_prev = mode;
 	unsigned char rlc_length_ini = 4;
 	unsigned char condition_length_ini = 7;
+	unsigned int bytes = 0;
+	unsigned char mask = 0b10000000;
 
 	rlc_length = rlc_length_ini;
 	condition_length = condition_length_ini;
 
-	for (int i = 0; i < sizeof(hops[line]); i++) {
+	for (int i = 0; i < 20; i++) {
+		printf("Simbolo: %u\n", hops[line][i]);
 		counterh0_prev = counterh0;
 		if (hops[line][i]==4){
 			counterh0+=1;
@@ -72,37 +88,102 @@ void entropic_enc(char **hops, int line) {
 			rlc_length=rlc_length_ini;
 		}
 
-
-
+		if (mode == 0) {
+			for (int b = 7; b >= 0; b--){
+				//printf("%u\n", huff_table[hops[line][i]]);
+				bits[line][bytes] = bits[line][bytes] | (testBit(huff_table[hops[line][i]], b) * mask);
+				printf("Byte: %u, %u\n", bits[line][bytes], bytes);
+				printf("%u\n", mask);
+				mask = mask >> 1;
+				if (mask == 0) {bytes++; mask=0b10000000;}
+				if (testBit(huff_table[hops[line][i]], b) == 1) {
+					break;
+				}
+			}
+		} else {
+			printf("Entra en modo RLC\n");
+		}
 
 
 	}
 
 }
-/*
+
 int main(int argc, char* argv[]) {
 
-	struct timeval t_ini, t_fin;
-	double secs;
+	//struct timeval t_ini, t_fin;
+	//double secs;
 
-	gettimeofday(&t_ini, NULL);
+	//gettimeofday(&t_ini, NULL);
 
-	init_huffmann_table();
-	for (int j = 0; j < 9; j++){
-		for (int i = 7; i >= 0; i--){
-			printf("%u", testBit(huff_table[j], i));
-			if (testBit(huff_table[j], i) == 1) {
-				break;
-			}
-		}
-		printf("\n");
+	printf("Iniciando el coder entropico\n");
+	init_entropic_enc();
+	printf("Coder entropico inicializado. Se pasa a iniciar hops\n");
+	unsigned char **hops;
+	hops = malloc(2*sizeof(unsigned char *));
+	for (int i = 0; i < 2; i++) {
+		hops[i]=calloc(20, 1);
 	}
+	hops[0][0] = 4;
+	hops[0][1] = 4;
+	hops[0][2] = 3;
+	hops[0][3] = 2;
+	hops[0][4] = 1;
+	hops[0][5] = 3;
+	hops[0][6] = 4;
+	hops[0][7] = 4;
+	hops[0][8] = 4;
+	hops[0][9] = 4;
+	hops[0][10] = 4;
+	hops[0][11] = 4;
+	hops[0][12] = 4;
+	hops[0][13] = 4;
+	hops[0][14] = 4;
+	hops[0][15] = 4;
+	hops[0][16] = 6;
+	hops[0][17] = 2;
+	hops[0][18] = 3;
+	hops[0][19] = 4;
+	hops[1][0] = 4;
+	hops[1][1] = 4;
+	hops[1][2] = 3;
+	hops[1][3] = 2;
+	hops[1][4] = 1;
+	hops[1][5] = 3;
+	hops[1][6] = 4;
+	hops[1][7] = 4;
+	hops[1][8] = 5;
+	hops[1][9] = 7;
+	hops[1][10] = 6;
+	hops[1][11] = 8;
+	hops[1][12] = 3;
+	hops[1][13] = 5;
+	hops[1][14] = 4;
+	hops[1][15] = 4;
+	hops[1][16] = 6;
+	hops[1][17] = 2;
+	hops[1][18] = 3;
+	hops[1][19] = 4;
+	printf("Hops inicializados se pasa a crear bits.\n");
+	unsigned char **bits;
+	bits = malloc(2*sizeof(unsigned char*));
+	for (int i = 0; i < 2; i++) {
+		bits[i]=malloc(20*sizeof(unsigned char));
+	}
+	printf("Bits creado, se pasa a ejecutar el codificador.\n");
+	entropic_enc(hops, bits, 0);
 
-	gettimeofday(&t_fin, NULL);
+	for (int j = 0; j < 8; j++){
+		for (int i = 7; i >= 0; i--){
+			printf("%u", testBit(bits[0][j], i));
+		}
+		//printf("\n");
+	}
+	printf("\n");
+	//gettimeofday(&t_fin, NULL);
 
 	//secs = timeval_diff(&t_fin, &t_ini)/10000;
-	printf("%.16g ms\n", secs * 1000.0);
+	//printf("%.16g ms\n", secs * 1000.0);
 
 	return 0;
 }
-*/
