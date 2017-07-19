@@ -34,10 +34,8 @@ void init_quantizer(){
 
 if (DEBUG) printf ("ENTER in init_quantizer()...\n");
 
-for (int hop0=0;hop0<=255;hop0++)
-{
- for (int hop1=4; hop1<=10;hop1++)
- {
+for (int hop0=0;hop0<=255;hop0++){
+ for (int hop1=4; hop1<=10;hop1++) {
  //ratio for possitive hops. max ratio=3 min ratio=1
  float maxr=3.0f;
  float minr=1.0f;//si fuese menor, un hop mayor podria ser inferior a un hop menor
@@ -74,8 +72,8 @@ for (int hop0=0;hop0<=255;hop0++)
  h=min(255,h);h=max(h,0);
  cache_hops[hop0][hop1-4][5] = (unsigned char)h;//(hop0+hop1*rpos*rpos*rpos);
 
- }//for hop1
-}//for hop0
+ }//endfor hop1
+}//endfor hop0
 
 
 //memory allocation for result and hops
@@ -158,7 +156,7 @@ void quantize_scanline(unsigned char **orig_YUV, int y,int width, unsigned char 
 /// this function quantize the luminances or chrominances of one scanline
 /// inputs : orig_YUV (which can be orig_down_Y, orig_down_U or orig_down_V), line, width,
 /// outputs: hops, result_YUV (which can be result_Y, result_U or result_V)
-///          first hop is initialized to original signal value, and also result_YUV
+
 
 if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
 
@@ -180,36 +178,28 @@ if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
  unsigned char hop_value=0;//data from cache
  unsigned char hop_number=4;// final assigned hop
 
-//first hop is initialized to original signal value, and also result_YUV
-hops[y][0]=quantum;
-result_YUV[y][0]=quantum;
-
-
 //this bucle is for only one scanline, excluding first pixel
 //----------------------------------------------------------
-for (int x=1;x<width;x++)
+for (int x=0;x<width;x++)
   {
 
   // --------------------- PHASE 1: PREDICTION---------------------------------------------------------
   oc=orig_YUV[y][x];//original color
 
-  if (y>0 && x!=width-1)
-    {
-
+  if (y>0 && x>0 && x!=width-1){
     if (last_small_hop) hop0=(result_YUV[y][x-1]+result_YUV[y-1][x]+result_YUV[y-1][x+1])/3;
     else
     hop0=(result_YUV[y][x-1]+result_YUV[y-1][x+1])>>1;
-
     }
-  else if (y>0)//x=width-1
-    {
+  else if (x>0 && y>0){
+    hop0=result_YUV[y-1][0];
+    }
+  else if (y>0){//x=width-1
     hop0=(result_YUV[y][x-1]+result_YUV[y-1][x])>>1;
     }
-  else //y=0
-   {
+  else{ //y=0
     hop0=result_YUV[y][x-1];
    }
-
 
   //-------------------------PHASE 2: HOPS COMPUTATION-------------------------------
   hop_number=4;// prediction corresponds with hop_number=4
@@ -305,9 +295,7 @@ if (emin>h1/2) //only enter in computation if emin>threshold
         }
     }
 
-
-
-}//endif emin>4
+}//endif emin
 
   //------------- PHASE 3: assignment of final quantized value --------------------------
   phase3:
