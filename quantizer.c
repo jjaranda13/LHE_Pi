@@ -191,7 +191,7 @@ for (int x=0;x<width;x++)
     else
     hop0=(result_YUV[y][x-1]+result_YUV[y-1][x+1])>>1;
     }
-  else if (x>0 && y>0){
+  else if (x==0 && y>0){
     hop0=result_YUV[y-1][0];
     }
   else if (y>0){//x=width-1
