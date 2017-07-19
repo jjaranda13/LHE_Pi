@@ -39,18 +39,18 @@ for (int hop0=0;hop0<=255;hop0++){
  //ratio for possitive hops. max ratio=3 min ratio=1
  float maxr=2.7f;
  float minr=1.0f;//si fuese menor, un hop mayor podria ser inferior a un hop menor
- const float margen=0.8f;
- double rpos = min (maxr,pow(margen*((255-hop0)/hop1),1.0f/3.0f));
+ const float range=0.8f; //con rango menor da mas calidad pero se gastan mas bits!!!!
+ double rpos = min (maxr,pow(range*((255-hop0)/hop1),1.0f/3.0f));
  rpos=max(minr,rpos);
 
  //ratio for negative hops. max ratio=3 min ratio=1
- double rneg = min(maxr,pow(margen*(hop0/hop1),1.0f/3.0f));
+ double rneg = min(maxr,pow(range*(hop0/hop1),1.0f/3.0f));
  rneg=max(minr,rneg);
 
  //compute hops 0,1,2,6,7,8 (hops 3,4,5 are known and dont need cache)
  //-------------------------------------------------------------------
  int h=(int)(hop0-hop1*rneg*rneg*rneg);
- int hop_min=0;
+ int hop_min=1;
  int hop_max=255-hop_min;
  h=min(hop_max,h);h=max(h,hop_min);
  cache_hops[hop0][hop1-4][0] = (unsigned char)h;//(hop0-hop1*rneg*rneg*rneg);
