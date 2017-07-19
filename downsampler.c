@@ -64,7 +64,7 @@ void down_avg_horiz(unsigned char **orig, unsigned char** dest,int line,int pppx
 
 if (DEBUG) printf("ENTER in down_avg_horiz...%d \n",line);
 
-int line_down=line/pppy;
+int line_down=line/pppy;//linea correspondiente a la original
 int pix=0;
 //printf ("Linedown= %d",line_down);
 	switch(pppx){

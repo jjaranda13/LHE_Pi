@@ -23,6 +23,11 @@ void framecoder_init(int width, int height,int px, int py)
     width_orig_Y=width;
     height_orig_Y=height;
 
+    //modelo YUV 444 inicialmente
+    //----------------
+    //height_orig_UV=width_orig_Y;
+    //width_orig_UV=width_orig_Y;
+
     init_downsampler();
     init_quantizer();
     init_entropic_enc();
@@ -62,8 +67,8 @@ load_frame("../LHE_Pi/img/lena.bmp");
 //load_frame("../LHE_Pi/img/baboon.bmp");
 printf("frame loaded  \n");
 
-pppx=1;
-pppy=1;
+pppx=2;
+pppy=2;
 framecoder_init(width_orig_Y,height_orig_Y,pppx,pppy);
 
 printf ("init ok");
@@ -104,9 +109,16 @@ printf("entropic coding in %.16g ms\n", secs * 1000.0);
 //char *data;
 //yuv2rgb(orig_down_Y,orig_down_U,orig_down_V,1,width_down_Y,height_down_Y, data);
 
-save_frame("../LHE_Pi/img/orig_Y.bmp", width_down_Y, height_down_Y, 1, orig_down_Y,orig_down_U,orig_down_V);
+save_frame("../LHE_Pi/img/orig_Y.bmp", width_orig_Y, height_orig_Y, 1, orig_Y,orig_down_U,orig_down_V);
+save_frame("../LHE_Pi/img/orig_U.bmp", width_orig_Y, height_orig_Y, 1, orig_U,orig_down_U,orig_down_V);
+save_frame("../LHE_Pi/img/orig_V.bmp", width_orig_Y, height_orig_Y, 1, orig_V,orig_down_U,orig_down_V);
+
+save_frame("../LHE_Pi/img/orig_down_Y.bmp", width_down_Y, height_down_Y, 1, orig_down_Y,orig_down_U,orig_down_V);
+
+
 save_frame("../LHE_Pi/img/LHE_Y.bmp", width_down_Y, height_down_Y, 1, result_Y,result_U,result_V);
 save_frame("../LHE_Pi/img/LHE_YUV.bmp", width_down_Y, height_down_Y, 3, result_Y,result_U,result_V);
+save_frame("../LHE_Pi/img/orig_down_YUV.bmp", width_down_Y, height_down_Y, 3, orig_down_Y,orig_down_U,orig_down_V);
 
 printf("save done \n");
 
@@ -132,15 +144,17 @@ if (downsampler_initialized==false) init_downsampler();
 
 // component Y
 // ------------
+//si pppy==2 entonces solo se downsamplean la mitad de las lineas, logicamente
 for (int line=0;line<height_orig_Y;line+=pppy){
 	down_avg_horiz(orig_Y,orig_down_Y,line,pppx,pppy);
 	}
 
 // components U, V
 // ----------------
-for (int line=0;line<height_orig_UV;line+=pppy){
-	down_avg_horiz(orig_U,orig_down_U,line,pppx,pppy);
-	down_avg_horiz(orig_U,orig_down_V,line,pppx,pppy);
+// si pppy=2 se downsamplean una de cada 4 lineas
+for (int line=0;line<height_orig_UV;line+=pppy*2){
+	down_avg_horiz(orig_U,orig_down_U,line,pppx*2,pppy*2);
+	down_avg_horiz(orig_V,orig_down_V,line,pppx*2,pppy*2);
 	}
 
 

@@ -242,9 +242,10 @@ for (int x=0;x<width;x++)
       // case hops 6 to 8 (less frequent)
       // --------------------------------
       for (int i=3;i<6;i++){
-
+        //cache normal
         //hop_value=cache_hops[hop0][h1-4][i];//indexes(i) are 3 to 5
 
+        //cache de 5KB simetrica
         hop_value=255-cache_hops[255-hop0][h1-4][5-i];//indexes are 2 to 0
 
         error=oc-hop_value;

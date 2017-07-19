@@ -50,6 +50,9 @@ if (DEBUG) printf("ENTER in save frame...\n");
 
 if (DEBUG) printf (" saving frame width=%d, height=%d channels=%d \n",width, height, channels);
 //cargamos el array
+
+
+//OJO ESTO PUEDE DAR LUGAR A UN ERROR: NO HACER MALLOCS FUERA de un init
 unsigned char *data=malloc (channels*width*height);
 
 
@@ -67,7 +70,7 @@ for (int line=0;line < height;line++)
 }
 }
 else if (channels==3){
-char *data;
+
 yuv2rgb(orig_down_Y,orig_down_U,orig_down_V,3,width_down_Y,height_down_Y, data);
 
 
@@ -80,11 +83,14 @@ if (DEBUG) printf ("resultado save file = %d \n",i);
 void rgb2yuv(unsigned char *rgb,  int rgb_channels)
 {
 /// this function transform an input image stored in *rgb into YUV image stored in 3 arrays
-if (DEBUG) printf ("ENTER in rgb2yuv()...\n");
+if (DEBUG) printf ("ENTER in rgb2yuv()..--.\n");
+
+//memory allocation ESTO ES UN POTENCIAL BUG, NO DEBEMOS HACER MALLOCS FUERA DE INIT
+//------------------
 
 
 //memory allocation for yuv storage (de momento solo la Y)
-//----------------------------------
+//---------------------------------------------------------
 orig_Y=malloc(height_orig_Y*sizeof (unsigned char *));
 orig_U=malloc(height_orig_Y*sizeof (unsigned char *));
 orig_V=malloc(height_orig_Y*sizeof (unsigned char *));
@@ -97,12 +103,15 @@ orig_V[i]=malloc(width_orig_Y* sizeof (unsigned char));
 
 }
 
-//data conversion (de momento es fake, pilla canal R y listo)
-//-----------------------------------------
+//data conversion
+//------------------
 int r=0;
 int g=0;
 int b=0;
-
+/*Y =  0.299R + 0.587G + 0.114B
+   U = -0.147R - 0.289G + 0.436B
+   V =  0.615R - 0.515G - 0.100B
+   */
 for (int line=0;line<height_orig_Y;line++)
 {
  int k=0;
@@ -113,8 +122,8 @@ for (int line=0;line<height_orig_Y;line++)
     b=rgb[line*width_orig_Y*rgb_channels+j+2];
 
    orig_Y[line][k]=(r*299+g*587+b*114)/1000;
-   orig_U[line][k]=128+ ((-r*168+g*331+b*500)/1000);
-   orig_V[line][k]=128+ ((r*500-g*418-b*81)/1000);
+   orig_U[line][k]=128+ (-168*r - 331*g + b*500)/1000;
+   orig_V[line][k]=128+ (500*r - 418*g - b*81)/1000;
 
    k++;//next pixel
 
@@ -127,12 +136,14 @@ for (int line=0;line<height_orig_Y;line++)
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void yuv2rgb(unsigned char **y, unsigned char **u, unsigned char ** v, int channels, int width, int height, char *data) {
 
-if (DEBUG) printf ("ENTER in yuv2rgb()...\n");
+//if (DEBUG)
+printf ("ENTER in yuv2rgb()...\n");
 
 
 //memory allocation ESTO ES UN POTENCIAL BUG, NO DEBEMOS HACER MALLOCS FUERA DE INIT
 //------------------
-data=malloc(height*width*channels*sizeof (unsigned char));
+//free (data);
+//data=malloc(height*width*channels*sizeof (unsigned char));
 
 //imagenes de solo componente Y
 // -----------------------------
@@ -149,6 +160,8 @@ return;
 
 //imagenes con crominancia
 //------------------------
+if (channels ==3){
+printf (" 3 channels... \n");
 for (int line=0;line<height;line++)
 {
 /*
@@ -156,23 +169,26 @@ for (int line=0;line<height;line++)
    G = Y - 0.395U - 0.581V
    B = Y + 2.032U
 */
-for (int x=0;x<width;x+=channels)
+int pix=0;
+for (int x=0;x<width*3;x+=channels)
   {
-  int yp=y[line][x];
-  int up=u[line/pppy][x/pppx];
-  int vp=v[line/pppy][x/pppx];
-
+  int yp=y[line][pix];
+  int up=u[line/2][pix/2];
+  int vp=v[line/2][pix/2];
+  pix++;
   int r=(1000*yp+1140*vp)/1000;
-  int g=(1000*yp-395*up- 580*vp)/1000;
-  int b=(1000*yp+2032*up);
+  int g=(1000*yp-395*up- 581*vp)/1000;
+  int b=(1000*yp+2032*up)/1000;
+  //printf ("r:%d, g:%d, b:%d \n",r,g,b);
 
-
-  data[line*width+x]=128r;
-  data[line*width+x+1]=g;
-  data[line*width+x+2]=b;
+  data[line*width*3+x]=(unsigned char)r;
+  data[line*width*3+x+1]=(unsigned char)g;
+  data[line*width*3+x+2]=(unsigned char)b;
 
   }
 
+}
+printf(" 3 channels done \n");
 }
 
 
