@@ -74,7 +74,8 @@ int entropic_enc(unsigned char **hops, unsigned char **bits, unsigned int line, 
 			mode=0;
 		}
 
-		if (mode==1 && counterh0==(unsigned char)(pow(2, rlc_length)-1)) {
+		//if (mode==1 && counterh0==(unsigned char)(pow(2, rlc_length)-1)) {
+		if (mode==1 && ((rlc_length==4 && counterh0==16) || (rlc_length==5 && counterh0==32))){
 			counterh0=0;
 			rlc_length=5;
 			bits[line][bytes] = bits[line][bytes] | mask;
