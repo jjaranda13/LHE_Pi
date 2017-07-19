@@ -123,8 +123,6 @@ for (int line=0;line<height_orig_Y;line++)
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void yuv2rgb(unsigned char **y, unsigned char **u, unsigned char ** v, int channels, int width, int height, char *data) {
 
-/// de momento esta funcion no la usamos
-
 if (DEBUG) printf ("ENTER in yuv2rgb()...\n");
 
 

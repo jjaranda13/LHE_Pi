@@ -93,7 +93,11 @@ gettimeofday(&t_ini, NULL);
 veces=100;
 for (int i=0 ;i<veces;i++){
 for (int line=0;line<height_down_Y;line++) {
+<<<<<<< HEAD
     entropic_enc(hops_Y, bits_Y, 1, width_down_Y);
+=======
+    entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+>>>>>>> 1fec92276b3a04f88eb0abb1416096d5b6329bef
 }
 }
 gettimeofday(&t_fin, NULL);
