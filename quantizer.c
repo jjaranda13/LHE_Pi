@@ -156,8 +156,9 @@ quantizer_initialized=true;
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void quantize_scanline(unsigned char **orig_YUV, int y,int width, unsigned char **hops,unsigned char **result_YUV) {
 /// this function quantize the luminances or chrominances of one scanline
-/// inputs : orig_YUV (which can be result_Y, result_U or result_V), line, width,
+/// inputs : orig_YUV (which can be orig_down_Y, orig_down_U or orig_down_V), line, width,
 /// outputs: hops, result_YUV (which can be result_Y, result_U or result_V)
+///          first hop is initialized to original signal value, and also result_YUV
 
 if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
 
@@ -179,13 +180,9 @@ if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
  unsigned char hop_value=0;//data from cache
  unsigned char hop_number=4;// final assigned hop
 
-
-
 //first hop is initialized to original signal value, and also result_YUV
 hops[y][0]=quantum;
 result_YUV[y][0]=quantum;
-
-
 
 
 //this bucle is for only one scanline, excluding first pixel
@@ -220,22 +217,25 @@ for (int x=1;x<width;x++)
   quantum=hop0;//this is the initial predicted quantum, the value of prediction
   small_hop=true;//i supossed initially that hop will be small (3,4,5)
 
-//h1=4;
-//printf("%d",h1);
+
+  emin=oc-hop0 ; if (emin<0) emin=-emin;// only enter in computation if emin>4
+
+
+
+if (emin>4)
+{
   //positive hops
   //--------------
   if (oc>=hop0)
     {
-
      //case hop0 (most frequent)
      //--------------------------
-     emin=oc-hop0 ; //always possitive or zero
-     if (emin<4 || (quantum+h1)>255) goto phase3;// only enter in computation if emin>=4
+     if ((quantum +h1)>255) h1=255-quantum;//goto phase3;
 
      //case hop1 (frequent)
      //---------------------
      error=emin-h1;
-     //error=oc-hop0-h1;
+
      if (error<0) error=-error;
 
      if (error<emin)
@@ -274,13 +274,11 @@ for (int x=1;x<width;x++)
 
     //case hop0 (most frequent)
     //--------------------------
-     emin=hop0-oc;
-     if (emin<4 || (quantum -h1)<0) goto phase3;// only enter in computation if emin>=4
+     if ((quantum -h1)<0) h1=0-quantum;//goto phase3;
 
      //case hop1 (frequent)
      //-------------------
      error=emin-h1;
-     //error=hop0-h1-oc;
      if (error<0) error=-error;
 
      if (error<emin)
@@ -293,6 +291,7 @@ for (int x=1;x<width;x++)
       else goto phase3;
 
       // case hops 2 to 0 (less frequent)
+      // --------------------------------
       for (int i=2;i>=0;i--)
         {
         hop_value=cache_hops[hop0][h1-4][i];//indexes are 2 to 0
@@ -311,7 +310,7 @@ for (int x=1;x<width;x++)
 
 
 
-
+}//if emin>4
   //------------- PHASE 3: assignment of final quantized value --------------------------
   phase3:
 

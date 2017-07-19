@@ -98,7 +98,7 @@ save_frame("../LHE_Pi/img/orig_Y.bmp", width_down_Y, height_down_Y, 1, orig_down
 save_frame("../LHE_Pi/img/LHE_Y.bmp", width_down_Y, height_down_Y, 1, result_Y,result_U,result_V);
 printf("save done \n");
 
-float psnr=(float) get_PSNR();
+double psnr=(float) get_PSNR_YUV400();
 printf("psnr: %2.2f dB\n ",psnr);
 
 }
@@ -116,7 +116,6 @@ if (downsampler_initialized==false) init_downsampler();
 
 //downsampling by scanlines
 //--------------------------
-//int line=0;
 
 
 //esto debe ser coregido para que recorra las scanlines salteadas modulo 8
