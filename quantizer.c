@@ -307,7 +307,6 @@ if (emin>h1/2) //only enter in computation if emin>threshold
   //------------- PHASE 4: h1 logic  --------------------------
   if (hop_number>5 || hop_number<3) small_hop=false; //true by default
 
-
   if (small_hop==true && last_small_hop==true)
     {
     if (h1>min_h1) h1--;
@@ -319,7 +318,7 @@ if (emin>h1/2) //only enter in computation if emin>threshold
 
   last_small_hop=small_hop;
 //  printf("%d,",hop_number);
-if (h1<min_h1 || h1>max_h1) printf("fatal error %d \n", h1);
+//if (h1<min_h1 || h1>max_h1) printf("fatal error %d \n", h1);
 
 
   }
