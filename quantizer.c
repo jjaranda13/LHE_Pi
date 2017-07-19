@@ -287,7 +287,7 @@ for (int x=0;x<width;x++)
 
         hop_value=cache_hops[hop0][h1-4][i];//indexes are 2 to 0
 
-        hop_value=cache_hops[255-hop0][h1-4][6-i];//indexes are 2 to 0
+        //hop_value=cache_hops[255-hop0][h1-4][6-i];//indexes are 2 to 0
 
         error=hop_value-oc;
         if (error<0) error=-error;
