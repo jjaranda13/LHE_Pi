@@ -142,7 +142,7 @@ for (int line=0;line<height;line++)
 
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-double get_PSNR_YUV400()
+double get_PSNR_Y()
 {
 double total=0;
 double dif=0;
@@ -152,12 +152,13 @@ for (int y=0;y<height_down_Y;y++){
   dif=orig_down_Y[y][x]- result_Y[y][x];
   total+=dif*dif;
   }
+  }
   double mse=total/(double)(height_down_Y*width_down_Y);
-  printf ("mse=%f \n",mse);
+  //printf ("mse=%f \n",mse);
 double psnr=10.0*log10((255.0*255.0)/mse);
- printf ("psnr=%f \n",psnr);
+ //printf ("psnr=%f \n",psnr);
 return psnr;
-}
+
 
 
 }

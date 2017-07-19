@@ -4,4 +4,4 @@ void save_frame(char const* filename, int width, int height, int channels,unsign
 
 void rgb2yuv(unsigned char *rgb, int rgb_channels);
 void yuv2rgb(unsigned char **y, unsigned char **u, unsigned char ** v, int channels, int width, int height, char *data);
-double get_PSNR_YUV400();
+double get_PSNR_Y();
