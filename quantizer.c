@@ -22,8 +22,9 @@
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 // la cache realmente podria ser de 10KB cache_hops[255][7][6]; e incluso de la mitad (5KB) pues es simetrica
-unsigned char cache_hops[256][7][6]; //10KB cache [Y][h1][hop_number]
+//unsigned char cache_hops[256][7][6]; //10KB cache [Y][h1][hop_number]
 
+unsigned char cache_hops[256][7][3]; //5KB cache [Y][h1][hop_number]
 
 
 
@@ -62,7 +63,7 @@ for (int hop0=0;hop0<=255;hop0++){
  h=(int)(hop0-hop1*rneg);
  h=min(hop_max,h);h=max(h,hop_min);
  cache_hops[hop0][hop1-4][2] = (unsigned char)h;//(hop0-hop1*rneg);
-
+/*
  h=(int)(hop0+hop1*rpos);
  h=min(hop_max,h);h=max(h,hop_min);
  cache_hops[hop0][hop1-4][3] = (unsigned char)h;//(hop0+hop1*rpos);
@@ -74,7 +75,7 @@ for (int hop0=0;hop0<=255;hop0++){
  h=(int)(hop0+hop1*rpos*rpos*rpos);
  h=min(hop_max,h);h=max(h,hop_min);
  cache_hops[hop0][hop1-4][5] = (unsigned char)h;//(hop0+hop1*rpos*rpos*rpos);
-
+*/
  }//endfor hop1
 }//endfor hop0
 
@@ -242,7 +243,10 @@ for (int x=0;x<width;x++)
       // --------------------------------
       for (int i=3;i<6;i++){
 
-        hop_value=cache_hops[hop0][h1-4][i];//indexes(i) are 3 to 5
+        //hop_value=cache_hops[hop0][h1-4][i];//indexes(i) are 3 to 5
+
+        hop_value=255-cache_hops[255-hop0][h1-4][5-i];//indexes are 2 to 0
+
         error=oc-hop_value;
         if (error<0) error=-error;
         if (error<emin){
@@ -287,7 +291,7 @@ for (int x=0;x<width;x++)
 
         hop_value=cache_hops[hop0][h1-4][i];//indexes are 2 to 0
 
-        //hop_value=cache_hops[255-hop0][h1-4][6-i];//indexes are 2 to 0
+        //hop_value=255-cache_hops[255-hop0][h1-4][5-i];//indexes are 2 to 0
 
         error=hop_value-oc;
         if (error<0) error=-error;

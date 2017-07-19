@@ -65,6 +65,10 @@ for (int line=0;line < height;line++)
  data[line*width+x]=Y[line][x];
  }
 }
+}
+else if (channels==3){
+char *data;
+yuv2rgb(orig_down_Y,orig_down_U,orig_down_V,3,width_down_Y,height_down_Y, data);
 
 
 }
@@ -126,15 +130,49 @@ void yuv2rgb(unsigned char **y, unsigned char **u, unsigned char ** v, int chann
 if (DEBUG) printf ("ENTER in yuv2rgb()...\n");
 
 
-//memory allocation
+//memory allocation ESTO ES UN POTENCIAL BUG, NO DEBEMOS HACER MALLOCS FUERA DE INIT
 //------------------
 data=malloc(height*width*channels*sizeof (unsigned char));
+
+//imagenes de solo componente Y
+// -----------------------------
+if (channels==1){
 for (int line=0;line<height;line++)
 {
   for (int x=0;x<width;x++)
   {
   data[line*width+x]=y[line][x];
   }
+}
+return;
+}//endif channels==1
+
+//imagenes con crominancia
+//------------------------
+for (int line=0;line<height;line++)
+{
+/*
+   R = Y + 1.140V
+   G = Y - 0.395U - 0.581V
+   B = Y + 2.032U
+*/
+for (int x=0;x<width;x+=channels)
+  {
+  int yp=y[line][x];
+  int up=u[line/pppy][x/pppx];
+  int vp=v[line/pppy][x/pppx];
+
+  int r=(1000*yp+1140*vp)/1000;
+  int g=(1000*yp-395*up- 580*vp)/1000;
+  int b=(1000*yp+2032*up);
+
+
+  data[line*width+x]=128r;
+  data[line*width+x+1]=g;
+  data[line*width+x+2]=b;
+
+  }
+
 }
 
 
