@@ -1,8 +1,3 @@
-
-
-
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -13,6 +8,7 @@
 #include "downsampler.h"
 #include "quantizer.h"
 #include "frame_encoder.h"
+#include "entropic_enc.h"
 
 double timeval_diff(struct timeval *a, struct timeval *b) {
 	return ((double)(a->tv_sec +(double)a->tv_usec/1000000)-(double)(b->tv_sec + (double)b->tv_usec/1000000));
@@ -29,7 +25,7 @@ void framecoder_init(int width, int height,int px, int py)
 
     init_downsampler();
     init_quantizer();
-
+    init_entropic_enc();
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -91,6 +87,19 @@ printf("quantization done\n");
 secs = timeval_diff(&t_fin, &t_ini)/veces;
 
 printf("quantization in %.16g ms\n", secs * 1000.0);
+
+gettimeofday(&t_ini, NULL);
+veces=100;
+for (int i=0 ;i<veces;i++){
+//for (int line=0;line<height_down_Y;line++) {
+    entropic_enc(hops_Y, bits_Y, 1, width_down_Y);
+//}
+}
+gettimeofday(&t_fin, NULL);
+printf("entropic coding done\n");
+secs = timeval_diff(&t_fin, &t_ini)/veces;
+
+printf("entropic coding in %.16g ms\n", secs * 1000.0);
 //char *data;
 //yuv2rgb(orig_down_Y,orig_down_U,orig_down_V,1,width_down_Y,height_down_Y, data);
 

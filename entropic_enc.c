@@ -8,18 +8,6 @@
 
 #define testBit(A,k) ((A & (1<<(k)))>>k)
 
-/*
-double timeval_diff(struct timeval *a, struct timeval *b) {
-	return ((double)(a->tv_sec +(double)a->tv_usec/1000000)-(double)(b->tv_sec + (double)b->tv_usec/1000000));
-}
-*/
-
-
-/////////////////////////////////////////////////////////////////////////
-//Hay que ponerle los valores correctos a rlc_length_ini y a rlc_length//
-/////////////////////////////////////////////////////////////////////////
-
-
 void init_huffman_table() {
 
 	huff_table = malloc(9);
@@ -58,26 +46,25 @@ void init_entropic_enc(){
 	}
 } //Los pongo a cero porque voy a usar máscaras para colocar los bits
 
-int entropic_enc(unsigned char **hops, unsigned char **bits, int line) {
+
+int entropic_enc(unsigned char **hops, unsigned char **bits, unsigned int line, unsigned int line_width) {
 
 	unsigned int counterh0 = 0;
 	unsigned char mode = 0; //0=huffman, 1=rlc
 	unsigned char mode_prev = mode;
-	unsigned char rlc_length_ini = 2;
+	unsigned char rlc_length_ini = 4;
 	unsigned char condition_length_ini = 7;
 	unsigned int bytes = 0;
-	unsigned char mask = 0b10000000;
+	unsigned char mask = 128;
 
 	rlc_length = rlc_length_ini;
 	condition_length = condition_length_ini;
 
-	for (int i = 0; i < 20; i++) {//Hay que cambiar el 20 por el ancho de la imagen
-		printf("Simbolo: %u\n", hops[line][i]);
+	for (int i = 0; i < line_width; i++) {
 		if (hops[line][i]==4){
 			counterh0+=1;
 			if (mode==0 && counterh0==condition_length) {
-				printf("Entra por primera vez en modo RLC, pone el bit que corresponde a 1, cambia de modo y el contador a cero\n");
-				mode=1; 
+				mode=1;
 				counterh0=0;
 				bits[line][bytes] = bits[line][bytes] | mask;
 				mask = mask >> 1;
@@ -89,30 +76,23 @@ int entropic_enc(unsigned char **hops, unsigned char **bits, int line) {
 
 		if (mode==1 && counterh0==(unsigned char)(pow(2, rlc_length)-1)) {
 			counterh0=0;
-			rlc_length=3;
+			rlc_length=5;
 			bits[line][bytes] = bits[line][bytes] | mask;
 			mask = mask >> 1;
 			if (mask == 0) {bytes++; mask=128;}
-			printf("Se ha alcanzado la longitud maxima de RLC, se añade un 1 a los bits\n");
 		}
 
 		if (mode_prev==1 && mode==0) {
 			for (int b = rlc_length-1; b >= 0; b--){
 				bits[line][bytes] = bits[line][bytes] | (testBit(counterh0, b) * mask);
-				printf("Byte: %u, %u\n", bits[line][bytes], bytes);
-				printf("Mascara: %u\n", mask);
 				mask = mask >> 1;
 				if (mask == 0) {bytes++; mask=128;}
 			}
-			printf("Ha salido del modo RLC y se come el primer cero\n");
 			condition_length=condition_length_ini;
 			rlc_length=rlc_length_ini;
 			counterh0=0;
 			for (int b = 6; b >= 0; b--){
-				//printf("%u\n", huff_table[hops[line][i]]);
 				bits[line][bytes] = bits[line][bytes] | (testBit(huff_table[hops[line][i]], b) * mask);
-				printf("Byte: %u, %u\n", bits[line][bytes], bytes);
-				printf("Mascara: %u\n", mask);
 				mask = mask >> 1;
 				if (mask == 0) {bytes++; mask=128;}
 				if (testBit(huff_table[hops[line][i]], b) == 1) {
@@ -120,30 +100,25 @@ int entropic_enc(unsigned char **hops, unsigned char **bits, int line) {
 				}
 			}
 		} else if (mode == 0 && mode_prev == 0) {
-			printf("Funcionamiento normal de huffman\n");
 			for (int b = 7; b >= 0; b--){
-				//printf("%u\n", huff_table[hops[line][i]]);
 				bits[line][bytes] = bits[line][bytes] | (testBit(huff_table[hops[line][i]], b) * mask);
-				printf("Byte: %u, %u\n", bits[line][bytes], bytes);
-				printf("Mascara: %u\n", mask);
 				mask = mask >> 1;
 				if (mask == 0) {bytes++; mask=128;}
 				if (testBit(huff_table[hops[line][i]], b) == 1) {
 					break;
 				}
 			}
-		} else {
-
 		}
 
 		mode_prev = mode;
-
 
 	}
 	return bytes;
 
 }
 
+
+/*
 int main(int argc, char* argv[]) {
 
 	//struct timeval t_ini, t_fin;
@@ -222,3 +197,4 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 }
+*/

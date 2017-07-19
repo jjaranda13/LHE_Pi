@@ -2,7 +2,7 @@
 #include "globals.h"
 //#include "camera_reader.h"
 #include "downsampler.h"
-//#include "entropic_enc.h"
+#include "entropic_enc.h"
 #include "quantizer.h"
 //#include "streamer.h"
 #include <stdio.h>
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
 */
     printf ("encoding frame \n");
 //    debug=true;
-   DEBUG=false;
+    DEBUG=false;
     encode_frame_fromfile();
     printf("Creado fichero ");
 
