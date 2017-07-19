@@ -80,7 +80,7 @@ downsample_frame(pppx,pppy);
 printf("down done\n");
 
 gettimeofday(&t_ini, NULL);
-int veces=1;
+int veces=100;
 for (int i=0 ;i<veces;i++)
 quantize_frame();
 gettimeofday(&t_fin, NULL);
@@ -92,9 +92,9 @@ printf("quantization in %.16g ms\n", secs * 1000.0);
 gettimeofday(&t_ini, NULL);
 veces=100;
 for (int i=0 ;i<veces;i++){
-//for (int line=0;line<height_down_Y;line++) {
+for (int line=0;line<height_down_Y;line++) {
     entropic_enc(hops_Y, bits_Y, 1, width_down_Y);
-//}
+}
 }
 gettimeofday(&t_fin, NULL);
 printf("entropic coding done\n");
