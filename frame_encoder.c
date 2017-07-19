@@ -62,10 +62,11 @@ double secs;
 
 
 load_frame("../LHE_Pi/img/lena.bmp");
+//load_frame("../LHE_Pi/img/baboon.bmp");
 printf("frame loaded  \n");
 
-pppx=2;
-pppy=2;
+pppx=1;
+pppy=1;
 framecoder_init(width_orig_Y,height_orig_Y,pppx,pppy);
 
 printf ("init ok");
@@ -97,6 +98,8 @@ save_frame("../LHE_Pi/img/orig_Y.bmp", width_down_Y, height_down_Y, 1, orig_down
 save_frame("../LHE_Pi/img/LHE_Y.bmp", width_down_Y, height_down_Y, 1, result_Y,result_U,result_V);
 printf("save done \n");
 
+float psnr=(float) get_PSNR();
+printf("psnr: %2.2f dB\n ",psnr);
 
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

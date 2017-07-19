@@ -70,7 +70,7 @@ for (int hop0=0;hop0<=255;hop0++)
  h=min(255,h);h=max(h,0);
  cache_hops[hop0][hop1-4][4] = (unsigned char) h;//(hop0+hop1*rpos*rpos);
 
- h=(int)(hop0+hop1*rpos*rpos)*rpos;
+ h=(int)(hop0+hop1*rpos*rpos*rpos);
  h=min(255,h);h=max(h,0);
  cache_hops[hop0][hop1-4][5] = (unsigned char)h;//(hop0+hop1*rpos*rpos*rpos);
 
@@ -116,6 +116,39 @@ for (int i=0;i<height_down_UV;i++)
 
 ent_stream_flag=malloc(height_down_Y* sizeof (unsigned char));
 
+// these lines print the cache
+//----------------------------------
+/*
+for (int hop0=0;hop0<=255;hop0++)
+{
+for (int hop1=4;hop1<=10;hop1++)
+{
+for (int hn=0;hn<=2;hn++)
+{
+
+printf( "y=%d h1=%d h%d=%d \n",hop0,hop1,hn,cache_hops[hop0][hop1-4][hn]);
+
+}
+printf ( "y=%d h1=%d h3=%d \n",hop0,hop1,(hop0-hop1));
+printf ( "y=%d h1=%d h4=%d \n",hop0,hop1,(hop0));
+printf ( "y=%d h1=%d h5=%d \n",hop0,hop1,(hop0+hop1));
+
+for (int hn=3;hn<=5;hn++)
+{
+
+printf( "y=%d h1=%d h%d=%d \n",hop0,hop1,hn+3,cache_hops[hop0][hop1-4][hn]);
+
+}
+
+
+
+}
+
+
+
+}
+
+*/
 
 quantizer_initialized=true;
 
@@ -128,36 +161,41 @@ void quantize_scanline(unsigned char **orig_YUV, int y,int width, unsigned char 
 
 if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
 
- const char max_h1=10;
- const char min_h1=4;
- const char start_h1=(max_h1+min_h1)<<1;
- char h1=start_h1;
+ const int max_h1=10;
+ const int min_h1=4;
+ const int start_h1=(max_h1+min_h1)<<1;
+ int  h1=start_h1;
+
  bool last_small_hop=true; //last hop was small
  bool small_hop=true;//current hop is small
- int hop0=0; //prediction
+
+
  int emin=255;//error min
  int error=0;//computed error
- char oc=orig_YUV[y][0];//original color
- unsigned char quantum=oc; //quantum value
- char hop_number=4;
+
+ unsigned char oc=orig_YUV[y][0];//original color
+ unsigned char hop0=0; //prediction
+ unsigned char quantum=oc; //final quantum asigned value
  unsigned char hop_value=0;//data from cache
+ unsigned char hop_number=4;// final assigned hop
 
 
-//first hop is original signal value, and also result_YUV
+
+//first hop is initialized to original signal value, and also result_YUV
 hops[y][0]=quantum;
 result_YUV[y][0]=quantum;
 
 
 
 
-
+//this bucle is for only one scanline, excluding first pixel
+//----------------------------------------------------------
 for (int x=1;x<width;x++)
   {
 
   // --------------------- PHASE 1: PREDICTION---------------------------------------------------------
-  //original color
-  oc=orig_YUV[y][x];
-  //oc=orig_down_Y[y][x];
+  oc=orig_YUV[y][x];//original color
+
   if (y>0 && x!=width-1)
     {
 
@@ -178,35 +216,39 @@ for (int x=1;x<width;x++)
 
 
   //-------------------------PHASE 2: HOPS COMPUTATION-------------------------------
-  hop_number=4;
-  quantum=hop0;
-  small_hop=true;
+  hop_number=4;// prediction corresponds with hop_number=4
+  quantum=hop0;//this is the initial predicted quantum, the value of prediction
+  small_hop=true;//i supossed initially that hop will be small (3,4,5)
 
 //h1=4;
+//printf("%d",h1);
   //positive hops
   //--------------
   if (oc>=hop0)
     {
+
      //case hop0 (most frequent)
-     emin=oc-hop0 ;
-     if (emin<4 || (quantum+h1>255)) goto phase3;// only enter in computation if emin>=4
+     //--------------------------
+     emin=oc-hop0 ; //always possitive or zero
+     if (emin<4 || (quantum+h1)>255) goto phase3;// only enter in computation if emin>=4
 
      //case hop1 (frequent)
      //---------------------
      error=emin-h1;
-
+     //error=oc-hop0-h1;
      if (error<0) error=-error;
+
      if (error<emin)
        {
        hop_number=5;
        emin=error;
        quantum+=h1;
-
        if (emin<4) goto phase3;
        }
      else goto phase3;
 
       // case hops 6 to 8 (less frequent)
+      // --------------------------------
       for (int i=3;i<6;i++)
         {
         hop_value=cache_hops[hop0][h1-4][i];//indexes(i) are 3 to 5
@@ -229,15 +271,18 @@ for (int x=1;x<width;x++)
   //--------------
   else
     {
+
     //case hop0 (most frequent)
+    //--------------------------
      emin=hop0-oc;
-     if (emin<4 || (quantum -h1<0)) goto phase3;// only enter in computation if emin>=4
+     if (emin<4 || (quantum -h1)<0) goto phase3;// only enter in computation if emin>=4
 
      //case hop1 (frequent)
      //-------------------
      error=emin-h1;
      //error=hop0-h1-oc;
      if (error<0) error=-error;
+
      if (error<emin)
        {
        hop_number=3;
@@ -277,25 +322,23 @@ for (int x=1;x<width;x++)
   //------------- PHASE 4: h1 logic  --------------------------
   if (hop_number>5 || hop_number<3) small_hop=false; //true by default
 
-  //else small_hop=true;
 
-  //if (hop_number>=3 && hop_number<=5) small_hop=true;
-  //else small_hop=false;
-
-  if (small_hop && last_small_hop)
+  if (small_hop==true && last_small_hop==true)
     {
     if (h1>min_h1) h1--;
     }
-  else //if (hop_number>7 || hop_number<1) //he tenido que meter este if
+  else
     {
     h1=max_h1;
     }
+
   last_small_hop=small_hop;
-  //printf("%d",h1);
+//  printf("%d,",hop_number);
 
 
 
   }
+//  printf("\n");
 
 
 }
