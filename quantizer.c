@@ -116,7 +116,7 @@ for (int i=0;i<height_down_UV;i++)
 
 ent_stream_flag=malloc(height_down_Y* sizeof (unsigned char));
 
-// these lines print the cache
+// these lines print the cache, for debug purposes
 //----------------------------------
 /*
 for (int hop0=0;hop0<=255;hop0++)
@@ -164,7 +164,7 @@ if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
 
  const int max_h1=10;
  const int min_h1=4;
- const int start_h1=(max_h1+min_h1)<<1;
+ const int start_h1=(max_h1+min_h1)/2;
  int  h1=start_h1;
 
  bool last_small_hop=true; //last hop was small
@@ -198,7 +198,6 @@ for (int x=1;x<width;x++)
 
     if (last_small_hop) hop0=(result_YUV[y][x-1]+result_YUV[y-1][x]+result_YUV[y-1][x+1])/3;
     else
-    //si solo hacemos la prediccion normal, bajamos a 2.49   desde 2.86ms . no es muy costoso
     hop0=(result_YUV[y][x-1]+result_YUV[y-1][x+1])>>1;
 
     }
@@ -216,21 +215,18 @@ for (int x=1;x<width;x++)
   hop_number=4;// prediction corresponds with hop_number=4
   quantum=hop0;//this is the initial predicted quantum, the value of prediction
   small_hop=true;//i supossed initially that hop will be small (3,4,5)
+  emin=oc-hop0 ; if (emin<0) emin=-emin;
 
-
-  emin=oc-hop0 ; if (emin<0) emin=-emin;// only enter in computation if emin>4
-
-
-
-if (emin>4)
+if (emin>h1/2) //only enter in computation if emin>threshold
 {
   //positive hops
   //--------------
-  if (oc>=hop0)
+  if (oc>hop0)
     {
      //case hop0 (most frequent)
      //--------------------------
-     if ((quantum +h1)>255) h1=255-quantum;//goto phase3;
+
+     if ((quantum +h1)>255) goto phase3;
 
      //case hop1 (frequent)
      //---------------------
@@ -246,6 +242,7 @@ if (emin>4)
        if (emin<4) goto phase3;
        }
      else goto phase3;
+
 
       // case hops 6 to 8 (less frequent)
       // --------------------------------
@@ -274,7 +271,7 @@ if (emin>4)
 
     //case hop0 (most frequent)
     //--------------------------
-     if ((quantum -h1)<0) h1=0-quantum;//goto phase3;
+     if ((quantum -h1)<0)    goto phase3;
 
      //case hop1 (frequent)
      //-------------------
@@ -310,7 +307,8 @@ if (emin>4)
 
 
 
-}//if emin>4
+}//endif emin>4
+
   //------------- PHASE 3: assignment of final quantized value --------------------------
   phase3:
 
@@ -333,7 +331,7 @@ if (emin>4)
 
   last_small_hop=small_hop;
 //  printf("%d,",hop_number);
-
+if (h1<min_h1 || h1>max_h1) printf("fatal error %d \n", h1);
 
 
   }

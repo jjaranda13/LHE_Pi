@@ -65,8 +65,8 @@ load_frame("../LHE_Pi/img/lena.bmp");
 //load_frame("../LHE_Pi/img/baboon.bmp");
 printf("frame loaded  \n");
 
-pppx=1;
-pppy=1;
+pppx=2;
+pppy=2;
 framecoder_init(width_orig_Y,height_orig_Y,pppx,pppy);
 
 printf ("init ok");
