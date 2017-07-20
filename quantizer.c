@@ -87,6 +87,7 @@ height_down_Y=height_orig_Y/pppx;
 
 //aqui hay que comprobar el modelo de color con la variable yuv_model
 //-----------------------------------------
+//esto debe estar en el downsampler
 width_down_UV=width_down_Y/2;
 height_down_UV=height_down_Y/2;
 

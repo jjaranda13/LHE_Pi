@@ -67,8 +67,8 @@ load_frame("../LHE_Pi/img/lena.bmp");
 //load_frame("../LHE_Pi/img/baboon.bmp");
 printf("frame loaded  \n");
 
-pppx=2;
-pppy=2;
+pppx=1;
+pppy=1;
 framecoder_init(width_orig_Y,height_orig_Y,pppx,pppy);
 
 printf ("init ok");
@@ -85,7 +85,7 @@ downsample_frame(pppx,pppy);
 printf("down done\n");
 
 gettimeofday(&t_ini, NULL);
-int veces=1;
+int veces=100;
 for (int i=0 ;i<veces;i++)
 quantize_frame();
 gettimeofday(&t_fin, NULL);
@@ -95,7 +95,7 @@ secs = timeval_diff(&t_fin, &t_ini)/veces;
 printf("quantization in %.16g ms\n", secs * 1000.0);
 
 gettimeofday(&t_ini, NULL);
-veces=1;
+veces=100;
 for (int i=0 ;i<veces;i++){
 for (int line=0;line<height_down_Y;line++) {
     entropic_enc(hops_Y, bits_Y, 1, width_down_Y);
@@ -117,8 +117,8 @@ save_frame("../LHE_Pi/img/orig_down_Y.bmp", width_down_Y, height_down_Y, 1, orig
 
 
 save_frame("../LHE_Pi/img/LHE_Y.bmp", width_down_Y, height_down_Y, 1, result_Y,result_U,result_V);
-save_frame("../LHE_Pi/img/LHE_YUV.bmp", width_down_Y, height_down_Y, 3, result_Y,result_U,result_V);
-save_frame("../LHE_Pi/img/orig_down_YUV.bmp", width_down_Y, height_down_Y, 3, orig_down_Y,orig_down_U,orig_down_V);
+//save_frame("../LHE_Pi/img/LHE_YUV.bmp", width_down_Y, height_down_Y, 3, result_Y,result_U,result_V);
+//save_frame("../LHE_Pi/img/orig_down_YUV.bmp", width_down_Y, height_down_Y, 3, orig_down_Y,orig_down_U,orig_down_V);
 
 printf("save done \n");
 
@@ -149,6 +149,8 @@ for (int line=0;line<height_orig_Y;line+=pppy){
 	down_avg_horiz(orig_Y,orig_down_Y,line,pppx,pppy);
 	}
 
+
+/* aqui hay un bug. si ejecuto esto pisa la zona de memoria de Y
 // components U, V
 // ----------------
 // si pppy=2 se downsamplean una de cada 4 lineas
@@ -156,7 +158,7 @@ for (int line=0;line<height_orig_UV;line+=pppy*2){
 	down_avg_horiz(orig_U,orig_down_U,line,pppx*2,pppy*2);
 	down_avg_horiz(orig_V,orig_down_V,line,pppx*2,pppy*2);
 	}
-
+*/
 
 }
 

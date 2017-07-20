@@ -34,6 +34,8 @@ if (DEBUG) printf("ENTER in load frame...\n");
 //orig_Y=stbi_load("../LHE_Pi/img/lena.bmp", &width_orig, &height_orig, &channels, 0);
 rgb=stbi_load(filename, &width_orig_Y, &height_orig_Y, &rgb_channels, 0);
 
+
+
 if (DEBUG) printf(" image loaded. width=%d, height=%d",width_orig_Y,height_orig_Y);
 
 //int i = stbi_write_bmp("../LHE_Pi/img/kk.bmp", width_orig, height_orig, channels, orig_Y);
@@ -85,6 +87,11 @@ void rgb2yuv(unsigned char *rgb,  int rgb_channels)
 /// this function transform an input image stored in *rgb into YUV image stored in 3 arrays
 if (DEBUG) printf ("ENTER in rgb2yuv()..--.\n");
 
+//las componentes UV van a medir lo mismo
+//---------------------------------------
+width_orig_UV=width_orig_Y;
+height_orig_UV=height_orig_Y;
+
 //memory allocation ESTO ES UN POTENCIAL BUG, NO DEBEMOS HACER MALLOCS FUERA DE INIT
 //------------------
 
@@ -92,14 +99,14 @@ if (DEBUG) printf ("ENTER in rgb2yuv()..--.\n");
 //memory allocation for yuv storage (de momento solo la Y)
 //---------------------------------------------------------
 orig_Y=malloc(height_orig_Y*sizeof (unsigned char *));
-orig_U=malloc(height_orig_Y*sizeof (unsigned char *));
-orig_V=malloc(height_orig_Y*sizeof (unsigned char *));
+orig_U=malloc(height_orig_UV*sizeof (unsigned char *));
+orig_V=malloc(height_orig_UV*sizeof (unsigned char *));
 
 for (int i=0;i<height_orig_Y;i++)
 {
 orig_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
-orig_U[i]=malloc(width_orig_Y* sizeof (unsigned char));
-orig_V[i]=malloc(width_orig_Y* sizeof (unsigned char));
+orig_U[i]=malloc(width_orig_UV* sizeof (unsigned char));
+orig_V[i]=malloc(width_orig_UV* sizeof (unsigned char));
 
 }
 
@@ -112,6 +119,11 @@ int b=0;
    U = -0.147R - 0.289G + 0.436B
    V =  0.615R - 0.515G - 0.100B
    */
+
+
+// podriamos optimizar haciendo un subsampling de tipo YUV420 para las componentes
+// de crominancia iniciales, en lugar de tener que downsamplear despues
+
 for (int line=0;line<height_orig_Y;line++)
 {
  int k=0;
@@ -170,7 +182,7 @@ for (int line=0;line<height;line++)
    B = Y + 2.032U
 */
 int pix=0;
-for (int x=0;x<width*3;x+=channels)
+for (int x=0;x<width*3;x+=3)//channels)
   {
   int yp=y[line][pix];
   int up=u[line/2][pix/2];

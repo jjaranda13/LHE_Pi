@@ -76,9 +76,9 @@ unsigned char **result_Y;
 unsigned char **result_U;
 unsigned char **result_V;
 
-unsigned char **bits_Y;
-unsigned char **bits_U;
-unsigned char **bits_V;
+unsigned long int **bits_Y;
+unsigned long int **bits_U;
+unsigned long int **bits_V;
 
 unsigned char *huff_table;
 unsigned char rlc_length, condition_length;
