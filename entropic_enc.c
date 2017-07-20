@@ -235,7 +235,8 @@ int entropic_enc(unsigned char **hops, unsigned long int **bits, unsigned int li
 
 	}
 	bits[line][bytes]=aux;
-	return bytes;
+	int bits_count = (bytes-1)*32+moves;
+	return bits_count;
 
 }
 
