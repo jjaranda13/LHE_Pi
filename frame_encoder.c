@@ -81,7 +81,7 @@ downsample_frame(pppx,pppy);
 printf("down done\n");
 
 gettimeofday(&t_ini, NULL);
-int veces=1;
+int veces=1000;
 for (int i=0 ;i<veces;i++)
 quantize_frame();
 gettimeofday(&t_fin, NULL);
@@ -91,10 +91,13 @@ secs = timeval_diff(&t_fin, &t_ini)/veces;
 printf("quantization in %.16g ms\n", secs * 1000.0);
 
 gettimeofday(&t_ini, NULL);
-veces=1;
 for (int i=0 ;i<veces;i++){
 for (int line=0;line<height_down_Y;line++) {
-    entropic_enc(hops_Y, bits_Y, 1, width_down_Y);
+    entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+}
+for (int line=0;line<height_down_UV;line++) {
+    entropic_enc(hops_U, bits_U, line, width_down_UV);
+    entropic_enc(hops_V, bits_V, line, width_down_UV);
 }
 }
 gettimeofday(&t_fin, NULL);

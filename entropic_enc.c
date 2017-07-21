@@ -2,31 +2,30 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <stdbool.h>
-#include <math.h>
 #include <limits.h>
 #include "globals.h"
 #include "entropic_enc.h"
 
-#define testBit(A,k) ((A & (1<<(k)))>>k)
+#define testBit(A,k) ((A & (1UL<<(k)))>>k)
 
 void init_entropic_enc(){
 
-	bits_Y = calloc(height_down_Y,sizeof(unsigned char *));
+	bits_Y = malloc(height_down_Y*sizeof(unsigned char *));
 
 	for (int i=0;i<height_down_Y;i++) {
-		bits_Y[i]=calloc(width_down_Y, sizeof (unsigned char));
+		bits_Y[i]=malloc(width_down_Y*sizeof (unsigned char));
 	}
 
-	bits_U = calloc(height_down_UV,sizeof(unsigned char *));
+	bits_U = malloc(height_down_UV*sizeof(unsigned char *));
 
 	for (int i=0;i<height_down_UV;i++) {
-		bits_U[i]=calloc(width_down_UV, sizeof (unsigned char));
+		bits_U[i]=malloc(width_down_UV*sizeof (unsigned char));
 	}
 
-	bits_V = calloc(height_down_UV,sizeof(unsigned char *));
+	bits_V = malloc(height_down_UV*sizeof(unsigned char *));
 
 	for (int i=0;i<height_down_UV;i++) {
-		bits_V[i]=calloc(width_down_UV, sizeof (unsigned char));
+		bits_V[i]=malloc(width_down_UV*sizeof (unsigned char));
 	}
 } //Los pongo a cero porque voy a usar máscaras para colocar los bits
 
@@ -41,8 +40,8 @@ int entropic_enc(unsigned char **hops, unsigned long int **bits, unsigned int li
 	unsigned char rlc_length_ini = 4;
 	unsigned char condition_length_ini = 7;
 	unsigned int bytes = 0;
-	unsigned int moves = 0;
-	unsigned long int mask = 0x80000000;
+	unsigned int moves = 1;
+	unsigned long int mask = 1UL << sizeof(mask)*(CHAR_BIT-1);
 	unsigned long int aux = 0;
 	int hop = 0;
 
@@ -63,15 +62,6 @@ int entropic_enc(unsigned char **hops, unsigned long int **bits, unsigned int li
 		} else {
             if (mode_prev == 0) {counterh0 = 0;}
 			mode=0;
-		}
-
-		if (mode==1 && ((rlc_length==4 && counterh0==15) || (rlc_length==5 && counterh0==31))){
-			counterh0=0;
-			rlc_length=5;
-			aux |= mask;
-			mask = (mask >> 1) | (mask << (LENGTH-1));
-			moves += 1;
-            if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
 		}
 
         if (mode == 0 && mode_prev == 0) {
@@ -229,6 +219,13 @@ int entropic_enc(unsigned char **hops, unsigned long int **bits, unsigned int li
                     if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
                     break;
             }
+		} else if (mode==1 && ((rlc_length==4 && counterh0==15) || (rlc_length==5 && counterh0==31))){
+			counterh0=0;
+			rlc_length=5;
+			aux |= mask;
+			mask = (mask >> 1) | (mask << (LENGTH-1));
+			moves += 1;
+            if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
 		}
 
 		mode_prev = mode;
@@ -246,18 +243,17 @@ int main(int argc, char* argv[]) {
 
 	//struct timeval t_ini, t_fin;
 	//double secs;
-
+	unsigned long int mask = 0;
 	//gettimeofday(&t_ini, NULL);
-
 	printf("Iniciando el coder entropico\n");
 	init_entropic_enc();
 	printf("Coder entropico inicializado. Se pasa a iniciar hops\n");
 	unsigned char **hops;
 	hops = malloc(2*sizeof(unsigned char *));
 	for (int i = 0; i < 2; i++) {
-		hops[i]=calloc(20, 1);
+		hops[i]=malloc(20);
 	}
-	hops[0][0] = 4;
+	hops[0][0] = 5;
 	hops[0][1] = 8;
 	hops[0][2] = 8;
 	hops[0][3] = 8;
@@ -299,16 +295,16 @@ int main(int argc, char* argv[]) {
 	hops[1][19] = 4;
 	printf("Hops inicializados se pasa a crear bits.\n");
 	unsigned long int **bits;
-	bits = malloc(2*sizeof(unsigned long int*));
+	bits = malloc(2*sizeof(unsigned char*));
 	for (int i = 0; i < 2; i++) {
-		bits[i]=malloc(20*sizeof(unsigned long int)/CHAR_BIT);
+		bits[i]=malloc(20*sizeof(unsigned char));
 	}
 	printf("Bits creado, se pasa a ejecutar el codificador.\n");
 	int bytes = entropic_enc(hops, bits, 0, 20);
 
 	for (int j = 0; j <= bytes; j++){
-		for (int i = 31; i >= 0; i--){
-			printf("%u", testBit(bits[0][j], i));
+		for (int i = LENGTH-1; i >= 0; i--){
+			printf("%lu", testBit(bits[0][j], i));
 		}
 		//printf("\n");
 	}
@@ -320,7 +316,4 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 }
-
-
-
 */
