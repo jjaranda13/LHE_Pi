@@ -21,6 +21,8 @@
 #include "stb_image/stb_image.h"
 #include "stb_image/stb_image_write.h"
 
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#define max(a, b) (((a) > (b)) ? (a) : (b))
 /*
 http://aras-p.info/blog/2007/05/28/now-thats-what-i-call-a-good-api-stb_image/
 
@@ -133,9 +135,18 @@ for (int line=0;line<height_orig_Y;line++)
     g=rgb[line*width_orig_Y*rgb_channels+j+1];
     b=rgb[line*width_orig_Y*rgb_channels+j+2];
 
-   orig_Y[line][k]=(r*299+g*587+b*114)/1000;
-   orig_U[line][k]=128+ (-168*r - 331*g + b*500)/1000;
-   orig_V[line][k]=128+ (500*r - 418*g - b*81)/1000;
+
+  int y=(r*299+g*587+b*114)/1000;
+  int u=128+ (-168*r - 331*g + b*500)/1000;
+  int v=128+ (500*r - 418*g - b*81)/1000;
+  if (y<0) y=0; if (y>255) y=255;
+  if (u<0) u=0; if (u>255) u=255;
+  if (v<0) v=0; if (v>255) v=255;
+
+
+   orig_Y[line][k]=(unsigned char ) y;//r*299+g*587+b*114)/1000;
+   orig_U[line][k]=(unsigned char ) u;//128+ (-168*r - 331*g + b*500)/1000;
+   orig_V[line][k]=(unsigned char ) v;//128+ (500*r - 418*g - b*81)/1000;
 
    k++;//next pixel
 
@@ -177,6 +188,8 @@ printf (" 3 channels... \n");
 for (int line=0;line<height;line++)
 {
 /*
+
+https://en.wikipedia.org/wiki/YCbCr
    R = Y + 1.140V
    G = Y - 0.395U - 0.581V
    B = Y + 2.032U
@@ -191,6 +204,14 @@ for (int x=0;x<width*3;x+=3)//channels)
   int r=(1000*yp+1402*(vp-128))/1000;
   int g=(1000*yp-344*(up-128)- 714*(vp-128))/1000;
   int b=(1000*yp+1772*(up-128))/1000;
+
+  if (r<0 )r=0;if (r>255) r=255;
+  if (g<0 )r=0;if (g>255) g=255;
+  if (b<0 )r=0;if (b>255) b=255;
+
+  //r=max (0,r);r=min(255,r);
+  //g=max (0,g);r=min(255,g);
+  //b=max (0,b);r=min(255,b);
   //printf ("r:%d, g:%d, b:%d \n",r,g,b);
 
   data[line*width*3+x]=(unsigned char)r;
