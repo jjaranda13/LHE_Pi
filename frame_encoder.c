@@ -14,7 +14,7 @@ double timeval_diff(struct timeval *a, struct timeval *b) {
 	return ((double)(a->tv_sec +(double)a->tv_usec/1000000)-(double)(b->tv_sec + (double)b->tv_usec/1000000));
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void framecoder_init(int width, int height,int px, int py)
+void init_framecoder(int width, int height,int px, int py)
 {
     downsampler_initialized=false;
     quantizer_initialized=false;
@@ -67,17 +67,13 @@ load_frame("../LHE_Pi/img/lena.bmp");
 //load_frame("../LHE_Pi/img/baboon.bmp");
 printf("frame loaded  \n");
 
-pppx=1;
-pppy=1;
-framecoder_init(width_orig_Y,height_orig_Y,pppx,pppy);
+pppx=2;
+pppy=2;
+init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
 
 printf ("init ok");
 rgb2yuv(rgb,rgb_channels);
 printf("rgb2yuv done \n");
-
-
-
-
 
 downsample_frame(pppx,pppy);
 
@@ -85,7 +81,7 @@ downsample_frame(pppx,pppy);
 printf("down done\n");
 
 gettimeofday(&t_ini, NULL);
-int veces=100;
+int veces=1;
 for (int i=0 ;i<veces;i++)
 quantize_frame();
 gettimeofday(&t_fin, NULL);
@@ -95,7 +91,7 @@ secs = timeval_diff(&t_fin, &t_ini)/veces;
 printf("quantization in %.16g ms\n", secs * 1000.0);
 
 gettimeofday(&t_ini, NULL);
-veces=100;
+veces=1;
 for (int i=0 ;i<veces;i++){
 for (int line=0;line<height_down_Y;line++) {
     entropic_enc(hops_Y, bits_Y, 1, width_down_Y);
@@ -114,11 +110,13 @@ save_frame("../LHE_Pi/img/orig_U.bmp", width_orig_Y, height_orig_Y, 1, orig_U,or
 save_frame("../LHE_Pi/img/orig_V.bmp", width_orig_Y, height_orig_Y, 1, orig_V,orig_down_U,orig_down_V);
 
 save_frame("../LHE_Pi/img/orig_down_Y.bmp", width_down_Y, height_down_Y, 1, orig_down_Y,orig_down_U,orig_down_V);
+save_frame("../LHE_Pi/img/orig_down_U.bmp", width_down_UV, height_down_UV, 1, orig_down_U,orig_down_U,orig_down_V);
+save_frame("../LHE_Pi/img/orig_down_V.bmp", width_down_UV, height_down_UV, 1, orig_down_V,orig_down_U,orig_down_V);
 
 
 save_frame("../LHE_Pi/img/LHE_Y.bmp", width_down_Y, height_down_Y, 1, result_Y,result_U,result_V);
-//save_frame("../LHE_Pi/img/LHE_YUV.bmp", width_down_Y, height_down_Y, 3, result_Y,result_U,result_V);
-//save_frame("../LHE_Pi/img/orig_down_YUV.bmp", width_down_Y, height_down_Y, 3, orig_down_Y,orig_down_U,orig_down_V);
+save_frame("../LHE_Pi/img/LHE_YUV.bmp", width_down_Y, height_down_Y, 3, result_Y,result_U,result_V);
+save_frame("../LHE_Pi/img/orig_down_YUV.bmp", width_down_Y, height_down_Y, 3, orig_down_Y,orig_down_U,orig_down_V);
 
 printf("save done \n");
 
@@ -146,19 +144,24 @@ if (downsampler_initialized==false) init_downsampler();
 // ------------
 //si pppy==2 entonces solo se downsamplean la mitad de las lineas, logicamente
 for (int line=0;line<height_orig_Y;line+=pppy){
-	down_avg_horiz(orig_Y,orig_down_Y,line,pppx,pppy);
+	down_avg_horiz(orig_Y,width_orig_Y,orig_down_Y,line,pppx,pppy);
 	}
 
 
-/* aqui hay un bug. si ejecuto esto pisa la zona de memoria de Y
+
 // components U, V
 // ----------------
 // si pppy=2 se downsamplean una de cada 4 lineas
-for (int line=0;line<height_orig_UV;line+=pppy*2){
-	down_avg_horiz(orig_U,orig_down_U,line,pppx*2,pppy*2);
-	down_avg_horiz(orig_V,orig_down_V,line,pppx*2,pppy*2);
+int ratio_height_YUV=height_orig_Y/height_orig_UV;
+int ratio_width_YUV=width_orig_Y/width_orig_UV;
+int pppyUV=2*pppy/ratio_height_YUV;
+int pppxUV=2*pppy/ratio_width_YUV;
+printf ("pppx:%d , pppy:%d, pppxUV:%d, pppyUV:%d \n",pppx,pppy,pppxUV,pppyUV);
+for (int line=0;line<height_orig_UV;line+=pppyUV){
+	down_avg_horiz(orig_U,width_orig_UV,orig_down_U,line,pppxUV,pppyUV);
+	down_avg_horiz(orig_V,width_orig_UV,orig_down_V,line,pppxUV,pppyUV);
 	}
-*/
+
 
 }
 

@@ -34,6 +34,11 @@ void init_quantizer(){
 ///la cache es cache[hop0][h1][hop] = 10.000 bytes = 10 KB
 
 if (DEBUG) printf ("ENTER in init_quantizer()...\n");
+if (!downsampler_initialized) {
+ printf(" Error: first you must initialize downsampler !!!!!");
+ exit(0);
+}
+
 
 for (int hop0=0;hop0<=255;hop0++){
  for (int hop1=4; hop1<=10;hop1++) {
@@ -82,14 +87,18 @@ for (int hop0=0;hop0<=255;hop0++){
 
 //memory allocation for result and hops
 //---------------------------------------
-width_down_Y=width_orig_Y/pppy;
-height_down_Y=height_orig_Y/pppx;
+//esto debe estar en el downsampler
+//width_down_Y=width_orig_Y/pppy;
+//height_down_Y=height_orig_Y/pppx;
 
 //aqui hay que comprobar el modelo de color con la variable yuv_model
 //-----------------------------------------
 //esto debe estar en el downsampler
-width_down_UV=width_down_Y/2;
-height_down_UV=height_down_Y/2;
+//width_down_UV=width_down_Y/2;
+//height_down_UV=height_down_Y/2;
+
+
+
 
 hops_Y=malloc(height_down_Y*sizeof (unsigned char *));
 hops_U=malloc(height_down_UV*sizeof (unsigned char *));
@@ -157,6 +166,43 @@ quantizer_initialized=true;
 
 }// end function
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void close_quantizer(){
+
+
+
+// free memory in inverse order than initialization
+// --------------------------------------------------
+for (int i=0;i<height_down_Y;i++)
+  {
+  free (hops_Y[i]);
+  free(result_Y[i]);
+  }
+
+for (int i=0;i<height_down_UV;i++)
+  {
+
+  free(hops_U[i]);
+  free (hops_V[i]);
+
+
+  free (result_U[i]);
+  free (result_V[i]);
+  }
+
+free (hops_Y);
+free(hops_U);
+free (hops_V);
+
+free (result_Y);
+free(result_U);
+free(result_V);
+
+
+quantizer_initialized=false;
+
+}//end close quantizer
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void quantize_scanline(unsigned char **orig_YUV, int y,int width, unsigned char **hops,unsigned char **result_YUV) {
 /// this function quantize the luminances or chrominances of one scanline
 /// inputs : orig_YUV (which can be orig_down_Y, orig_down_U or orig_down_V), line, width,

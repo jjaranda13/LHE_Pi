@@ -27,7 +27,7 @@ if (DEBUG) printf ("pppx=%d, pppy=%d \n ",pppx,pppy);
 width_down_Y=width_orig_Y/pppy;
 height_down_Y=height_orig_Y/pppx;
 
-//aqui hay que comprobar el modelo de color con la variable yuv_model
+//aqui habria que comprobar el modelo de color con la variable yuv_model
 //-----------------------------------------
 width_down_UV=width_down_Y/2;
 height_down_UV=height_down_Y/2;
@@ -58,19 +58,19 @@ if (DEBUG) printf(" downsampler initialized succesfully \n");
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 /*Función de downsampling de un scanline*/
-void down_avg_horiz(unsigned char **orig, unsigned char** dest,int line,int pppx,int pppy) {
+void down_avg_horiz(unsigned char **orig,int width_orig, unsigned char** dest,int line,int pppx,int pppy) {
 /// this function downsample a single scanline. the result is stored in another scanline
 /// depending on pppy (linedown is line/pppy)
 
 if (DEBUG) printf("ENTER in down_avg_horiz...%d \n",line);
 
-int line_down=line/pppy;//linea correspondiente a la original
+int line_down=line/pppy ;//linea correspondiente a la original en la imagen downsampleada (apuntada por *dest)
 int pix=0;
 //printf ("Linedown= %d",line_down);
 	switch(pppx){
 		case 2:
 
-			for (int i=0; i < width_orig_Y; i+=2) {
+			for (int i=0; i < width_orig; i+=2) {
 				dest[line_down][pix]=(orig[line][i]+orig[line][i+1]) >>1; //px[1]+px[2]/2
 				pix++;
 
@@ -80,19 +80,21 @@ int pix=0;
 
         case 4:
 
-			for (int i=0; i < width_orig_Y; i+=4) {
-				dest[line_down][i] =  (orig[line][i]+orig[line][i+1]+orig[line][i+2]+orig[line][i+3]) >>2; //px[1]+px[2]/2
+			for (int i=0; i < width_orig; i+=4) {
+				dest[line_down][pix] =  (orig[line][i]+orig[line][i+1]+orig[line][i+2]+orig[line][i+3]) >>2; //px[1]+px[2]/2
+				pix++;
 			}
 			break;
 
 		default:
 
-		    for (int i=0; i < width_orig_Y; i+=pppx) {
+		    for (int i=0; i < width_orig; i+=pppx) {
 		    	dest[line_down][i] = 0;
 		    	for (int j=0; j < pppx; j++) {
-					dest[line_down][i] += orig[line][(i+j)];
+					dest[line_down][pix] += orig[line][(i+j)];
 		    	}
-	    		dest[line_down][i]=dest[line_down][i]/pppx;
+	    		dest[line_down][pix]=dest[line_down][i]/pppx;
+	    		pix++;
 			}
 			break;
         }
@@ -102,3 +104,9 @@ int pix=0;
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void close_downsampler()
+{
+
+//to do
+
+}

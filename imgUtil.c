@@ -188,9 +188,9 @@ for (int x=0;x<width*3;x+=3)//channels)
   int up=u[line/2][pix/2];
   int vp=v[line/2][pix/2];
   pix++;
-  int r=(1000*yp+1140*vp)/1000;
-  int g=(1000*yp-395*up- 581*vp)/1000;
-  int b=(1000*yp+2032*up)/1000;
+  int r=(1000*yp+1402*(vp-128))/1000;
+  int g=(1000*yp-344*(up-128)- 714*(vp-128))/1000;
+  int b=(1000*yp+1772*(up-128))/1000;
   //printf ("r:%d, g:%d, b:%d \n",r,g,b);
 
   data[line*width*3+x]=(unsigned char)r;
