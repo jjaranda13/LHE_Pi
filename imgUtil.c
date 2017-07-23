@@ -139,9 +139,9 @@ for (int line=0;line<height_orig_Y;line++)
   int y=(r*299+g*587+b*114)/1000;
   int u=128+ (-168*r - 331*g + b*500)/1000;
   int v=128+ (500*r - 418*g - b*81)/1000;
-  if (y<0) y=0; if (y>255) y=255;
-  if (u<0) u=0; if (u>255) u=255;
-  if (v<0) v=0; if (v>255) v=255;
+  if (y<0) y=0;else if (y>255) y=255;
+  if (u<0) u=0;else if (u>255) u=255;
+  if (v<0) v=0;else if (v>255) v=255;
 
 
    orig_Y[line][k]=(unsigned char ) y;//r*299+g*587+b*114)/1000;
@@ -205,9 +205,9 @@ for (int x=0;x<width*3;x+=3)//channels)
   int g=(1000*yp-344*(up-128)- 714*(vp-128))/1000;
   int b=(1000*yp+1772*(up-128))/1000;
 
-  if (r<0 )r=0;if (r>255) r=255;
-  if (g<0 )r=0;if (g>255) g=255;
-  if (b<0 )r=0;if (b>255) b=255;
+  if (r<0 )r=0;else if (r>255) r=255;
+  if (g<0 )r=0;else if (g>255) g=255;
+  if (b<0 )r=0;else if (b>255) b=255;
 
   //r=max (0,r);r=min(255,r);
   //g=max (0,g);r=min(255,g);

@@ -63,8 +63,8 @@ struct timeval t_ini, t_fin;
 double secs;
 
 
-load_frame("../LHE_Pi/img/lena.bmp");
-//load_frame("../LHE_Pi/img/baboon.bmp");
+//load_frame("../LHE_Pi/img/lena.bmp");
+load_frame("../LHE_Pi/img/baboon.bmp");
 printf("frame loaded  \n");
 
 pppx=1;
@@ -81,7 +81,7 @@ downsample_frame(pppx,pppy);
 printf("down done\n");
 
 gettimeofday(&t_ini, NULL);
-int veces=1000;
+int veces=1;
 for (int i=0 ;i<veces;i++)
 quantize_frame();
 gettimeofday(&t_fin, NULL);
