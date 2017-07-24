@@ -135,17 +135,57 @@ for (int line=0;line<height_orig_Y;line++)
     g=rgb[line*width_orig_Y*rgb_channels+j+1];
     b=rgb[line*width_orig_Y*rgb_channels+j+2];
 
+ // YCbCr equations
+  int y=(r*299+g*587+b*114)/1000;//luma (not luminance)
+  int u=128+ (-169*r - 331*g + b*500)/1000;//Cb
+  int v=128+ (500*r - 418*g - b*81)/1000;//Cr
 
-  int y=(r*299+g*587+b*114)/1000;
-  int u=128+ (-168*r - 331*g + b*500)/1000;
-  int v=128+ (500*r - 418*g - b*81)/1000;
+  //joseja equations
+//  int y=(r*299+g*587+b*114)/1000;//luma (not luminance)
+//  int u=128+ (-169*r - 331*g + b*500)/1500;//Cb
+//  int v=128+ (500*r - 418*g - b*81)/1500;//Cr
+
+
+ //int u=128+ (-147*r - 289*g + b*436)/1000;//Cb
+ //int v=128+ (615*r - 515*g - b*10)/1000;//Cr
+
+
+
+// supuestamente estas ecuaciones son validas, aunque diferentes
+// segun https://www.pcmag.com/encyclopedia/term/55166/yuv-rgb-conversion-formulas
+// y tambien: http://www.compression.ru/download/articles/color_space/ch03.pdf
+// dan mejor resultado al volver luego a rgb,
+//  Y =  0.299R + 0.587G + 0.114B
+//   U = -0.147R - 0.289G + 0.436B
+//   V =  0.615R - 0.515G - 0.100B
+  //int u= 128 +(492*(b-y))/1000;
+  //int v= 128 +(877*(r-y))/1000;
+  /*
+  Y  =      (0.257 * R) + (0.504 * G) + (0.098 * B) + 16
+
+Cr = V =  (0.439 * R) - (0.368 * G) - (0.071 * B) + 128
+
+Cb = U = -(0.148 * R) - (0.291 * G) + (0.439 * B) + 128
+  */
+ // y=((257 * r) + (504 * g) + (98 * b))/1000 + 16;
+ /*
+ U'= (B-Y)*0.565
+
+V'= (R-Y)*0.713
+*/
+  //v=((439*r)-(368*g)-71*b)/1000 +128;
+  //u=(-148*r-291*g+439*b)/1000+128;
+//u=(b-y)*565/1000+128;
+//v=(r-y)*713/1000+128;
+
   if (y<0) y=0;else if (y>255) y=255;
   if (u<0) u=0;else if (u>255) u=255;
   if (v<0) v=0;else if (v>255) v=255;
-
+  //if (y==0) {u=0;v=0;}
+  //if (y==255) {u=255;v=255;}
 
    orig_Y[line][k]=(unsigned char ) y;//r*299+g*587+b*114)/1000;
-   orig_U[line][k]=(unsigned char ) u;//128+ (-168*r - 331*g + b*500)/1000;
+   orig_U[line][k]=(unsigned char ) u;//128+ (-169*r - 331*g + b*500)/1000;
    orig_V[line][k]=(unsigned char ) v;//128+ (500*r - 418*g - b*81)/1000;
 
    k++;//next pixel
@@ -200,10 +240,61 @@ for (int x=0;x<width*3;x+=3)//channels)
   int yp=y[line][pix];
   int up=u[line/2][pix/2];
   int vp=v[line/2][pix/2];
+
+  //up=(up-128)*2+128;
+  //vp=(vp-128)*2+128;
+  // if (up<0) up=0;else if (up>255) up=255;
+  //if (vp<0) vp=0;else if (vp>255) vp=255;
+
+
   pix++;
+  // el downsampling ha hecho que algunas tuplas yuv sean incoherentes pues
+  // y,u,v ( usamos YCbCr) no son independientes. primero hay que arreglar
+  // el triplete
+  //most of the YUV space is in fact unused !!!!!
+  //in YCbCr, the Y is the brightness (luma), Cb is blue minus luma (B-Y) and Cr is red minus luma (R-Y)
+
+
+  /*
+     Unlike R, G, and B, the Y, Cb and Cr values are not independent;
+     choosing YCbCr values arbitrarily may lead to one or more of the RGB values
+     that are out of gamut, i.e. greater than 1.0 or less than 0.0.
+    */
+
+
+  //if (y<0) y=0;else if (y>255) y=255;
+  //if (up<20) up=20;else if (up>105) up=105;
+  //if (vp<20) vp=20;else if (vp>105) vp=105;
+
+
+
   int r=(1000*yp+1402*(vp-128))/1000;
   int g=(1000*yp-344*(up-128)- 714*(vp-128))/1000;
   int b=(1000*yp+1772*(up-128))/1000;
+
+ // int r=(1000*yp+1370*(vp-128))/1000;
+ // int g=(1000*yp-337*(up-128)- 698*(vp-128))/1000;
+ // int b=(1000*yp+1732*(up-128))/1000;
+
+
+
+  //int r=(1000*yp+1140*(vp-128))/1000;
+  //int g=(1000*yp-395*(up-128)- 581*(vp-128))/1000;
+  //int b=(1000*yp+2032*(up-128))/1000;
+
+
+/*
+B = 1.164(Y - 16)                   + 2.018(U - 128)
+
+G = 1.164(Y - 16) - 0.813(V - 128) - 0.391(U - 128)
+
+R = 1.164(Y - 16) + 1.596(V - 128)
+*/
+//   b=(1164*(yp-16))/1000;
+//   g=(1164*(yp-16)-813*(vp-128)-391*(up-128))/1000;
+//   r=(1164*(yp-16)+1596*(vp-128))/1000;
+
+   if (b<0 || b>255) printf("%d \n",r);
 
   if (r<0 )r=0;else if (r>255) r=255;
   if (g<0 )r=0;else if (g>255) g=255;

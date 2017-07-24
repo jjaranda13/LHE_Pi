@@ -67,13 +67,16 @@ if (DEBUG) printf("ENTER in down_avg_horiz...%d \n",line);
 int line_down=line/pppy ;//linea correspondiente a la original en la imagen downsampleada (apuntada por *dest)
 int pix=0;
 //printf ("Linedown= %d",line_down);
+int data=0;
 	switch(pppx){
 		case 2:
 
 			for (int i=0; i < width_orig; i+=2) {
 				dest[line_down][pix]=(orig[line][i]+orig[line][i+1]) >>1; //px[1]+px[2]/2
+				//data=(orig[line][i]+orig[line][i+1]) >>1;
+				//dest[line_down][pix]=data;
 				pix++;
-
+                //printf("k");
 			}
             break;
 
@@ -82,19 +85,27 @@ int pix=0;
 
 			for (int i=0; i < width_orig; i+=4) {
 				dest[line_down][pix] =  (orig[line][i]+orig[line][i+1]+orig[line][i+2]+orig[line][i+3]) >>2; //px[1]+px[2]/2
+                //data=(orig[line][i]+orig[line][i+1]+orig[line][i+2]+orig[line][i+3]) >>2;
+                //dest[line_down][pix] = data;
 				pix++;
+				//printf("k");
 			}
 			break;
 
 		default:
 
 		    for (int i=0; i < width_orig; i+=pppx) {
-		    	dest[line_down][i] = 0;
+		    	//dest[line_down][i] = 0;
+		    	data=0;
 		    	for (int j=0; j < pppx; j++) {
-					dest[line_down][pix] += orig[line][(i+j)];
+					//dest[line_down][pix] += orig[line][(i+j)];
+					data+=orig[line][(i+j)];
 		    	}
-	    		dest[line_down][pix]=dest[line_down][i]/pppx;
+	    		//dest[line_down][pix]=dest[line_down][i]/pppx;
+
+	    		dest[line_down][pix]=(unsigned char) (data/pppx);
 	    		pix++;
+	    		//printf("k");
 			}
 			break;
         }
