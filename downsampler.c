@@ -84,9 +84,9 @@ int data=0;
         case 4:
 
 			for (int i=0; i < width_orig; i+=4) {
-				dest[line_down][pix] =  (orig[line][i]+orig[line][i+1]+orig[line][i+2]+orig[line][i+3]) >>2; //px[1]+px[2]/2
-                //data=(orig[line][i]+orig[line][i+1]+orig[line][i+2]+orig[line][i+3]) >>2;
-                //dest[line_down][pix] = data;
+				//dest[line_down][pix] =  (orig[line][i]+orig[line][i+1]+orig[line][i+2]+orig[line][i+3]) >>2; //px[1]+px[2]/2
+                data=(orig[line][i]+orig[line][i+1]+orig[line][i+2]+orig[line][i+3]) >>2;
+                dest[line_down][pix] = data;
 				pix++;
 				//printf("k");
 			}

@@ -73,6 +73,15 @@ init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
 
 printf ("init ok");
 rgb2yuv(rgb,rgb_channels);
+
+//ahora esta en YUV444
+
+
+yuv2rgbX(orig_Y,orig_U,orig_V,3,width_orig_Y,height_orig_Y, rgb);
+
+int i = stbi_write_bmp("../LHE_Pi/img/orig_RGB_YUV_RGB.bmp", width_orig_Y, height_orig_Y, 3, rgb);
+
+
 printf("rgb2yuv done \n");
 
 downsample_frame(pppx,pppy);

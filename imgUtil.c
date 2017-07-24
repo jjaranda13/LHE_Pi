@@ -294,7 +294,7 @@ R = 1.164(Y - 16) + 1.596(V - 128)
 //   g=(1164*(yp-16)-813*(vp-128)-391*(up-128))/1000;
 //   r=(1164*(yp-16)+1596*(vp-128))/1000;
 
-   if (b<0 || b>255) printf("%d \n",r);
+  // if (b<0 || b>255) printf("%d \n",r);
 
   if (r<0 )r=0;else if (r>255) r=255;
   if (g<0 )r=0;else if (g>255) g=255;
@@ -338,3 +338,103 @@ return psnr;
 
 
 }
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void yuv2rgbX(unsigned char **y, unsigned char **u, unsigned char ** v, int channels, int width, int height, char *data) {
+
+for (int line=0;line<height;line++)
+{
+/*
+
+https://en.wikipedia.org/wiki/YCbCr
+   R = Y + 1.140V
+   G = Y - 0.395U - 0.581V
+   B = Y + 2.032U
+*/
+int pix=0;
+for (int x=0;x<width*3;x+=3)//channels)
+  {
+  int yp=y[line][pix];
+  int up=u[line][pix];
+  int vp=v[line][pix];
+
+  //up=(up-128)*2+128;
+  //vp=(vp-128)*2+128;
+  // if (up<0) up=0;else if (up>255) up=255;
+  //if (vp<0) vp=0;else if (vp>255) vp=255;
+
+
+  pix++;
+  // el downsampling ha hecho que algunas tuplas yuv sean incoherentes pues
+  // y,u,v ( usamos YCbCr) no son independientes. primero hay que arreglar
+  // el triplete
+  //most of the YUV space is in fact unused !!!!!
+  //in YCbCr, the Y is the brightness (luma), Cb is blue minus luma (B-Y) and Cr is red minus luma (R-Y)
+
+
+  /*
+     Unlike R, G, and B, the Y, Cb and Cr values are not independent;
+     choosing YCbCr values arbitrarily may lead to one or more of the RGB values
+     that are out of gamut, i.e. greater than 1.0 or less than 0.0.
+    */
+
+
+  //if (y<0) y=0;else if (y>255) y=255;
+  //if (up<20) up=20;else if (up>105) up=105;
+  //if (vp<20) vp=20;else if (vp>105) vp=105;
+
+
+
+  int r=(1000*yp+1402*(vp-128))/1000;
+  int g=(1000*yp-344*(up-128)- 714*(vp-128))/1000;
+  int b=(1000*yp+1772*(up-128))/1000;
+
+ // int r=(1000*yp+1370*(vp-128))/1000;
+ // int g=(1000*yp-337*(up-128)- 698*(vp-128))/1000;
+ // int b=(1000*yp+1732*(up-128))/1000;
+
+
+
+  //int r=(1000*yp+1140*(vp-128))/1000;
+  //int g=(1000*yp-395*(up-128)- 581*(vp-128))/1000;
+  //int b=(1000*yp+2032*(up-128))/1000;
+
+
+/*
+B = 1.164(Y - 16)                   + 2.018(U - 128)
+
+G = 1.164(Y - 16) - 0.813(V - 128) - 0.391(U - 128)
+
+R = 1.164(Y - 16) + 1.596(V - 128)
+*/
+//   b=(1164*(yp-16))/1000;
+//   g=(1164*(yp-16)-813*(vp-128)-391*(up-128))/1000;
+//   r=(1164*(yp-16)+1596*(vp-128))/1000;
+
+   //if (b<0 || b>255) printf("%d \n",r);
+
+  if (r<0 )r=0;else if (r>255) r=255;
+  if (g<0 )r=0;else if (g>255) g=255;
+  if (b<0 )r=0;else if (b>255) b=255;
+
+  //r=max (0,r);r=min(255,r);
+  //g=max (0,g);r=min(255,g);
+  //b=max (0,b);r=min(255,b);
+  //printf ("r:%d, g:%d, b:%d \n",r,g,b);
+
+  data[line*width*3+x]=(unsigned char)r;
+  data[line*width*3+x+1]=(unsigned char)g;
+  data[line*width*3+x+2]=(unsigned char)b;
+
+  }
+
+}
+printf(" 3 channels done \n");
+}
+
+
+
+
+
+
