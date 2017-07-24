@@ -168,7 +168,7 @@ for (int line=0;line<height_orig_Y;line+=pppy){
 int ratio_height_YUV=height_orig_Y/height_orig_UV;
 int ratio_width_YUV=width_orig_Y/width_orig_UV;
 int pppyUV=2*pppy/ratio_height_YUV;
-int pppxUV=2*pppy/ratio_width_YUV;
+int pppxUV=2*pppx/ratio_width_YUV;
 printf ("pppx:%d , pppy:%d, pppxUV:%d, pppyUV:%d \n",pppx,pppy,pppxUV,pppyUV);
 for (int line=0;line<height_orig_UV;line+=pppyUV){
 	down_avg_horiz(orig_U,width_orig_UV,orig_down_U,line,pppxUV,pppyUV);
