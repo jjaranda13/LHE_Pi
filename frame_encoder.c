@@ -63,8 +63,8 @@ struct timeval t_ini, t_fin;
 double secs;
 
 
-//load_frame("../LHE_Pi/img/lena.bmp");
-load_frame("../LHE_Pi/img/baboon.bmp");
+load_frame("../LHE_Pi/img/lena.bmp");
+//load_frame("../LHE_Pi/img/baboon.bmp");
 printf("frame loaded  \n");
 
 pppx=1;
