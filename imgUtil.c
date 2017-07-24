@@ -415,8 +415,8 @@ R = 1.164(Y - 16) + 1.596(V - 128)
    //if (b<0 || b>255) printf("%d \n",r);
 
   if (r<0 )r=0;else if (r>255) r=255;
-  if (g<0 )r=0;else if (g>255) g=255;
-  if (b<0 )r=0;else if (b>255) b=255;
+  if (g<0 )g=0;else if (g>255) g=255;
+  if (b<0 )b=0;else if (b>255) b=255;
 
   //r=max (0,r);r=min(255,r);
   //g=max (0,g);r=min(255,g);
