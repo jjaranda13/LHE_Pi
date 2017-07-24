@@ -68,7 +68,7 @@ load_frame("../LHE_Pi/img/baboon.bmp");
 printf("frame loaded  \n");
 
 pppx=2;
-pppy=2;
+pppy=1;
 init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
 
 printf ("init ok");
@@ -141,7 +141,8 @@ void downsample_frame( int pppx,  int pppy)
 {
 /// this function downsample a frame scanline by scanline, in the same order than quantizer
 /// scanlines are processed in order module 8
-if (DEBUG) printf("ENTER in downsample_frame...\n");
+//if (DEBUG)
+printf("ENTER in downsample_frame...\n");
 
 // downsampler initialization, if needed
 //---------------------------------------
@@ -151,7 +152,7 @@ if (downsampler_initialized==false) init_downsampler();
 //downsampling by scanlines
 //--------------------------
 //esto debe ser coregido para que recorra las scanlines salteadas modulo 8
-
+printf ("downsampling...");
 // component Y
 // ------------
 //si pppy==2 entonces solo se downsamplean la mitad de las lineas, logicamente
