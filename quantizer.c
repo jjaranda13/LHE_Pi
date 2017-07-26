@@ -16,8 +16,8 @@
 #include <math.h>
 #include <stdbool.h>
 
-#include "globals.h"
-#include "quantizer.h"
+#include "include/globals.h"
+#include "include/quantizer.h"
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))

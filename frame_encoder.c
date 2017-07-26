@@ -3,12 +3,12 @@
 #include <sys/time.h>
 #include <math.h>
 #include <stdbool.h>
-#include "globals.h"
-#include "imgUtil.h"
-#include "downsampler.h"
-#include "quantizer.h"
-#include "frame_encoder.h"
-#include "entropic_enc.h"
+#include "include/globals.h"
+#include "include/imgUtil.h"
+#include "include/downsampler.h"
+#include "include/quantizer.h"
+#include "include/frame_encoder.h"
+#include "include/entropic_enc.h"
 
 double timeval_diff(struct timeval *a, struct timeval *b) {
 	return ((double)(a->tv_sec +(double)a->tv_usec/1000000)-(double)(b->tv_sec + (double)b->tv_usec/1000000));
@@ -90,7 +90,7 @@ downsample_frame(pppx,pppy);
 printf("down done\n");
 
 gettimeofday(&t_ini, NULL);
-int veces=1;
+int veces=100;
 for (int i=0 ;i<veces;i++)
 quantize_frame();
 gettimeofday(&t_fin, NULL);

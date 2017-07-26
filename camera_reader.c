@@ -10,7 +10,7 @@
  * @see https://github.com/jjaranda13/LHE_Pi
  */
 
-#include "camera_reader.h"
+#include "include/camera_reader.h"
 
 #include "bcm_host.h"
 #include "interface/vcos/vcos.h"

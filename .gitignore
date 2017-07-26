@@ -59,3 +59,9 @@ dkms.conf
 #Compilation result files
 bin/
 obj/
+
+#Example images
+*.bmp
+
+#Compilation exec
+lhepi

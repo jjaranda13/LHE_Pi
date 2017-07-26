@@ -14,7 +14,7 @@
 #include <sys/time.h>
 #include <math.h>
 #include <stdbool.h>
-#include "globals.h"
+#include "include/globals.h"
 #define STB_IMAGE_STATIC
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION

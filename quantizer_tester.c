@@ -1,14 +1,15 @@
 #include <stdbool.h>
-#include "globals.h"
+#include "include/globals.h"
 //#include "camera_reader.h"
-#include "downsampler.h"
-#include "entropic_enc.h"
-#include "quantizer.h"
+#include "include/downsampler.h"
+#include "include/entropic_enc.h"
+#include "include/quantizer.h"
 //#include "streamer.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
-#include "imgUtil.h"
+#include "include/imgUtil.h"
+#include "include/frame_encoder.h"
 
 /*Función auxiliar para medir tiempos de ejecución*/
 /*
@@ -63,7 +64,9 @@ int main(int argc, char* argv[]) {
     printf ("encoding frame \n");
 //    debug=true;
     DEBUG=false;
+    //for (int i = 0; i < 30; i++){
     encode_frame_fromfile();
+	//}
     printf("Creado fichero ");
 
 	}

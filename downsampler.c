@@ -15,8 +15,8 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <stdbool.h>
-#include "globals.h"
-#include "downsampler.h"
+#include "include/globals.h"
+#include "include/downsampler.h"
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void init_downsampler()

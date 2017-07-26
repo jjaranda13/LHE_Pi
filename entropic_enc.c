@@ -3,8 +3,8 @@
 #include <sys/time.h>
 #include <stdbool.h>
 #include <limits.h>
-#include "globals.h"
-#include "entropic_enc.h"
+#include "include/globals.h"
+#include "include/entropic_enc.h"
 
 #define testBit(A,k) ((A & (1UL<<(k)))>>k)
 
