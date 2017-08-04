@@ -103,6 +103,7 @@ gettimeofday(&t_ini, NULL);
 for (int i=0 ;i<veces;i++){
 for (int line=0;line<height_down_Y;line++) {
     entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+	//tam_bytes_Y[line]=entropic_enc(hops_Y, bits_Y, line, width_down_Y); //Consultar: Esta instruccion es para que el streamer sepa cuantos bits ocupa cada linea
 }
 for (int line=0;line<height_down_UV;line++) {
     entropic_enc(hops_U, bits_U, line, width_down_UV);
@@ -114,6 +115,17 @@ printf("entropic coding done\n");
 secs = timeval_diff(&t_fin, &t_ini)/veces;
 
 printf("entropic coding in %.16g ms\n", secs * 1000.0);
+
+/*Para probar el streamer
+//Streamer
+gettimeofday(&t_ini, NULL);
+sendData();
+gettimeofday(&t_fin, NULL);
+printf("streamer done\n");
+secs = timeval_diff(&t_fin, &t_ini);
+
+printf("streamer in %.16g ms\n", secs * 1000.0);*/
+
 //char *data;
 //yuv2rgb(orig_down_Y,orig_down_U,orig_down_V,1,width_down_Y,height_down_Y, data);
 

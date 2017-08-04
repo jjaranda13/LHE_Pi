@@ -80,5 +80,8 @@ unsigned long int **bits_Y;
 unsigned long int **bits_U;
 unsigned long int **bits_V;
 
+//Tamaño en bytes que ocupa cada linea tras la cuantizacion
+int *tam_bytes_Y;
+
 unsigned char *huff_table;
 unsigned char rlc_length, condition_length;
