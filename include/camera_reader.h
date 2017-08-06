@@ -2,68 +2,69 @@
  * @file camera_reader.h
  * @author Francisco José Juan Quintanilla
  * @date July 2017
- * @brief Camera reader reads the camera and outputs the raw data.
+ * @brief Camera reader reads the camera and outputs YUV data.
  *
- * This module reads the the pi camera using the MMAL library from Raspberry Pi.
- * It outputs the data so the next module can encode the raw information into LHE.
+ * This module reads the the pi camera using the MMAL library from Broadcom. It
+ * sends the video in YUV format to a global variable that is readed further
+ * in the downsampler.
  *
  * @see https://github.com/jjaranda13/LHE_Pi
  */
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#include <interface/mmal/mmal.h>
+#include "interface/mmal/util/mmal_util.h"
+#include "interface/mmal/util/mmal_util_params.h"
+#include "interface/mmal/util/mmal_default_components.h"
+
+#include "globals.h"
 
  /**
   * Options to pass to the camera. All are mandatory.
   */
-struct CAMERA_OPTIONS
+typedef struct CAMERA_OPTIONS
 {
-  int width;                          /// Requested width of image
-  int height;                         /// requested height of image
+  int width;                          /// Requested width of the image
+  int height;                         /// requested height of the image
   int framerate;                      /// Requested frame rate (fps)
-  int cameraNum;                       /// Camera number. Set it to 0 as default.
-  int sensor_mode;                     /// Sensor mode. 0=auto. Check docs/forum for modes selected by other values.
-}
+  int cameraNum;                      /// Camera number. Set it to 0 as default.
+  int sensor_mode;                    /// Sensor mode. 0=auto. @see https://www.raspberrypi.org/documentation/raspbian/applications/camera.md
+} CAMERA_OPTIONS;
 
-/**
- * @brief Callback function that is called whne a frame is ready.
- *
- * The function to be called recieves a buffer with its indexes to obtain the
- * frame. A timestamp of the presentation time is obtained too.
- *
- * @p data Array of bytes contaning the image.
- * @p offset Offset of the start of the frame.
- * @p length Lengh of the payload. Counter after offset.
- * @p pts Presentation timestamp of the frame.
- */
-typedef void(* ENCODE_CALLBACK) (uint8_t* data, uint32_t *offset, uint32_t length, int64_t pts);
+
 
 /**
  * @brief Initiates the camera.
  *
- * This functions initites the camera and starts trwing frame to the callabck provided.
+ * This function initiates the camera and starts generating frames in the global variables.
+ * It must be called at first and generated frames asap.
  *
  * @param options Options for ythe video capture.
- * @param cb callabck function to eb executed after a frame
- * @return MMAL_COMPONENT_T the camera component.
+ * @return The camera component created to handle the camera.
  */
-static MMAL_COMPONENT_T init_camera(CAMERA_OPTIONS *options, ENCODE_CALLBACK cb);
+MMAL_COMPONENT_T * init_camera(CAMERA_OPTIONS *options);
 
 /**
  * @brief Closes the camera passed.
  *
- *Stops and closes the camera passed.
+ * Stops and closes the camera passed. Stops the new frames and allow the camera to be used by other processes.
  *
  * @param camera_object the camera to be closed.
- * @return Status of the process.
+ * @return Status of the process. 0=sucess 1=error
  */
-int close_camera(camera_object);
+int close_camera(MMAL_COMPONENT_T * camera_object);
 
 
 // Private area
-static void camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+void camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 
-static void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 
 typedef struct
 {
-   MMAL_POOL_T *pool;                   /// Pool in which the port has its buffer_headers
-   ENCODE_CALLBACK cb;                 /// pointer to the callback
+   MMAL_POOL_T *pool ;                    // Pool which contains the buffers we are using.
+   MMAL_BUFFER_HEADER_T *previous_buffer; // Buffer of the previous frame. Passed in order to release it.
 } PORT_USERDATA;
