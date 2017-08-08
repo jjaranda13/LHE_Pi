@@ -1,7 +1,7 @@
 IDIR=./include
 IDIRRPI=/opt/vc/include/
 CC=gcc
-CFLAGS=-I$(IDIR) -I$(IDIRRPI)
+CFLAGS=-I$(IDIR) -I$(IDIRRPI) -std=c99
 
 ODIR=./obj
 LDIR=./lib
