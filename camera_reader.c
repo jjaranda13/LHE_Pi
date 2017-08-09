@@ -10,7 +10,7 @@
  * @see https://github.com/jjaranda13/LHE_Pi
  */
 
-#include "camera_reader.h"
+#include "include/camera_reader.h"
 
 #define MMAL_CAMERA_VIDEO_PORT 0
 #define VIDEO_FRAME_RATE_DEN 1

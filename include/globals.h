@@ -1,4 +1,4 @@
-
+#include <stdbool.h>
 
 bool DEBUG;//for execution in debug mode and show more traces
 
