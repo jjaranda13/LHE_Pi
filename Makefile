@@ -1,12 +1,12 @@
 IDIR=./include
 IDIRRPI=/opt/vc/include/
 CC=gcc
-CFLAGS=-I$(IDIR) -I$(IDIRRPI) -std=c99
+CFLAGS=-I$(IDIR) -I$(IDIRRPI) -std=gnu11 -O3
 
 ODIR=./obj
 LDIR=./lib
 
-LIBS=-lm /opt/vc/lib/libmmal_vc_client.so /opt/vc/lib/libmmal.so /opt/vc/lib/libmmal_components.so /opt/vc/lib/libmmal_util.so /opt/vc/lib/libmmal_core.so
+LIBS=-lm /opt/vc/lib/libmmal_vc_client.so /opt/vc/lib/libmmal.so /opt/vc/lib/libmmal_components.so /opt/vc/lib/libmmal_util.so /opt/vc/lib/libmmal_core.so -pthread
 #-pg
 
 _DEPS=downsampler.h entropic_enc.h frame_encoder.h globals.h imgUtil.h quantizer.h camera_reader.h

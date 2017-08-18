@@ -3,6 +3,7 @@
 #include <sys/time.h>
 #include <math.h>
 #include <stdbool.h>
+#include <pthread.h>
 #include "include/globals.h"
 #include "include/imgUtil.h"
 #include "include/downsampler.h"
@@ -31,6 +32,84 @@ void init_framecoder(int width, int height,int px, int py)
     init_downsampler();
     init_quantizer();
     init_entropic_enc();
+}
+
+void *quantize_pair() {
+    for (int line=0; line < height_down_Y/2; line++){
+        quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
+	entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+    }
+    for (int line=0; line < height_down_UV/2; line++){
+        quantize_scanline( orig_down_U,  line, width_down_UV, hops_U,result_U);
+	entropic_enc(hops_U, bits_U, line, width_down_UV);
+        quantize_scanline( orig_down_V,  line, width_down_UV, hops_V,result_V);
+	entropic_enc(hops_V, bits_V, line, width_down_UV);
+    }
+}
+
+void *quantize_impair() {
+    for (int line=height_down_Y/2; line < height_down_Y; line++){
+        quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
+	entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+    }
+    for (int line=height_down_UV/2; line < height_down_UV; line++){
+        quantize_scanline( orig_down_U,  line, width_down_UV, hops_U,result_U);
+        entropic_enc(hops_U, bits_U, line, width_down_UV);
+        quantize_scanline( orig_down_V,  line, width_down_UV, hops_V,result_V);
+	entropic_enc(hops_V, bits_V, line, width_down_UV);
+    }
+}
+
+void *quantize_one() {
+    for (int line=0; line < height_down_Y/4; line++){
+        quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
+        entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+    }
+    for (int line=0; line < height_down_UV/4; line++){
+        quantize_scanline( orig_down_U,  line, width_down_UV, hops_U,result_U);
+        entropic_enc(hops_U, bits_U, line, width_down_UV);
+        quantize_scanline( orig_down_V,  line, width_down_UV, hops_V,result_V);
+        entropic_enc(hops_V, bits_V, line, width_down_UV);
+    }
+}
+
+void *quantize_two() {
+    for (int line=0; line < height_down_Y/2; line++){
+        quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
+        entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+    }
+    for (int line=0; line < height_down_UV/2; line++){
+        quantize_scanline( orig_down_U,  line, width_down_UV, hops_U,result_U);
+        entropic_enc(hops_U, bits_U, line, width_down_UV);
+        quantize_scanline( orig_down_V,  line, width_down_UV, hops_V,result_V);
+        entropic_enc(hops_V, bits_V, line, width_down_UV);
+    }
+}
+
+void *quantize_three() {
+    for (int line=0; line < 3*height_down_Y/4; line++){
+        quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
+        entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+    }
+    for (int line=0; line < 3*height_down_UV/4; line++){
+        quantize_scanline( orig_down_U,  line, width_down_UV, hops_U,result_U);
+        entropic_enc(hops_U, bits_U, line, width_down_UV);
+        quantize_scanline( orig_down_V,  line, width_down_UV, hops_V,result_V);
+        entropic_enc(hops_V, bits_V, line, width_down_UV);
+    }
+}
+
+void *quantize_four() {
+    for (int line=0; line < height_down_Y; line++){
+        quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
+        entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+    }
+    for (int line=0; line < height_down_UV; line++){
+        quantize_scanline( orig_down_U,  line, width_down_UV, hops_U,result_U);
+        entropic_enc(hops_U, bits_U, line, width_down_UV);
+        quantize_scanline( orig_down_V,  line, width_down_UV, hops_V,result_V);
+        entropic_enc(hops_V, bits_V, line, width_down_UV);
+    }
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -64,13 +143,18 @@ double secs;
 
 
 //load_frame("../LHE_Pi/img/lena.bmp");
-load_frame("../LHE_Pi/img/baboon.bmp");
+//load_frame("../LHE_Pi/img/baboon.bmp");
+load_frame("../LHE_Pi/img/cascada.bmp");
 printf("frame loaded  \n");
 
-pppx=2;
+pppx=1;
 pppy=1;
 init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+int rc1, rc2, rc3, rc4;
+pthread_t thread1, thread2, thread3, thread4;
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 printf ("init ok");
 rgb2yuv(rgb,rgb_channels);
 
@@ -88,7 +172,7 @@ downsample_frame(pppx,pppy);
 
 
 printf("down done\n");
-
+/*
 gettimeofday(&t_ini, NULL);
 int veces=100;
 for (int i=0 ;i<veces;i++)
@@ -96,6 +180,55 @@ quantize_frame();
 gettimeofday(&t_fin, NULL);
 printf("quantization done\n");
 secs = timeval_diff(&t_fin, &t_ini)/veces;
+*/
+/*
+gettimeofday(&t_ini, NULL);
+int veces=100;
+for (int i=0 ;i<veces;i++){
+if ((rc1=pthread_create(&thread1, NULL, &quantize_pair, NULL))){
+    printf("Thread creation failed.");
+}
+if ((rc2=pthread_create(&thread2, NULL, &quantize_impair, NULL))){
+    printf("Thread creation failed.");
+}
+//pthread_join(thread1, NULL);
+pthread_join(thread2, NULL);
+}
+gettimeofday(&t_fin, NULL);
+printf("quantization done\n");
+secs = timeval_diff(&t_fin, &t_ini)/veces;
+*/
+
+gettimeofday(&t_ini, NULL);
+int veces=100;
+for (int i=0 ;i<veces;i++){
+if ((rc1=pthread_create(&thread1, NULL, &quantize_one, NULL))){
+    printf("Thread creation failed.");
+}
+if ((rc2=pthread_create(&thread2, NULL, &quantize_two, NULL))){
+    printf("Thread creation failed.");
+}
+if ((rc3=pthread_create(&thread3, NULL, &quantize_three, NULL))){
+    printf("Thread creation failed.");
+}
+if ((rc4=pthread_create(&thread4, NULL, &quantize_four, NULL))){
+    printf("Thread creation failed.");
+}
+
+//pthread_join(thread1, NULL);
+//pthread_join(thread2, NULL);
+//pthread_join(thread3, NULL);
+pthread_join(thread4, NULL);
+}
+gettimeofday(&t_fin, NULL);
+printf("quantization done\n");
+secs = timeval_diff(&t_fin, &t_ini)/veces;
+
+
+
+
+
+
 
 printf("quantization in %.16g ms\n", secs * 1000.0);
 
@@ -113,6 +246,16 @@ for (int line=0;line<height_down_UV;line++) {
 gettimeofday(&t_fin, NULL);
 printf("entropic coding done\n");
 secs = timeval_diff(&t_fin, &t_ini)/veces;
+
+
+
+
+
+
+
+
+
+
 
 printf("entropic coding in %.16g ms\n", secs * 1000.0);
 
