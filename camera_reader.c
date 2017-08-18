@@ -10,11 +10,30 @@
  * @see https://github.com/jjaranda13/LHE_Pi
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "include/camera_reader.h"
+#include "include/globals.h"
+
+#include "interface/mmal/util/mmal_util.h"
+#include "interface/mmal/util/mmal_util_params.h"
+#include "interface/mmal/util/mmal_default_components.h"
 
 #define MMAL_CAMERA_VIDEO_PORT 0
 #define VIDEO_FRAME_RATE_DEN 1
 #define VIDEO_OUTPUT_BUFFERS_NUM 5
+
+int frame_counter=0;
+
+void camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+typedef struct
+{
+   MMAL_POOL_T *pool ;                    // Pool which contains the buffers we are using.
+   MMAL_BUFFER_HEADER_T *previous_buffer; // Buffer of the previous frame. Passed in order to release it.
+} PORT_USERDATA;
+
 
 MMAL_COMPONENT_T * init_camera(CAMERA_OPTIONS *options)
 {
@@ -254,7 +273,7 @@ void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
     //if (DEBUG) printf ("DEBUG:camera_buffer_callback: Called camera_buffer_callback\n");
     PORT_USERDATA *callback_data;
     callback_data = (PORT_USERDATA *)port->userdata;
-
+    frame_counter++;
 
     if (callback_data->previous_buffer) // release the previous buffer back to the pool
     {
@@ -292,7 +311,7 @@ void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
         // Do not copy the image and drop the frame
         callback_data->previous_buffer = NULL;
         mmal_buffer_header_release(buffer);
-        printf("%s:%s:%d:INFO: Dropped frame\n", __FILE__,__func__ ,__LINE__);
+        printf("%s:%s:%d:INFO: Dropped frame %d\n", __FILE__,__func__ ,__LINE__, frame_counter);
     }
 
     // and send one back to the port (if still open)

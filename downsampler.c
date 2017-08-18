@@ -34,18 +34,19 @@ height_down_UV=height_down_Y/2;
 
 //memory allocation
 //------------------
-orig_down_Y=malloc(height_down_Y*sizeof (unsigned char *));
-orig_down_U=malloc(height_down_UV*sizeof (unsigned char *));
-orig_down_V=malloc(height_down_UV*sizeof (unsigned char *));
+orig_down_Y=(unsigned char**) malloc(height_down_Y*sizeof (unsigned char *));
+orig_down_U=(unsigned char**) malloc(height_down_UV*sizeof (unsigned char *));
+orig_down_V=(unsigned char**) malloc(height_down_UV*sizeof (unsigned char *));
+
 
 for (int i=0;i<height_down_Y;i++)
   {
-  orig_down_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
+  orig_down_Y[i]= (unsigned char *) malloc(width_down_Y* sizeof (unsigned char));
   }
 for (int i=0;i<height_down_UV;i++)
   {
-  orig_down_U[i]=malloc(width_down_UV* sizeof (unsigned char));
-  orig_down_V[i]=malloc(width_down_UV* sizeof (unsigned char));
+  orig_down_U[i]=(unsigned char *) malloc(width_down_UV* sizeof (unsigned char));
+  orig_down_V[i]=(unsigned char *) malloc(width_down_UV* sizeof (unsigned char));
   }
 
 

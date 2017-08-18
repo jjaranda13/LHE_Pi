@@ -3,6 +3,7 @@
  */
 
 #include "../include/camera_reader.h"
+#include "../include/globals.h"
 #include <stdio.h>
 #include <time.h>
 

@@ -10,17 +10,11 @@
  *
  * @see https://github.com/jjaranda13/LHE_Pi
  */
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
+
+#ifndef CAMERA_READER_H
+#define CAMERA_READER_H
 
 #include <interface/mmal/mmal.h>
-#include "interface/mmal/util/mmal_util.h"
-#include "interface/mmal/util/mmal_util_params.h"
-#include "interface/mmal/util/mmal_default_components.h"
-
-#include "globals.h"
 
  /**
   * Options to pass to the camera. All are mandatory.
@@ -57,14 +51,4 @@ MMAL_COMPONENT_T * init_camera(CAMERA_OPTIONS *options);
  */
 int close_camera(MMAL_COMPONENT_T * camera_object);
 
-
-// Private area
-void camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
-
-void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
-
-typedef struct
-{
-   MMAL_POOL_T *pool ;                    // Pool which contains the buffers we are using.
-   MMAL_BUFFER_HEADER_T *previous_buffer; // Buffer of the previous frame. Passed in order to release it.
-} PORT_USERDATA;
+#endif /* CAMERA_READER_H */
