@@ -6,21 +6,23 @@
 
 #include "../include/camera_reader.h"
 #include "../include/downsampler.h"
+#include "../include/entropic_enc.h"
 #include "../include/globals.h"
-
-void *downsampling_task();
+#include "../include/quantizer.h"
 
 int ratio_height_YUV;
 int ratio_width_YUV;
 int pppyUV;
 int pppxUV;
 
+void *after_task();
+
 int main(int argc, char* argv[])
 {
     CAMERA_OPTIONS options;
     MMAL_COMPONENT_T *camera;
     int status;
-    pthread_t downsampling_thread;
+    pthread_t after_thread;
 
     options.width = 1280;
     options.height = 720;
@@ -34,20 +36,24 @@ int main(int argc, char* argv[])
     pppy = 1;
 
     camera = init_camera(&options);
+
     ratio_height_YUV=height_orig_Y/height_orig_UV;
     ratio_width_YUV=width_orig_Y/width_orig_UV;
     pppyUV=2*pppy/ratio_height_YUV;
     pppxUV=2*pppx/ratio_width_YUV;
     init_downsampler();
 
-    status = pthread_create(&downsampling_thread, NULL, downsampling_task, (void *)0);
+    init_quantizer();
+    init_entropic_enc();
+
+    status = pthread_create(&after_thread, NULL, after_task, (void *)0);
     if (status)
     {
         printf("Error creating thread %d", status);
     }
 
     sleep(2);
-    status = pthread_cancel(downsampling_thread);
+    status = pthread_cancel(after_thread);
     if (status)
     {
         printf("Error cancelling thread %d", status);
@@ -61,12 +67,13 @@ int main(int argc, char* argv[])
 }
 
 
-void *downsampling_task(void *argument)
+void *after_task(void *argument)
 {
     while(1)
     {
         if (cam_down_sem==1)
         {
+            //Downsampling
             for(int y =0 ; y <height_orig_Y; y+=pppy)
             {
                 down_avg_horiz(orig_Y,width_orig_Y, orig_down_Y, y,pppx, pppy);
@@ -74,14 +81,30 @@ void *downsampling_task(void *argument)
             for(int y =0 ; y <height_orig_UV; y+=pppyUV)
             {
                 down_avg_horiz(orig_U,width_orig_UV, orig_down_U, y,pppxUV, pppyUV);
-            }
-            for(int y =0 ; y <height_orig_UV; y+=pppyUV)
-            {
                 down_avg_horiz(orig_V,width_orig_UV, orig_down_V, y,pppxUV, pppyUV);
             }
-            save_frame("../LHE_Pi/img/orig_down_Y.bmp", width_down_Y, height_down_Y, 1, orig_down_Y,orig_down_U,orig_down_V);
+
+            //Quantizer
+            for (int y=0;y<height_down_Y;y++)
+            {
+              quantize_scanline( orig_down_Y,  y, width_down_Y, hops_Y,result_Y);
+            }
+            for (int y=0;y<height_down_UV;y++){
+              quantize_scanline( orig_down_U, y, width_down_UV, hops_U,result_U);
+              quantize_scanline( orig_down_V, y, width_down_UV, hops_V,result_V);
+            }
+
+            //Entropic
+            for (int y=0;y<height_down_Y;y++)
+            {
+                entropic_enc(hops_Y, bits_Y, y, width_down_Y);
+            }
+            for (int y=0;y<height_down_UV;y++){
+                entropic_enc(hops_U, bits_U, y, width_down_UV);
+                entropic_enc(hops_V, bits_V, y, width_down_UV);
+            }
             cam_down_sem=0;
+            printf("Line Coded sucessfully\n");
         }
     }
-
 }

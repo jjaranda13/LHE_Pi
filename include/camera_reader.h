@@ -17,7 +17,10 @@
 #include <interface/mmal/mmal.h>
 
  /**
-  * Options to pass to the camera. All are mandatory.
+  * @brief Camera Options.
+  *
+  * Options to pass to the camera. An instance of this struct must be send in
+  * order to create the camera.
   */
 typedef struct CAMERA_OPTIONS
 {
@@ -28,13 +31,17 @@ typedef struct CAMERA_OPTIONS
   int sensor_mode;                    /// Sensor mode. 0=auto. @see https://www.raspberrypi.org/documentation/raspbian/applications/camera.md
 } CAMERA_OPTIONS;
 
-
-
 /**
  * @brief Initiates the camera.
  *
- * This function initiates the camera and starts generating frames in the global variables.
- * It must be called at first and generated frames asap.
+ * This function initiates the camera and starts generating frames in the
+ * global variables. It must be called before generating frames. It fills
+ * height_orig_YUV width_orig_YUV. As soon it is inicialized it fills the
+ * global variables orig_YUV with the data.
+ *
+ * It uses the global variable cam_down_sem in order to check whether the
+ * previous frame is still in use. In case the previus buffer is still not
+ * released the actual frame is dropped.
  *
  * @param options Options for ythe video capture.
  * @return The camera component created to handle the camera.
@@ -44,7 +51,9 @@ MMAL_COMPONENT_T * init_camera(CAMERA_OPTIONS *options);
 /**
  * @brief Closes the camera passed.
  *
- * Stops and closes the camera passed. Stops the new frames and allow the camera to be used by other processes.
+ * Stops and closes the camera passed. Stops the new frames and allow the camera
+ * to be used by other processes. It needs the object that was returned when the
+ * camera was created.
  *
  * @param camera_object the camera to be closed.
  * @return Status of the process. 0=sucess 1=error
