@@ -17,6 +17,7 @@ int pppxUV;
 
 int main(int argc, char* argv[])
 {
+    ProfilerStart("LHE_Pi_profiling.prof");
     CAMERA_OPTIONS options;
     MMAL_COMPONENT_T *camera;
     int status;
@@ -57,6 +58,7 @@ int main(int argc, char* argv[])
     {
         printf("Error closing camera %d", status);
     }
+    ProfilerStop();
     return 0;
 }
 
@@ -65,23 +67,20 @@ void *downsampling_task(void *argument)
 {
     while(1)
     {
-        if (cam_down_sem==1)
+        pthread_mutex_lock (&cam_down_mutex);
+        pthread_cond_wait (&cam_down_cv,&cam_down_mutex);
+
+        for(int y =0 ; y <height_orig_Y; y+=pppy)
         {
-            for(int y =0 ; y <height_orig_Y; y+=pppy)
-            {
-                down_avg_horiz(orig_Y,width_orig_Y, orig_down_Y, y,pppx, pppy);
-            }
-            for(int y =0 ; y <height_orig_UV; y+=pppyUV)
-            {
-                down_avg_horiz(orig_U,width_orig_UV, orig_down_U, y,pppxUV, pppyUV);
-            }
-            for(int y =0 ; y <height_orig_UV; y+=pppyUV)
-            {
-                down_avg_horiz(orig_V,width_orig_UV, orig_down_V, y,pppxUV, pppyUV);
-            }
-            save_frame("../LHE_Pi/img/orig_down_Y.bmp", width_down_Y, height_down_Y, 1, orig_down_Y,orig_down_U,orig_down_V);
-            cam_down_sem=0;
+            down_avg_horiz(orig_Y,width_orig_Y, orig_down_Y, y,pppx, pppy);
         }
+        for(int y =0 ; y <height_orig_UV; y+=pppyUV)
+        {
+            down_avg_horiz(orig_U,width_orig_UV, orig_down_U, y,pppxUV, pppyUV);
+            down_avg_horiz(orig_V,width_orig_UV, orig_down_V, y,pppxUV, pppyUV);
+        }
+        //save_frame("../LHE_Pi/img/orig_down_Y.bmp", width_down_Y, height_down_Y, 1, orig_down_Y,orig_down_U,orig_down_V);
+        pthread_mutex_unlock (&cam_down_mutex);
     }
 
 }

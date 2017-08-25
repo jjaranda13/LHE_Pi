@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <pthread.h>
 
 bool DEBUG;//for execution in debug mode and show more traces
 
@@ -47,7 +48,8 @@ unsigned char **orig_down_U;
 unsigned char **orig_down_V;
 
 //Semaforo para iniciar el downsampler de la imagen capturada
-unsigned char cam_down_sem;
+pthread_mutex_t cam_down_mutex;
+pthread_cond_t cam_down_cv;
 
 //Variable condicional para iniciar la cuantización de las scanlines(hace broadcast cuando se tenga una slice)
 unsigned char down_quant_sem;

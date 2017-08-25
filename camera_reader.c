@@ -77,7 +77,9 @@ MMAL_COMPONENT_T * init_camera(CAMERA_OPTIONS *options)
         orig_Y = (unsigned char**) malloc(sizeof(unsigned char *) *height_orig_Y);
         orig_U = (unsigned char**) malloc(sizeof(unsigned char *) *height_orig_UV);
         orig_V = (unsigned char**) malloc(sizeof(unsigned char *) *height_orig_UV);
-        cam_down_sem = 0;
+
+        pthread_mutex_init(&cam_down_mutex, NULL);
+        pthread_cond_init (&cam_down_cv, NULL);
     }
     else
     {
@@ -245,7 +247,6 @@ MMAL_COMPONENT_T * init_camera(CAMERA_OPTIONS *options)
         }
     }
     if (DEBUG) printf ("%s:%s:%d:DEBUG: Port filled with buffers\n", __FILE__,__func__ ,__LINE__);
-
     printf ("%s:%s:%d:INFO: Camera Started\n", __FILE__,__func__ ,__LINE__);
 
     return camera;
@@ -280,7 +281,7 @@ void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
         mmal_buffer_header_release(callback_data->previous_buffer);
     }
 
-    if (cam_down_sem == 0) // Downsampler finished its work so the global pointers can b modified.
+    if (!pthread_mutex_trylock(&cam_down_mutex)) // Downsampler finished its work so the global pointers can b modified.
     {
 
         int index = 0;
@@ -302,7 +303,8 @@ void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
             index += width_orig_UV;
         }
 
-        cam_down_sem = 1;
+        pthread_cond_signal(&cam_down_cv);
+        pthread_mutex_unlock(&cam_down_mutex);
         callback_data->previous_buffer = buffer;
         if (DEBUG) printf("%s:%s:%d:DEBUG: Processed frame\n", __FILE__,__func__ ,__LINE__);
 
@@ -343,14 +345,18 @@ void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 int close_camera(MMAL_COMPONENT_T * camera_object)
 {
 
-    if (camera_object)
-    {
-        mmal_component_destroy(camera_object);
-        printf ("%s:%s:%d:INFO: Camera Closed\n", __FILE__,__func__ ,__LINE__);
-        return 0;
-    }
+    pthread_mutex_destroy(&cam_down_mutex);
+    pthread_cond_destroy(&cam_down_cv);
 
-    return 1;
+    mmal_component_destroy(camera_object);
+
+    free((void *) orig_Y);
+    free((void *) orig_U);
+    free((void *) orig_V);
+
+    printf ("%s:%s:%d:INFO: Camera Closed\n", __FILE__,__func__ ,__LINE__);
+    return 0;
+
 }
 
 
