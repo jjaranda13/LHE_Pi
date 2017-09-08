@@ -142,9 +142,9 @@ struct timeval t_ini, t_fin;
 double secs;
 
 
-//load_frame("../LHE_Pi/img/lena.bmp");
+load_frame("../LHE_Pi/img/lena.bmp");
 //load_frame("../LHE_Pi/img/baboon.bmp");
-load_frame("../LHE_Pi/img/cascada.bmp");
+//load_frame("../LHE_Pi/img/cascada.bmp");
 printf("frame loaded  \n");
 
 pppx=1;
@@ -200,7 +200,7 @@ secs = timeval_diff(&t_fin, &t_ini)/veces;
 */
 
 gettimeofday(&t_ini, NULL);
-int veces=100;
+int veces=1;
 for (int i=0 ;i<veces;i++){
 if ((rc1=pthread_create(&thread1, NULL, &quantize_one, NULL))){
     printf("Thread creation failed.");
@@ -215,9 +215,9 @@ if ((rc4=pthread_create(&thread4, NULL, &quantize_four, NULL))){
     printf("Thread creation failed.");
 }
 
-//pthread_join(thread1, NULL);
-//pthread_join(thread2, NULL);
-//pthread_join(thread3, NULL);
+pthread_join(thread1, NULL);
+pthread_join(thread2, NULL);
+pthread_join(thread3, NULL);
 pthread_join(thread4, NULL);
 }
 gettimeofday(&t_fin, NULL);
