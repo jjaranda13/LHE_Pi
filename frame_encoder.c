@@ -11,6 +11,14 @@
 #include "include/frame_encoder.h"
 #include "include/entropic_enc.h"
 
+
+struct thread_info
+{
+int start;
+int separation;
+int num_threads;
+};
+
 double timeval_diff(struct timeval *a, struct timeval *b) {
 	return ((double)(a->tv_sec +(double)a->tv_usec/1000000)-(double)(b->tv_sec + (double)b->tv_usec/1000000));
 }
@@ -113,6 +121,8 @@ void *quantize_four() {
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+//         quantize_subframe
+//         -----------------
 // esta funcion procesa un grupo de lineas separadas entre si
 // comienza en start_line, despues start_line+8, despues start_line+16 etc
 // y asi hasta que llega al final de la imagen. en ese momento se detiene,
@@ -121,8 +131,7 @@ void *quantize_four() {
 // el th1 ejecutara la linea 0, luego la 8*3=24, luego la 48, etc
 // el th2 ejeutara la linea 8 , luego la 32, luego la 56 etc
 // el th3 ejecutara la linea 16, luego la 40, luego la 64 etc
-
-
+//------------------------------------------------------------
 void quantize_subframe(int start_line,int separacion)
 {
 int line=start_line;
@@ -135,8 +144,9 @@ int n=0;
 while (line<height_down_Y)
 {
   //componentes luminancia
-  if (DEBUG) printf("line %d \n",line);
+  if (DEBUG)  printf("line %d \n",line);
   quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
+
   n++;
   line=(start_line+n*separacion);
 
@@ -190,7 +200,7 @@ quantize_subframe(i, 8);
 void quantize_frame_normal()
 
 {
- if (DEBUG) printf ("ENTER in quantizeframe... \n");
+ if (DEBUG) printf ("ENTER in quantizeframe()... \n");
 
     //luminance
     //--------------------
@@ -209,6 +219,23 @@ void quantize_frame_normal()
 	}
 
 
+
+}
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+//esta funcion es la que debe ejecutar cualquier thread
+void *mytask(void *arg)
+{
+struct thread_info *tinfo = arg;
+//(int start, int separation, int num_threads)
+int start=tinfo->start;
+int separation=tinfo->separation;
+int num_threads=tinfo->num_threads;
+
+int invocaciones=separation/num_threads;
+
+for (int i=start; i< start+invocaciones;i++){
+  quantize_subframe(i,separation);
+}
 
 }
 
@@ -281,7 +308,38 @@ printf("quantizing...\n");
 gettimeofday(&t_ini, NULL);
 int veces=1;
 
-quantize_frame();
+// la funcion quantize_frame no usa threads
+//quantize_frame();
+
+/*
+if ((rc1=pthread_create(&thread1, NULL, &mytask(0,16,2), NULL))){
+    printf("Thread creation failed.");
+if ((rc2=pthread_create(&thread2, NULL, &mytask(8,16,2), NULL))){
+    printf("Thread creation failed.");
+*/
+struct thread_info *tinfo;
+int num_threads=2;
+tinfo = calloc(num_threads, sizeof(struct thread_info));
+
+
+tinfo[0].start=0;
+tinfo[0].separation=16;
+tinfo[0].num_threads=2;
+tinfo[1].start=8;
+tinfo[1].separation=16;
+tinfo[1].num_threads=2;
+
+if ((rc1=pthread_create(&thread1, NULL, &mytask, &tinfo[0]))){
+    printf("Thread creation failed.");
+    }
+
+if ((rc2=pthread_create(&thread2, NULL, &mytask, &tinfo[1]))){
+    printf("Thread creation failed.");
+    }
+
+pthread_join(thread1, NULL);
+pthread_join(thread2, NULL);
+
 /*
 for (int i=0 ;i<veces;i++){
 if ((rc1=pthread_create(&thread1, NULL, &quantize_one, NULL))){
