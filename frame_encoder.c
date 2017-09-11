@@ -113,15 +113,86 @@ void *quantize_four() {
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+// esta funcion procesa un grupo de lineas en un orden especial
+// comienza en start_line, despues start_line+8, despues start_line+16 etc
+// y asi hasta que coincide con la primera linea. en ese momento se detiene,
+// la formula general es line= (start_line+N*module)
+// en caso de tener varios threads, el modulo debe ser modulo * num_threads. de este modo
+// el th1 ejecutara la linea 0, luego la 8*3=24, luego la 48, etc
+// el th2 ejeutara la linea 8 , luego la 32, luego la 56 etc
+// el th3 ejecutara la linea 16, luego la 40, luego la 64 etc
+
+
+void quantize_subframe(int start_line,int module)
+{
+int line=start_line;
+int n=0;
+
+// primeramente procesamos todas las lineas de luminancia
+// -----------------------------------------------------
+// empezamos por la start_line
+//quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
+//printf("line %d \n",line);
+//n++;
+//line=(start_line+n*8)% height_down_Y;
+while (line<height_down_Y)
+{
+  //componentes luminancia
+  if (DEBUG) printf("line %d \n",line);
+  quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
+  n++;
+  line=(start_line+n*module); //% height_down_Y;
+
+}
+
+
+// tras la luminancia, procesamos las de crominancia. son menos
+// ------------------------------------------------------------
+line=start_line;
+n=0;
+//quantize_scanline( orig_down_U,  line, width_down_UV, hops_U,result_U);
+//quantize_scanline( orig_down_V,  line, width_down_UV, hops_V,result_V);
+//printf("line UV %d \n",line);
+//n++;
+line=(start_line+n*8)% height_down_UV;
+while (line<height_down_UV)
+{
+  if (DEBUG) printf("line UV %d \n",line);
+  quantize_scanline( orig_down_U,  line, width_down_UV, hops_U,result_U);
+  quantize_scanline( orig_down_V,  line, width_down_UV, hops_V,result_V);
+  n++;
+  line=(start_line+n*8) ;//% height_down_UV;
+}
+
+
+}
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void quantize_frame()
+{
+for (int i=0;i<8;i++)
+{
+if (DEBUG) printf ("processing lines starting at %d \n",i);
+quantize_subframe(i, 8);
+}
+
+}
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+//aunque esta funcion no la vamos a usar, la he querido dejar por si la queremos para pruebas
+//cuantiza una imagen siguiendo un orden secuencial en las lineas
+void quantize_frame_normal()
+
 {
  if (DEBUG) printf ("ENTER in quantizeframe... \n");
 
-    //luminance components
+    //luminance
     //--------------------
+
 	for (int line=0;line<height_down_Y;line++){
       quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
 	}
+
+
+
 	//chrominance components
 	//-----------------------
 	for (int line=0;line<height_down_UV;line++){
@@ -147,8 +218,8 @@ load_frame("../LHE_Pi/img/lena.bmp");
 //load_frame("../LHE_Pi/img/cascada.bmp");
 printf("frame loaded  \n");
 
-pppx=1;
-pppy=1;
+pppx=2;
+pppy=2;
 init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int rc1, rc2, rc3, rc4;
@@ -198,9 +269,12 @@ gettimeofday(&t_fin, NULL);
 printf("quantization done\n");
 secs = timeval_diff(&t_fin, &t_ini)/veces;
 */
-
+printf("quantizing...\n");
 gettimeofday(&t_ini, NULL);
 int veces=1;
+
+quantize_frame();
+/*
 for (int i=0 ;i<veces;i++){
 if ((rc1=pthread_create(&thread1, NULL, &quantize_one, NULL))){
     printf("Thread creation failed.");
@@ -219,9 +293,13 @@ pthread_join(thread1, NULL);
 pthread_join(thread2, NULL);
 pthread_join(thread3, NULL);
 pthread_join(thread4, NULL);
+
+
+
 }
+*/
 gettimeofday(&t_fin, NULL);
-printf("quantization done\n");
+printf("quantization done!\n");
 secs = timeval_diff(&t_fin, &t_ini)/veces;
 
 

@@ -238,15 +238,23 @@ for (int x=0;x<width;x++)
   oc=orig_YUV[y][x];//original color
 
   if (y>0 && x>0 && x!=width-1){
-    if (last_small_hop) hop0=(result_YUV[y][x-1]+result_YUV[y-1][x]+result_YUV[y-1][x+1])/3;
-    else
-    hop0=(result_YUV[y][x-1]+result_YUV[y-1][x+1])>>1;
+
+    //if (last_small_hop) hop0=(result_YUV[y][x-1]+result_YUV[y-1][x]+result_YUV[y-1][x+1])/3;
+    //else
+    //hop0=(result_YUV[y][x-1]+result_YUV[y-1][x+1])>>1;
+
+    //prediccion izquierda para scanlines salteadas
+    hop0=result_YUV[y][x-1];
     }
   else if (x==0 && y>0){
+    //este caso no se debe dar, pues codificaremos a partir de 2ndo pixel. el primero va en 1 byte en cada scanline
     hop0=result_YUV[y-1][0];
     }
   else if (y>0){//x=width-1
-    hop0=(result_YUV[y][x-1]+result_YUV[y-1][x])>>1;
+    //hop0=(result_YUV[y][x-1]+result_YUV[y-1][x])>>1;
+
+    //prediccion izquierda para scanlines salteadas
+    hop0=result_YUV[y][x-1];
     }
   else{ //y=0
     hop0=result_YUV[y][x-1];
