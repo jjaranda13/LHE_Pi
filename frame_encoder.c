@@ -113,17 +113,17 @@ void *quantize_four() {
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-// esta funcion procesa un grupo de lineas en un orden especial
+// esta funcion procesa un grupo de lineas separadas entre si
 // comienza en start_line, despues start_line+8, despues start_line+16 etc
-// y asi hasta que coincide con la primera linea. en ese momento se detiene,
-// la formula general es line= (start_line+N*module)
-// en caso de tener varios threads, el modulo debe ser modulo * num_threads. de este modo
+// y asi hasta que llega al final de la imagen. en ese momento se detiene,
+// la formula general es line= (start_line+N*separacion)
+// en caso de tener varios threads, la separacion debe ser separacion * num_threads. de este modo
 // el th1 ejecutara la linea 0, luego la 8*3=24, luego la 48, etc
 // el th2 ejeutara la linea 8 , luego la 32, luego la 56 etc
 // el th3 ejecutara la linea 16, luego la 40, luego la 64 etc
 
 
-void quantize_subframe(int start_line,int module)
+void quantize_subframe(int start_line,int separacion)
 {
 int line=start_line;
 int n=0;
@@ -131,17 +131,14 @@ int n=0;
 // primeramente procesamos todas las lineas de luminancia
 // -----------------------------------------------------
 // empezamos por la start_line
-//quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
-//printf("line %d \n",line);
-//n++;
-//line=(start_line+n*8)% height_down_Y;
+
 while (line<height_down_Y)
 {
   //componentes luminancia
   if (DEBUG) printf("line %d \n",line);
   quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
   n++;
-  line=(start_line+n*module); //% height_down_Y;
+  line=(start_line+n*separacion);
 
 }
 
@@ -150,10 +147,7 @@ while (line<height_down_Y)
 // ------------------------------------------------------------
 line=start_line;
 n=0;
-//quantize_scanline( orig_down_U,  line, width_down_UV, hops_U,result_U);
-//quantize_scanline( orig_down_V,  line, width_down_UV, hops_V,result_V);
-//printf("line UV %d \n",line);
-//n++;
+
 line=(start_line+n*8)% height_down_UV;
 while (line<height_down_UV)
 {
@@ -161,12 +155,26 @@ while (line<height_down_UV)
   quantize_scanline( orig_down_U,  line, width_down_UV, hops_U,result_U);
   quantize_scanline( orig_down_V,  line, width_down_UV, hops_V,result_V);
   n++;
-  line=(start_line+n*8) ;//% height_down_UV;
+  line=(start_line+n*separacion) ;
 }
 
 
 }
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+//esta funcion es un ejemplo muy sencillo, solo valido para un thread
+//si tenemos 2 threads y queremos una separacion de lineas 8
+// th1 quantize_subframe(0,16) ejecutaria 0,16,32 etc
+// th2 quantize_subframe(8,16) ejecutaria 8,24,48 etc
+// de este modo las primeras lineas procesadas seran la 0,8,16,24,32,48 etc
+// el th1 y el th2 despues tendrian que invocarse con
+// th1 quantize_subframe(1,16) ejecutaria 1,17,33 etc
+// th2 quantize_subframe(9,16) ejecutaria 9,25,49 etc
+// por lo tanto tendriamos la 1,9,17,25,33,49 etc
+// debemos hacer estas invocaciones hasta el final. como hemos cogido separacion 16 tendremos que las dos
+//ultimas invocaciones serian
+// th1 quantize_subframe(14,16) ejecutaria 14,30,46 etc
+// th2 quantize_subframe(15,16) ejecutaria 15,31,47 etc
 void quantize_frame()
 {
 for (int i=0;i<8;i++)
@@ -218,8 +226,8 @@ load_frame("../LHE_Pi/img/lena.bmp");
 //load_frame("../LHE_Pi/img/cascada.bmp");
 printf("frame loaded  \n");
 
-pppx=2;
-pppy=2;
+pppx=1;
+pppy=1;
 init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int rc1, rc2, rc3, rc4;
