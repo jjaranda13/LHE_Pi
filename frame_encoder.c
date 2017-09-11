@@ -253,8 +253,8 @@ load_frame("../LHE_Pi/img/lena.bmp");
 //load_frame("../LHE_Pi/img/cascada.bmp");
 printf("frame loaded  \n");
 
-pppx=1;
-pppy=1;
+pppx=2;
+pppy=2;
 init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int rc1, rc2, rc3, rc4;
@@ -310,13 +310,14 @@ int veces=1;
 
 // la funcion quantize_frame no usa threads
 //quantize_frame();
-
 /*
 if ((rc1=pthread_create(&thread1, NULL, &mytask(0,16,2), NULL))){
     printf("Thread creation failed.");
 if ((rc2=pthread_create(&thread2, NULL, &mytask(8,16,2), NULL))){
     printf("Thread creation failed.");
 */
+
+
 struct thread_info *tinfo;
 int num_threads=2;
 tinfo = calloc(num_threads, sizeof(struct thread_info));
@@ -365,7 +366,7 @@ pthread_join(thread4, NULL);
 }
 */
 gettimeofday(&t_fin, NULL);
-printf("quantization done!\n");
+printf("quantization done !\n");
 secs = timeval_diff(&t_fin, &t_ini)/veces;
 
 
