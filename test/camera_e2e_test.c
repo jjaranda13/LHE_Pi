@@ -41,8 +41,8 @@ int main(int argc, char* argv[])
     ratio_width_YUV=width_orig_Y/width_orig_UV;
     pppyUV=2*pppy/ratio_height_YUV;
     pppxUV=2*pppx/ratio_width_YUV;
-    init_downsampler();
 
+    init_downsampler();
     init_quantizer();
     init_entropic_enc();
 
@@ -71,40 +71,41 @@ void *after_task(void *argument)
 {
     while(1)
     {
-        if (cam_down_sem==1)
+        pthread_mutex_lock (&cam_down_mutex);
+        pthread_cond_wait (&cam_down_cv,&cam_down_mutex);
+
+        //Downsampling
+        for(int y =0 ; y <height_orig_Y; y+=pppy)
         {
-            //Downsampling
-            for(int y =0 ; y <height_orig_Y; y+=pppy)
-            {
-                down_avg_horiz(orig_Y,width_orig_Y, orig_down_Y, y,pppx, pppy);
-            }
-            for(int y =0 ; y <height_orig_UV; y+=pppyUV)
-            {
-                down_avg_horiz(orig_U,width_orig_UV, orig_down_U, y,pppxUV, pppyUV);
-                down_avg_horiz(orig_V,width_orig_UV, orig_down_V, y,pppxUV, pppyUV);
-            }
-
-            //Quantizer
-            for (int y=0;y<height_down_Y;y++)
-            {
-              quantize_scanline( orig_down_Y,  y, width_down_Y, hops_Y,result_Y);
-            }
-            for (int y=0;y<height_down_UV;y++){
-              quantize_scanline( orig_down_U, y, width_down_UV, hops_U,result_U);
-              quantize_scanline( orig_down_V, y, width_down_UV, hops_V,result_V);
-            }
-
-            //Entropic
-            for (int y=0;y<height_down_Y;y++)
-            {
-                entropic_enc(hops_Y, bits_Y, y, width_down_Y);
-            }
-            for (int y=0;y<height_down_UV;y++){
-                entropic_enc(hops_U, bits_U, y, width_down_UV);
-                entropic_enc(hops_V, bits_V, y, width_down_UV);
-            }
-            cam_down_sem=0;
-            printf("Line Coded sucessfully\n");
+            down_avg_horiz(orig_Y,width_orig_Y, orig_down_Y, y,pppx, pppy);
         }
+        for(int y =0 ; y <height_orig_UV; y+=pppyUV)
+        {
+            down_avg_horiz(orig_U,width_orig_UV, orig_down_U, y,pppxUV, pppyUV);
+            down_avg_horiz(orig_V,width_orig_UV, orig_down_V, y,pppxUV, pppyUV);
+        }
+
+        //Quantizer
+        for (int y=0;y<height_down_Y;y++)
+        {
+            quantize_scanline( orig_down_Y,  y, width_down_Y, hops_Y,result_Y);
+        }
+        for (int y=0;y<height_down_UV;y++)
+        {
+            quantize_scanline( orig_down_U, y, width_down_UV, hops_U,result_U);
+            quantize_scanline( orig_down_V, y, width_down_UV, hops_V,result_V);
+        }
+
+        //Entropic
+        for (int y=0;y<height_down_Y;y++)
+        {
+            entropic_enc(hops_Y, bits_Y, y, width_down_Y);
+        }
+        for (int y=0;y<height_down_UV;y++){
+            entropic_enc(hops_U, bits_U, y, width_down_UV);
+            entropic_enc(hops_V, bits_V, y, width_down_UV);
+        }
+        pthread_mutex_unlock (&cam_down_mutex);
+        printf("Line Coded sucessfully\n");
     }
 }

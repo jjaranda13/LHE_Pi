@@ -33,30 +33,27 @@ int main(int argc, char* argv[])
     time (&end);
     while(difftime(end, start) < time_to_run) // Run for 10 seconds
     {
-        if (cam_down_sem==1)
+        pthread_mutex_lock (&cam_down_mutex);
+        pthread_cond_wait (&cam_down_cv,&cam_down_mutex);
+
+        t1 = clock();
+        snprintf(t1s,80, "%d", t1);
+        fp=fopen(strcat(str,t1s), "w+");
+        for(y =0 ; y <height_orig_Y; y++)
         {
-            t1 = clock();
-            snprintf(t1s,80, "%d", t1);
-            fp=fopen(strcat(str,t1s), "w+");
-            for(y =0 ; y <height_orig_Y; y++)
-            {
-                fwrite(orig_Y[y], 1, width_orig_Y, fp);
-            }
-            for(y =0 ; y <height_orig_UV; y++)
-            {
-                fwrite(orig_U[y], 1, width_orig_UV, fp);
-            }
-            for(y =0 ; y <height_orig_UV; y++)
-            {
-                fwrite(orig_V[y], 1, width_orig_UV, fp);
-            }
-            cam_down_sem=0;
-            fclose(fp);
+            fwrite(orig_Y[y], 1, width_orig_Y, fp);
         }
-        else
+        for(y =0 ; y <height_orig_UV; y++)
         {
-            //No fame yet
+            fwrite(orig_U[y], 1, width_orig_UV, fp);
         }
+        for(y =0 ; y <height_orig_UV; y++)
+        {
+            fwrite(orig_V[y], 1, width_orig_UV, fp);
+        }
+        pthread_mutex_unlock (&cam_down_mutex);
+
+        fclose(fp);
         time (&end);
     }
 
