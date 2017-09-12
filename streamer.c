@@ -105,6 +105,7 @@ int write_socket (int fd, struct sockaddr *remote,	socklen_t long_remote, unsign
     if (aux > 0){
 			// Si hemos conseguido escribir caracteres, se actualiza la variable escrito
 			escrito = escrito + aux;
+            printf("Escribo %d bytes\n",aux);
 		}
 		else{
 			//Si se ha cerrado el socket, devolvemos el numero de caracteres leidos.
@@ -162,12 +163,48 @@ void sendData(){
   inet_aton("192.168.1.52", &server.sin_addr.s_addr);//La direccion del otro ordenador
   long_server = sizeof(server);
 
-  //Enviar imagen en paquetes de ul
-  //int k=0;//Con esto cuento todos los elementos
-  int elems_linea;
+
+  int tam_linea;
+  //ENVIO PRIMERO EL HEIGHT DOWN
+  sendto(socket_con_server, (int *)&height_down_Y, sizeof(height_down_Y), 0, (struct sockaddr *)&server, long_server );
+  for(int i=0;i<height_down_Y;i++){
+    //Mando num linea
+    //sendto(socket_con_server, (int *)&i, sizeof(i), 0, (struct sockaddr *)&server, long_server );
+    //Mando tamaño de linea
+    tam_linea=tam_bytes_Y[i];
+    printf("Linea %d de %d bytes\n",i,tam_linea);
+    sendto(socket_con_server, (int *)&tam_bytes_Y[i], sizeof(int), 0, (struct sockaddr *)&server, long_server );
+    //Mando los bytes de la linea
+    sendto(socket_con_server, (int *)&bits_Y[i][0], tam_linea, 0, (struct sockaddr *)&server, long_server );
+  }
+  FILE *fp = fopen("client.lhe","wb");
   for (int i=0;i<height_down_Y;i++){
-    elems_linea=tam_bytes_Y[i]/4;
-    for(int j=0;j<elems_linea;j++){
+    tam_linea=tam_bytes_Y[i];
+    fwrite(&bits_Y[i][0],tam_linea,1,fp);
+  }
+  fclose(fp);
+
+  //Enviar imagen en paquetes de ul
+  /*int k=0;//Con esto cuento todos los elementos
+  int elems_linea, resto_linea;
+  int tam_total=0;
+  int linea_total;
+  //ENVIO PRIMERO EL HEIGHT DOWN
+  sendto(socket_con_server, (int *)&height_down_Y, sizeof(height_down_Y), 0, (struct sockaddr *)&server, long_server );
+  sendto(socket_con_server, (int *)&width_down_Y, sizeof(width_down_Y), 0, (struct sockaddr *)&server, long_server );
+  int i=167;//Linea de pruebas en la que sobra 1 byte
+  //for (int i=0;i<height_down_Y;i++){
+    elems_linea=tam_bytes_Y[i]/4;//tambytes me da el numero de bytes, y quiero pasarlos de 32 en 32 no de 8 en 8 por eso el /4
+    resto_linea=tam_bytes_Y[i]%4;
+    tam_total+=elems_linea+resto_linea;
+    printf("En la linea %d hay %d bytes.\n", i, tam_bytes_Y[i]);
+    printf("El resto entre 4 es %d\n", tam_bytes_Y[i]%4);
+    printf("Envío %d ul's y %d bytes que sobran\n", elems_linea, resto_linea);
+    linea_total = elems_linea + resto_linea;
+    printf("El ancho de la linea %d es %d uls y %d bytes\n",i,linea_total,tam_bytes_Y[i]);
+    sendto(socket_con_server, (int *)&linea_total, sizeof(int), 0, (struct sockaddr *)&server, long_server );*/
+
+    /*for(int j=0;j<elems_linea+resto_linea;j++){
         //printf("%d,%d=>%lu\n",i,j,bits_Y[i][j]);
         //Envío losdatos de cada bits_Y
         data=bits_Y[i][j];
@@ -175,22 +212,23 @@ void sendData(){
         //write_socket(socket_con_server, (struct sockaddr *)&server, long_server, (unsigned long int *)&data, sizeof(data));
         sendto(socket_con_server, (unsigned long int *)&data, sizeof(data), 0, (struct sockaddr *)&server, long_server );
         //printf("%d\n",k);
-        //k++;
-    }
-  }
-  //Enviar imagen en paquetes de 1024 bytes (hay q conservar el k anterior)
-  /*int i=0;
-  data=bits_Y[0];
-  int elems;
-  if ((k%256)==0)
-        elems=k/256;
-  else{
-        elems=(k/256)+1;
-  }
-  while(i<elems){
-    write_socket(socket_con_server, (struct sockaddr *)&server, long_server, (unsigned long int *)&data, sizeof(data)*256);
-    data=data+256;
-    i++;
-  }*/
+        printf("%d: Datos: %lu\n",k, data);
+        k++;
+    }*/
+    //&printf("Info de pruebas: El byte del resto era %d\n", bits_Y[i][(elems_linea+resto_linea)-1]);
 
+  //}
+    //=====================================================================Test de paso de linea entera
+    /*for (int i=0;i<linea_total;i++){
+        printf("%d: %lu con direccion %lu\n",i,bits_Y[167][i],&bits_Y[167][i]);
+
+    }
+    data=bits_Y[167][0];
+    printf("Voy a enviar a la direccion: %lu\n",&data);
+    printf("Voy a enviar a la direccion: %lu\n",&bits_Y[167][0]);
+
+    sendto(socket_con_server, &bits_Y[167][0], 756, 0, (struct sockaddr *)&server, long_server );
+    FILE *fp = fopen("test.file","wb");
+    fwrite(&bits_Y[167][0],756,1,fp);
+    fclose(fp);*/
 }
