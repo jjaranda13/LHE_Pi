@@ -87,3 +87,5 @@ int *tam_bytes_Y;
 
 unsigned char *huff_table;
 unsigned char rlc_length, condition_length;
+
+unsigned int hops_type[9];

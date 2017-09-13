@@ -37,9 +37,13 @@ void init_framecoder(int width, int height,int px, int py)
     //height_orig_UV=width_orig_Y;
     //width_orig_UV=width_orig_Y;
 
+    for (int i = 0; i < 9; i++)
+        hops_type[i] = 0;
+
     init_downsampler();
     init_quantizer();
     init_entropic_enc();
+
 }
 
 void *quantize_pair() {
@@ -219,7 +223,12 @@ void quantize_frame_normal()
 	}
 
 
+/*
+     int total_bits=0;
+    for (int i = 0;i <9; i++){
+        printf("hop %d: %d \n", i, hops_type[i]);
 
+        }*/
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //esta funcion es la que debe ejecutar cualquier thread
@@ -253,8 +262,8 @@ load_frame("../LHE_Pi/img/lena.bmp");
 //load_frame("../LHE_Pi/img/cascada.bmp");
 printf("frame loaded  \n");
 
-pppx=2;
-pppy=2;
+pppx=4;
+pppy=4;
 init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int rc1, rc2, rc3, rc4;
@@ -306,10 +315,12 @@ secs = timeval_diff(&t_fin, &t_ini)/veces;
 */
 printf("quantizing...\n");
 gettimeofday(&t_ini, NULL);
-int veces=1;
+int veces=1000;
 
 // la funcion quantize_frame no usa threads
+for (int i=0;i<veces;i++)
 //quantize_frame();
+quantize_frame_normal();
 /*
 if ((rc1=pthread_create(&thread1, NULL, &mytask(0,16,2), NULL))){
     printf("Thread creation failed.");
@@ -317,7 +328,7 @@ if ((rc2=pthread_create(&thread2, NULL, &mytask(8,16,2), NULL))){
     printf("Thread creation failed.");
 */
 
-
+/*
 struct thread_info *tinfo;
 int num_threads=2;
 tinfo = calloc(num_threads, sizeof(struct thread_info));
@@ -340,6 +351,9 @@ if ((rc2=pthread_create(&thread2, NULL, &mytask, &tinfo[1]))){
 
 pthread_join(thread1, NULL);
 pthread_join(thread2, NULL);
+
+*/
+
 
 /*
 for (int i=0 ;i<veces;i++){
@@ -376,18 +390,22 @@ secs = timeval_diff(&t_fin, &t_ini)/veces;
 
 
 printf("quantization in %.16g ms\n", secs * 1000.0);
-
+int bits = 0;
+int pixels = 512*512;
 gettimeofday(&t_ini, NULL);
 for (int i=0 ;i<veces;i++){
 for (int line=0;line<height_down_Y;line++) {
-    entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+    bits += entropic_enc(hops_Y, bits_Y, line, width_down_Y);
 	//tam_bytes_Y[line]=entropic_enc(hops_Y, bits_Y, line, width_down_Y); //Consultar: Esta instruccion es para que el streamer sepa cuantos bits ocupa cada linea
 }
 for (int line=0;line<height_down_UV;line++) {
-    entropic_enc(hops_U, bits_U, line, width_down_UV);
-    entropic_enc(hops_V, bits_V, line, width_down_UV);
+    bits+=entropic_enc(hops_U, bits_U, line, width_down_UV);
+    bits+=entropic_enc(hops_V, bits_V, line, width_down_UV);
 }
 }
+printf("Bits: %d\n", bits);
+float bpp = (float)bits/(float)pixels;
+printf("bpp: %f\n", bpp);
 gettimeofday(&t_fin, NULL);
 printf("entropic coding done\n");
 secs = timeval_diff(&t_fin, &t_ini)/veces;

@@ -54,6 +54,7 @@ for (int hop0=0;hop0<=255;hop0++){
  rneg=max(minr,rneg);
 
  //compute hops 0,1,2,6,7,8 (hops 3,4,5 are known and dont need cache)
+ // 6,7 and 8 are not needed because cache is symmetrix. they are not computed
  //-------------------------------------------------------------------
  int h=(int)(hop0-hop1*rneg*rneg*rneg);
  int hop_min=1;
@@ -229,6 +230,9 @@ if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
  unsigned char hop_value=0;//data from cache
  unsigned char hop_number=4;// final assigned hop
 
+ unsigned char prev_color=128;
+ //char * result_signal=result_YUV[y];
+ //char * result_hops=hops[y];
 //this bucle is for only one scanline, excluding first pixel
 //----------------------------------------------------------
 for (int x=0;x<width;x++)
@@ -239,25 +243,31 @@ for (int x=0;x<width;x++)
 
   if (y>0 && x>0 && x!=width-1){
 
-    //if (last_small_hop) hop0=(result_YUV[y][x-1]+result_YUV[y-1][x]+result_YUV[y-1][x+1])/3;
-    //else
-    //hop0=(result_YUV[y][x-1]+result_YUV[y-1][x+1])>>1;
-
+    /*if (last_small_hop) hop0=(result_YUV[y][x-1]+result_YUV[y-1][x]+result_YUV[y-1][x+1])/3;
+    else
+    hop0=(result_YUV[y][x-1]+result_YUV[y-1][x+1])>>1;
+*/
     //prediccion izquierda para scanlines salteadas
-    hop0=result_YUV[y][x-1];
+    //hop0=result_YUV[y][x-1];
+    hop0=prev_color;
     }
   else if (x==0 && y>0){
-    //este caso no se debe dar, pues codificaremos a partir de 2ndo pixel. el primero va en 1 byte en cada scanline
-    hop0=result_YUV[y-1][0];
+    //este caso vamos a usar 128 y no el pixel superior ya que debido al orden de scanlines no lo tendremos
+
+    //hop0=result_YUV[y-1][0];
+    hop0=127;
+
     }
   else if (y>0){//x=width-1
     //hop0=(result_YUV[y][x-1]+result_YUV[y-1][x])>>1;
 
     //prediccion izquierda para scanlines salteadas
-    hop0=result_YUV[y][x-1];
+    //hop0=result_YUV[y][x-1];
+    hop0=prev_color;
     }
   else{ //y=0
-    hop0=result_YUV[y][x-1];
+    //hop0=result_YUV[y][x-1];
+    hop0=prev_color;
    }
 
   //-------------------------PHASE 2: HOPS COMPUTATION-------------------------------
@@ -368,8 +378,16 @@ for (int x=0;x<width;x++)
   phase3:
 
   result_YUV[y][x]=quantum;
-  hops[y][x]=hop_number;
+  //*result_signal=quantum; result_signal++;
 
+  prev_color=quantum;
+
+  hops[y][x]=hop_number;
+  //*result_hops=hop_number; result_hops++;
+
+
+
+  //hops_type[hop_number]++;
 
   //------------- PHASE 4: h1 logic  --------------------------
   if (hop_number>5 || hop_number<3) small_hop=false; //true by default
