@@ -262,8 +262,8 @@ load_frame("../LHE_Pi/img/lena.bmp");
 //load_frame("../LHE_Pi/img/cascada.bmp");
 printf("frame loaded  \n");
 
-pppx=4;
-pppy=4;
+pppx=2;
+pppy=2;
 init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int rc1, rc2, rc3, rc4;

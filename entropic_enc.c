@@ -32,6 +32,7 @@ void init_entropic_enc(){
 
 //#define LENGTH 32
 #define LENGTH sizeof(mask)*CHAR_BIT
+int prueba = 0;
 
 int entropic_enc(unsigned char **hops, unsigned long int **bits, unsigned int line, unsigned int line_width) {
 
@@ -42,7 +43,7 @@ int entropic_enc(unsigned char **hops, unsigned long int **bits, unsigned int li
 	unsigned char condition_length_ini = 7;
 	unsigned int bytes = 0;
 	unsigned int moves = 1;
-	unsigned long int mask = 1UL << sizeof(mask)*(CHAR_BIT-1);
+	unsigned long int mask = 1UL << (sizeof(mask)*(CHAR_BIT))-1;
 	unsigned long int aux = 0;
 	int hop = 0;
 

@@ -230,7 +230,7 @@ if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
  unsigned char hop_value=0;//data from cache
  unsigned char hop_number=4;// final assigned hop
 
- unsigned char prev_color=128;
+ //unsigned char prev_color=128;
  //char * result_signal=result_YUV[y];
  //char * result_hops=hops[y];
 //this bucle is for only one scanline, excluding first pixel
@@ -249,7 +249,7 @@ for (int x=0;x<width;x++)
 */
     //prediccion izquierda para scanlines salteadas
     //hop0=result_YUV[y][x-1];
-    hop0=prev_color;
+    hop0=quantum;//prev_color;
     }
   else if (x==0 && y>0){
     //este caso vamos a usar 128 y no el pixel superior ya que debido al orden de scanlines no lo tendremos
@@ -263,11 +263,11 @@ for (int x=0;x<width;x++)
 
     //prediccion izquierda para scanlines salteadas
     //hop0=result_YUV[y][x-1];
-    hop0=prev_color;
+    hop0=quantum;//prev_color;
     }
   else{ //y=0
     //hop0=result_YUV[y][x-1];
-    hop0=prev_color;
+    hop0=quantum;//prev_color;
    }
 
   //-------------------------PHASE 2: HOPS COMPUTATION-------------------------------
@@ -280,7 +280,7 @@ for (int x=0;x<width;x++)
 
   //positive hops
   //--------------
-  if (oc>hop0)
+  if (oc>=hop0)
     {
      //case hop0 (most frequent)
      //--------------------------
@@ -380,7 +380,7 @@ for (int x=0;x<width;x++)
   result_YUV[y][x]=quantum;
   //*result_signal=quantum; result_signal++;
 
-  prev_color=quantum;
+  //prev_color=quantum;
 
   hops[y][x]=hop_number;
   //*result_hops=hop_number; result_hops++;
@@ -392,11 +392,12 @@ for (int x=0;x<width;x++)
   //------------- PHASE 4: h1 logic  --------------------------
   if (hop_number>5 || hop_number<3) small_hop=false; //true by default
 
-  if (small_hop==true && last_small_hop==true){
+  //if (small_hop==true && last_small_hop==true){
+ if (small_hop * last_small_hop){
 
     if (h1>min_h1) h1--;
     }
-  else{
+  else {
 
     h1=max_h1;
     }
