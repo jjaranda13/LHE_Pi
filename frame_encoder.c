@@ -315,7 +315,7 @@ secs = timeval_diff(&t_fin, &t_ini)/veces;
 */
 printf("quantizing...\n");
 gettimeofday(&t_ini, NULL);
-int veces=1000;
+int veces=1;
 
 // la funcion quantize_frame no usa threads
 for (int i=0;i<veces;i++)
@@ -390,6 +390,25 @@ secs = timeval_diff(&t_fin, &t_ini)/veces;
 
 
 printf("quantization in %.16g ms\n", secs * 1000.0);
+int umbral=56;//56;
+/*
+0  -> 29.23 db
+28 -> 29.4 db
+48 -> 29.51 db
+56 -> 29.53
+64 -> 29.46
+80 -> 29.38 db
+128 -> 29.29 db
+255 -> 29.23 db
+*/
+printf("expanding...\n");
+scale_epx(result_Y,height_down_Y,width_down_Y,scaled_Y,umbral);
+scale_epx(result_U,height_down_UV,width_down_UV,scaled_U,umbral);
+scale_epx(result_V,height_down_UV,width_down_UV,scaled_V,umbral);
+save_frame("../LHE_Pi/img/LHE_scaled.bmp", width_orig_Y, height_orig_Y, 1, scaled_Y,scaled_U,scaled_V);
+
+
+
 int bits = 0;
 int pixels = 512*512;
 gettimeofday(&t_ini, NULL);
@@ -450,8 +469,14 @@ save_frame("../LHE_Pi/img/orig_down_YUV.bmp", width_down_Y, height_down_Y, 3, or
 
 printf("save done \n");
 
-double psnr=(float) get_PSNR_Y();
-printf("psnr: %2.2f dB\n ",psnr);
+double psnr= get_PSNR_Y();
+printf("psnr: %f dB\n ",psnr);
+
+
+int psnr2= get_PSNR_Y_universal(scaled_Y,orig_Y, height_orig_Y,width_orig_Y);
+printf("psnr scaled: %f dB\n ",(float)psnr2/100);
+//printf ("psnr dentro=%f \n",pnsr);
+
 
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

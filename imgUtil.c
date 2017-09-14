@@ -29,6 +29,13 @@ http://aras-p.info/blog/2007/05/28/now-thats-what-i-call-a-good-api-stb_image/
 https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
 */
 
+void init_imageUtil()
+{
+
+
+}
+
+
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void load_frame(char const* filename)
 {
@@ -75,8 +82,8 @@ for (int line=0;line < height;line++)
 }
 else if (channels==3){
 
-yuv2rgb(orig_down_Y,orig_down_U,orig_down_V,3,width_down_Y,height_down_Y, data);
-
+//yuv2rgb(orig_down_Y,orig_down_U,orig_down_V,3,width_down_Y,height_down_Y, data);
+yuv2rgb(Y,U,V,3,width_down_Y,height_down_Y, data);
 
 }
 int i = stbi_write_bmp(filename, width, height, channels, data);
@@ -104,11 +111,24 @@ orig_Y=malloc(height_orig_Y*sizeof (unsigned char *));
 orig_U=malloc(height_orig_UV*sizeof (unsigned char *));
 orig_V=malloc(height_orig_UV*sizeof (unsigned char *));
 
+
+scaled_Y=malloc(height_orig_Y*sizeof (unsigned char *));
+scaled_U=malloc(height_orig_UV*sizeof (unsigned char *));
+scaled_V=malloc(height_orig_UV*sizeof (unsigned char *));
+
+
+
 for (int i=0;i<height_orig_Y;i++)
 {
 orig_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
 orig_U[i]=malloc(width_orig_UV* sizeof (unsigned char));
 orig_V[i]=malloc(width_orig_UV* sizeof (unsigned char));
+
+scaled_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
+scaled_U[i]=malloc(width_orig_UV* sizeof (unsigned char));
+scaled_V[i]=malloc(width_orig_UV* sizeof (unsigned char));
+
+
 
 }
 
@@ -194,6 +214,56 @@ V'= (R-Y)*0.713
  }
  //printf("   \n");
 }
+
+}
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void scale_epx(unsigned char **channel, int c_height, int c_width, unsigned char **epx,int umbral)
+{
+
+int a,b,c,d,t,e1,e2,e3,e4,p,count;
+t=umbral;
+printf ("pppx %d pppy %d", pppx,pppy);
+
+for (int y=0;y<c_height;y++)
+{
+  for (int x=0;x<c_width;x++)
+  {
+   p=channel[y][x];
+   e1=p;
+   e2=p;
+   e3=p;
+   e4=p;
+
+
+   if (y>0 && x>0 && x<c_width-1 && y<c_height-1)
+   {
+   a=channel[y-1][x];
+   b=channel[y][x+1];
+   c=channel[y][x-1];
+   d=channel[y+1][x];
+
+   count=0;
+   if (abs(c-a)<t) {e1=(a+c)>>1;count++;}
+   if (abs(b-a)<t) {e2=(a+b)>>1;count++;}
+   if (abs(d-c)<t) {e3=(d+c)>>1;count++;}
+   if (abs(b-d)<t) {e4=(b+d)>>1;count++;}
+
+   //salva el disparo!
+   if (count>=3) {
+
+   e1=p;e2=p;e3=p;e4=p;}
+    }
+   epx[y*pppy][x*pppx]=e1;
+   epx[y*pppy][x*pppx+1]=e2;
+   epx[y*pppy+1][x*pppx]=e3;
+   epx[y*pppy+1][x*pppx+1]=e4;
+
+
+
+
+  }
+}
+
 
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -325,7 +395,7 @@ double dif=0;
 for (int y=0;y<height_down_Y;y++){
   for (int x=0;x<width_down_Y;x++){
 
-  dif=orig_down_Y[y][x]- result_Y[y][x];
+  dif=(double)orig_down_Y[y][x]- (double)result_Y[y][x];
   total+=dif*dif;
   }
   }
@@ -333,13 +403,38 @@ for (int y=0;y<height_down_Y;y++){
   //printf ("mse=%f \n",mse);
 double psnr=10.0*log10((255.0*255.0)/mse);
  //printf ("psnr=%f \n",psnr);
+
 return psnr;
+
 
 
 
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+int get_PSNR_Y_universal(unsigned char **result_Y, unsigned char ** orig_Y, int height , int width)
+{
+double total=0;
+double dif=0;
+for (int y=0;y<height;y++){
+  for (int x=0;x<width;x++){
+
+  dif=(double)orig_Y[y][x]- (double)result_Y[y][x];
+  total+=dif*dif;
+  }
+  }
+  double  mse=total/((double)height*(double)width);
+  //printf ("mse=%f \n",mse);
+double psnr=10.0*log10((255.0*255.0)/mse);
+  //printf ("psnr dentro=%f \n",psnr);
+ //printf ("mse dentro=%f \n",mse);
+ int k = (int) (psnr*100);
+return k;
+
+
+
+}
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void yuv2rgbX(unsigned char **y, unsigned char **u, unsigned char ** v, int channels, int width, int height, char *data) {
 

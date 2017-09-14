@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 
+int cosa;
 bool DEBUG;//for execution in debug mode and show more traces
 
 bool downsampler_initialized;
@@ -89,3 +90,14 @@ unsigned char *huff_table;
 unsigned char rlc_length, condition_length;
 
 unsigned int hops_type[9];
+
+
+
+
+// imagen expandida por EPX ( o por lo que sea)
+// su ancho y alto va a ser el de la imagen original. no hace falta explicitarlos
+unsigned char **scaled_Y;
+unsigned char **scaled_U;
+unsigned char **scaled_V;
+
+
