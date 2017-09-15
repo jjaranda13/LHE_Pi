@@ -45,7 +45,10 @@ for (int hop0=0;hop0<=255;hop0++){
  //ratio for possitive hops. max ratio=3 min ratio=1
  float maxr=2.7f;
  float minr=1.0f;//si fuese menor, un hop mayor podria ser inferior a un hop menor
- const float range=0.8f; //con rango menor da mas calidad pero se gastan mas bits!!!!
+
+ // le ponemos rango 0.55 y no rango 8 para que acierte mejor, ya que la prediccion
+ // que vamos a usar es mala (pixel izquierdo) y asi mejora
+ const float range=0.55f;//0.55f;//0.8f; //con rango menor da mas calidad pero se gastan mas bits!!!!
  double rpos = min (maxr,pow(range*((255-hop0)/hop1),1.0f/3.0f));
  rpos=max(minr,rpos);
 

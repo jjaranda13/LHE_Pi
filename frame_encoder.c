@@ -258,8 +258,9 @@ double secs;
 
 
 load_frame("../LHE_Pi/img/lena.bmp");
+//load_frame("../LHE_Pi/img/mario.bmp");
 //load_frame("../LHE_Pi/img/baboon.bmp");
-//load_frame("../LHE_Pi/img/cascada.bmp");
+//load_frame("../LHE_Pi/img/mountain.bmp");
 printf("frame loaded  \n");
 
 pppx=2;
@@ -276,7 +277,8 @@ rgb2yuv(rgb,rgb_channels);
 //ahora esta en YUV444
 
 
-yuv2rgbX(orig_Y,orig_U,orig_V,3,width_orig_Y,height_orig_Y, rgb);
+//yuv444_torgb(orig_Y,orig_U,orig_V,3,width_orig_Y,height_orig_Y, rgb);
+yuv2rgb(orig_Y,orig_U,orig_V,3,width_orig_Y,height_orig_Y, rgb,444);
 
 int i = stbi_write_bmp("../LHE_Pi/img/orig_RGB_YUV_RGB.bmp", width_orig_Y, height_orig_Y, 3, rgb);
 
@@ -390,7 +392,7 @@ secs = timeval_diff(&t_fin, &t_ini)/veces;
 
 
 printf("quantization in %.16g ms\n", secs * 1000.0);
-int umbral=56;//56;
+int umbral=38;//56;//56;
 /*
 0  -> 29.23 db
 28 -> 29.4 db
@@ -401,13 +403,23 @@ int umbral=56;//56;
 128 -> 29.29 db
 255 -> 29.23 db
 */
+
+//if (pppx==2 && pppy==2){
+{
 printf("expanding...\n");
 scale_epx(result_Y,height_down_Y,width_down_Y,scaled_Y,umbral);
 scale_epx(result_U,height_down_UV,width_down_UV,scaled_U,umbral);
 scale_epx(result_V,height_down_UV,width_down_UV,scaled_V,umbral);
-save_frame("../LHE_Pi/img/LHE_scaled.bmp", width_orig_Y, height_orig_Y, 1, scaled_Y,scaled_U,scaled_V);
 
+/*
+scale_epx(scaled_Y2,height_down_Y*2,width_down_Y*2,scaled_Y,umbral);
+scale_epx(scaled_U2,height_down_UV*2,width_down_UV*2,scaled_U,umbral);
+scale_epx(scaled_V2,height_down_UV*2,width_down_UV*2,scaled_V,umbral);
+*/
 
+save_frame("../LHE_Pi/img/LHE_scaled_BN.bmp", width_orig_Y, height_orig_Y, 1, scaled_Y,scaled_U,scaled_V,420);
+save_frame("../LHE_Pi/img/LHE_scaled_color.bmp", width_orig_Y, height_orig_Y, 3, scaled_Y,scaled_U,scaled_V,420);
+}
 
 int bits = 0;
 int pixels = 512*512;
@@ -454,28 +466,29 @@ printf("streamer in %.16g ms\n", secs * 1000.0);*/
 //char *data;
 //yuv2rgb(orig_down_Y,orig_down_U,orig_down_V,1,width_down_Y,height_down_Y, data);
 
-save_frame("../LHE_Pi/img/orig_Y.bmp", width_orig_Y, height_orig_Y, 1, orig_Y,orig_down_U,orig_down_V);
-save_frame("../LHE_Pi/img/orig_U.bmp", width_orig_Y, height_orig_Y, 1, orig_U,orig_down_U,orig_down_V);
-save_frame("../LHE_Pi/img/orig_V.bmp", width_orig_Y, height_orig_Y, 1, orig_V,orig_down_U,orig_down_V);
+save_frame("../LHE_Pi/img/orig_Y.bmp", width_orig_Y, height_orig_Y, 1, orig_Y,orig_down_U,orig_down_V,420);
+save_frame("../LHE_Pi/img/orig_U.bmp", width_orig_Y, height_orig_Y, 1, orig_U,orig_down_U,orig_down_V,420);
+save_frame("../LHE_Pi/img/orig_V.bmp", width_orig_Y, height_orig_Y, 1, orig_V,orig_down_U,orig_down_V,420);
 
-save_frame("../LHE_Pi/img/orig_down_Y.bmp", width_down_Y, height_down_Y, 1, orig_down_Y,orig_down_U,orig_down_V);
-save_frame("../LHE_Pi/img/orig_down_U.bmp", width_down_UV, height_down_UV, 1, orig_down_U,orig_down_U,orig_down_V);
-save_frame("../LHE_Pi/img/orig_down_V.bmp", width_down_UV, height_down_UV, 1, orig_down_V,orig_down_U,orig_down_V);
+save_frame("../LHE_Pi/img/orig_down_Y.bmp", width_down_Y, height_down_Y, 1, orig_down_Y,orig_down_U,orig_down_V,420);
+save_frame("../LHE_Pi/img/orig_down_U.bmp", width_down_UV, height_down_UV, 1, orig_down_U,orig_down_U,orig_down_V,420);
+save_frame("../LHE_Pi/img/orig_down_V.bmp", width_down_UV, height_down_UV, 1, orig_down_V,orig_down_U,orig_down_V,420);
 
 
-save_frame("../LHE_Pi/img/LHE_Y.bmp", width_down_Y, height_down_Y, 1, result_Y,result_U,result_V);
-save_frame("../LHE_Pi/img/LHE_YUV.bmp", width_down_Y, height_down_Y, 3, result_Y,result_U,result_V);
-save_frame("../LHE_Pi/img/orig_down_YUV.bmp", width_down_Y, height_down_Y, 3, orig_down_Y,orig_down_U,orig_down_V);
+save_frame("../LHE_Pi/img/LHE_Y.bmp", width_down_Y, height_down_Y, 1, result_Y,result_U,result_V,420);
+save_frame("../LHE_Pi/img/LHE_YUV.bmp", width_down_Y, height_down_Y, 3, result_Y,result_U,result_V,420);
+save_frame("../LHE_Pi/img/orig_down_YUV.bmp", width_down_Y, height_down_Y, 3, orig_down_Y,orig_down_U,orig_down_V,420);
 
 printf("save done \n");
 
-double psnr= get_PSNR_Y();
-printf("psnr: %f dB\n ",psnr);
+double psnr= get_PSNR_Y(result_Y,orig_down_Y,height_down_Y,width_down_Y);
+printf("psnr down: %2.2f dB\n ",psnr);
 
-
-int psnr2= get_PSNR_Y_universal(scaled_Y,orig_Y, height_orig_Y,width_orig_Y);
-printf("psnr scaled: %f dB\n ",(float)psnr2/100);
-//printf ("psnr dentro=%f \n",pnsr);
+//if (pppx==2 && pppy==2)
+{
+double psnr2= get_PSNR_Y(scaled_Y,orig_Y, height_orig_Y,width_orig_Y);
+printf("psnr scaled: %2.2f dB\n ",(float)psnr2);
+}
 
 
 }

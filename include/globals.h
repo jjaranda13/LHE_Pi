@@ -100,4 +100,7 @@ unsigned char **scaled_Y;
 unsigned char **scaled_U;
 unsigned char **scaled_V;
 
+unsigned char **scaled_Y2;
+unsigned char **scaled_U2;
+unsigned char **scaled_V2;
 

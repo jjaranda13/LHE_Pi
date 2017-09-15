@@ -23,7 +23,7 @@ void init_downsampler()
 {
 if (DEBUG) printf("ENTER in init_downsampler...\n");
 if (DEBUG) printf ("pppx=%d, pppy=%d \n ",pppx,pppy);
-
+printf ("%d %d", width_orig_Y,height_orig_Y);
 width_down_Y=width_orig_Y/pppx;
 height_down_Y=height_orig_Y/pppy;
 

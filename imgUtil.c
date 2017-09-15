@@ -44,6 +44,9 @@ if (DEBUG) printf("ENTER in load frame...\n");
 rgb=stbi_load(filename, &width_orig_Y, &height_orig_Y, &rgb_channels, 0);
 
 
+//width_orig_Y=640;
+//height_orig_Y=480;
+//rgb_channels=3;
 
 if (DEBUG) printf(" image loaded. width=%d, height=%d",width_orig_Y,height_orig_Y);
 
@@ -54,7 +57,7 @@ if (DEBUG) printf(" image loaded. width=%d, height=%d",width_orig_Y,height_orig_
 printf("exit from load_frame...\n");
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void save_frame(char const* filename, int width, int height, int channels, unsigned char **Y,unsigned char **U, unsigned char **V)
+void save_frame(char const* filename, int width, int height, int channels, unsigned char **Y,unsigned char **U, unsigned char **V, int yuvmodel)
 {
 if (DEBUG) printf("ENTER in save frame...\n");
 //int i = stbi_write_bmp("../LHE_Pi/img/kk.bmp", width_orig, height_orig, channels, orig_Y);
@@ -83,7 +86,8 @@ for (int line=0;line < height;line++)
 else if (channels==3){
 
 //yuv2rgb(orig_down_Y,orig_down_U,orig_down_V,3,width_down_Y,height_down_Y, data);
-yuv2rgb(Y,U,V,3,width_down_Y,height_down_Y, data);
+//yuv2rgb(Y,U,V,3,width_down_Y,height_down_Y, data,yuvmodel);
+yuv2rgb(Y,U,V,3,width,height, data,yuvmodel);
 
 }
 int i = stbi_write_bmp(filename, width, height, channels, data);
@@ -112,10 +116,13 @@ orig_U=malloc(height_orig_UV*sizeof (unsigned char *));
 orig_V=malloc(height_orig_UV*sizeof (unsigned char *));
 
 
+scaled_Y2=malloc(height_orig_Y*sizeof (unsigned char *));
+scaled_U2=malloc(height_orig_UV*sizeof (unsigned char *));
+scaled_V2=malloc(height_orig_UV*sizeof (unsigned char *));
+
 scaled_Y=malloc(height_orig_Y*sizeof (unsigned char *));
 scaled_U=malloc(height_orig_UV*sizeof (unsigned char *));
 scaled_V=malloc(height_orig_UV*sizeof (unsigned char *));
-
 
 
 for (int i=0;i<height_orig_Y;i++)
@@ -124,10 +131,13 @@ orig_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
 orig_U[i]=malloc(width_orig_UV* sizeof (unsigned char));
 orig_V[i]=malloc(width_orig_UV* sizeof (unsigned char));
 
+scaled_Y2[i]=malloc(width_orig_Y* sizeof (unsigned char));
+scaled_U2[i]=malloc(width_orig_UV* sizeof (unsigned char));
+scaled_V2[i]=malloc(width_orig_UV* sizeof (unsigned char));
+
 scaled_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
 scaled_U[i]=malloc(width_orig_UV* sizeof (unsigned char));
 scaled_V[i]=malloc(width_orig_UV* sizeof (unsigned char));
-
 
 
 }
@@ -224,6 +234,10 @@ int a,b,c,d,t,e1,e2,e3,e4,p,count;
 t=umbral;
 printf ("pppx %d pppy %d", pppx,pppy);
 
+
+int pppx=2;
+int pppy=2;
+
 for (int y=0;y<c_height;y++)
 {
   for (int x=0;x<c_width;x++)
@@ -243,10 +257,18 @@ for (int y=0;y<c_height;y++)
    d=channel[y+1][x];
 
    count=0;
+/*
    if (abs(c-a)<t) {e1=(a+c)>>1;count++;}
    if (abs(b-a)<t) {e2=(a+b)>>1;count++;}
    if (abs(d-c)<t) {e3=(d+c)>>1;count++;}
    if (abs(b-d)<t) {e4=(b+d)>>1;count++;}
+*/
+
+
+ if (abs(c-a)<t) {e1=(a+c+p)/3;count++;}
+   if (abs(b-a)<t) {e2=(a+b+p)/3;count++;}
+   if (abs(d-c)<t) {e3=(d+c+p)/3;count++;}
+   if (abs(b-d)<t) {e4=(b+d+p)/3;count++;}
 
    //salva el disparo!
    if (count>=3) {
@@ -267,7 +289,7 @@ for (int y=0;y<c_height;y++)
 
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void yuv2rgb(unsigned char **y, unsigned char **u, unsigned char ** v, int channels, int width, int height, char *data) {
+void yuv2rgb(unsigned char **y, unsigned char **u, unsigned char ** v, int channels, int width, int height, char *data,int yuvmodel) {
 
 //if (DEBUG)
 printf ("ENTER in yuv2rgb()...\n");
@@ -305,11 +327,23 @@ https://en.wikipedia.org/wiki/YCbCr
    B = Y + 2.032U
 */
 int pix=0;
+
+int divisorUV=2;
+if (yuvmodel==444) {
+divisorUV=1;
+}
+else if (yuvmodel==420) {
+divisorUV=2;
+}
+else{
+printf ("yuv2rgb() :model YUV incorrect  %d", yuvmodel);
+exit(0);
+}
 for (int x=0;x<width*3;x+=3)//channels)
   {
   int yp=y[line][pix];
-  int up=u[line/2][pix/2];
-  int vp=v[line/2][pix/2];
+  int up=u[line/divisorUV][pix/divisorUV];
+  int vp=v[line/divisorUV][pix/divisorUV];
 
   //up=(up-128)*2+128;
   //vp=(vp-128)*2+128;
@@ -387,33 +421,13 @@ printf(" 3 channels done \n");
 
 
 }
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-double get_PSNR_Y()
-{
-double total=0;
-double dif=0;
-for (int y=0;y<height_down_Y;y++){
-  for (int x=0;x<width_down_Y;x++){
-
-  dif=(double)orig_down_Y[y][x]- (double)result_Y[y][x];
-  total+=dif*dif;
-  }
-  }
-  double mse=total/(double)(height_down_Y*width_down_Y);
-  //printf ("mse=%f \n",mse);
-double psnr=10.0*log10((255.0*255.0)/mse);
- //printf ("psnr=%f \n",psnr);
-
-return psnr;
 
 
 
-
-}
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-int get_PSNR_Y_universal(unsigned char **result_Y, unsigned char ** orig_Y, int height , int width)
+int get_PSNR_Y(unsigned char **result_Y, unsigned char ** orig_Y, int height , int width)
 {
 double total=0;
 double dif=0;
@@ -436,7 +450,7 @@ return k;
 
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void yuv2rgbX(unsigned char **y, unsigned char **u, unsigned char ** v, int channels, int width, int height, char *data) {
+void yuv444_torgb(unsigned char **y, unsigned char **u, unsigned char ** v, int channels, int width, int height, char *data) {
 
 for (int line=0;line<height;line++)
 {
