@@ -58,3 +58,43 @@ for (int x=0;x<width;x++)
   }
 
 }
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void VideoSimulation()
+{
+//esta funcion simula todo el proceso de captura, down, imagen diferencial, quantization y entropic
+//ojo, esta version es monothread
+//implica los bufferes adicionales: last_frame_player, result1, result2,
+//podremos medir el bitrate con varios tamaños de GOP, incluyendo GOP=1 (solo imagenes I)
+
+
+
+//carga la imagen lena
+
+
+//downsample lena
+
+
+// bucle infinito de movimiento
+
+
+   //mueve en circulos la imagen down
+
+
+   //if i% GOP =0 target = imagen down;
+
+   //else target =calcula imagen diferencial (imagedown, lastframe_player)
+
+   // vamos a tener dos resultados para alternar frames
+   // if i%2 result1=lhe (target); last_frame_encoded=result1
+   //else result2=lhe(target); last_frame_encoded=result2
+
+   //if i% gop=0 last_frame_player=copy(last_frame_encoded)
+   //else  last_frame_player=last_frame_player+last_frame_encoded
+
+   //save image , incluyendo en el nombre %i
+
+   //entropic: la ponemos para medir el bitrate
+
+   //streamer; esta parte podemos quitarla para la prueba de concepto
+
+}
