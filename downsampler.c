@@ -17,13 +17,13 @@
 #include <stdbool.h>
 #include "include/globals.h"
 #include "include/downsampler.h"
+#include "include/downsampler_simd.h"
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void init_downsampler()
 {
 if (DEBUG) printf("ENTER in init_downsampler...\n");
 if (DEBUG) printf ("pppx=%d, pppy=%d \n ",pppx,pppy);
-printf ("%d %d", width_orig_Y,height_orig_Y);
 width_down_Y=width_orig_Y/pppx;
 height_down_Y=height_orig_Y/pppy;
 
@@ -112,6 +112,63 @@ int data=0;
         }
 
 	if (DEBUG) printf("EXIT in down_avg_horiz...%d \n",line);
+
+}
+
+void down_avg_horiz_simd(unsigned char **orig,int width_orig, unsigned char** dest,int line,int pppx,int pppy) {
+
+if (DEBUG) printf("ENTER in down_avg_horiz_simd...%d \n",line);
+
+int line_down=line/pppy ;//linea correspondiente a la original en la imagen downsampleada (apuntada por *dest)
+
+int pix=0;
+
+int data=0;
+int i =0;
+
+	switch(pppx){
+		case 2:
+			for (; i < width_orig-31; i+=32) {
+                _downsample_by2_simd(orig[line]+i,dest[line_down]+pix);
+				pix+=16;
+                //printf("k");
+			}
+			for(;i < width_orig; i+=2) {
+                dest[line_down][pix] = (orig[line][i]+orig[line][i+1]) >>1;
+			}
+            break;
+
+
+        case 4:
+
+			for (int i=0; i < width_orig; i+=4) {
+				dest[line_down][pix] = (orig[line][i]+orig[line][i+1]+orig[line][i+2]+orig[line][i+3]) >>2; //px[1]+px[2]/2
+                //data=(orig[line][i]+orig[line][i+1]+orig[line][i+2]+orig[line][i+3]) >>2;
+                //dest[line_down][pix] = orig[line][i];//data;
+				pix++;
+				//printf("k");
+			}
+			break;
+
+		default:
+
+		    for (int i=0; i < width_orig; i+=pppx) {
+		    	//dest[line_down][i] = 0;
+		    	data=0;
+		    	for (int j=0; j < pppx; j++) {
+					//dest[line_down][pix] += orig[line][(i+j)];
+					data+=orig[line][(i+j)];
+		    	}
+	    		//dest[line_down][pix]=dest[line_down][i]/pppx;
+
+	    		dest[line_down][pix]=(unsigned char) (data/pppx);
+	    		pix++;
+	    		//printf("k");
+			}
+			break;
+        }
+
+	if (DEBUG) printf("EXIT in down_avg_horizsimd...%d \n",line);
 
 }
 
