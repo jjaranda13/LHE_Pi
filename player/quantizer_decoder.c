@@ -8,16 +8,16 @@
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
-uint8_t* init_quantizer_decoder(int width) {
-
+uint8_t* allocate_quantizer_decoder(int width) {
 	return (uint8_t *)malloc(sizeof(uint8_t)*width);
 }
-void close_quantizer_decoder(uint8_t* component_value) {
+
+void free_quantizer_decoder(uint8_t* component_value) {
 	free(component_value);
 	return;
 }
 
-void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int width, uint8_t original_component) {
+void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_lenght) {
 
 	int  h1 = START_H1;
 	uint8_t actual_hop = 0;
@@ -25,7 +25,7 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int width,
 	bool last_small_hop = true;
 	double positive_ratio, negative_ratio;
 
-	for (int x = 0; x < width; x++) {
+	for (int x = 0; x < hops_lenght; x++) {
 		actual_hop = hops[x];
 		if (x == 0) {
 			hop0 = 127;

@@ -154,16 +154,8 @@ void test_entropic_decoder() {
 	printf("INFO: add_hop0 tests completed\n");
 
 	//Test init_entropic_decoder
-	uint8_t * pointer = init_entropic_decoder(2,3,5);
-	if (rlc_length_ini != 2 || condition_length_ini != 3) {
-		printf("ERROR: init_entropic_decoder test 1 FAILED\n");
-		return;
-	}
-	pointer = init_entropic_decoder(4, 7, 5);
-	if (rlc_length_ini != 4 || condition_length_ini != 7) {
-		printf("ERROR: init_entropic_decoder test 2 FAILED\n");
-		return;
-	}
+	uint8_t * pointer = init_entropic_decoder(2);
+
 	printf("INFO: init_entropic_decoder tests completed\n");
 	//Test decode_line_entropic
 

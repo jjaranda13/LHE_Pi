@@ -32,7 +32,7 @@
 * hops0. In case it is equal to 4 the maximum number of hop0 that will be coded 
 * as RLE is 16. It defaults to 4. It MUST be equal to the one used at the coder
 */
-int rlc_length_ini; // = 4;
+#define RLC_LENGHT_INI 4
 
 /**
 * @brief Number of consecutive Hop0 required to start RLE
@@ -40,7 +40,7 @@ int rlc_length_ini; // = 4;
 * This parameter specifies the number consecutive hop0 that will activate the RLE mode.
 * Defaults to 7. It must te equal to the value used in the coder.
 */
-int condition_length_ini;// = 7;
+#define CONDITION_LENGHT_INI 7
 
 /**
 * @brief List of symbols for the hops.
@@ -58,21 +58,19 @@ int condition_length_ini;// = 7;
 #define HOP_P4 8
 
 /**
-* @brief Starts the entropic and allocates memory.
+* @brief Allocates memory for the entropic decoded
 *
-* @param rlc_length Value to set in rlc_length_ini. if input is negative defaults to 4.
-* @param condition_length Value to set in condition_length_ini. If input is negative defaults to 7.
 * @param width Width of the image. It is used to allocate memory.
 * @return hops Pointer to the memory allocated to be used in hops
 */
-uint8_t* init_entropic_decoder(int rlc_length, int condition_length, int width);
+uint8_t* allocate_entropic_decoder(int width);
 
 /**
 * @brief Frees the memory of the hops array.
 *
 * @param hops Pointer to the memory allocated for hops.
 */
-void close_entropic_decoder(uint8_t* hops);
+void free_entropic_decoder(uint8_t* hops);
 
 
 /**
@@ -87,7 +85,7 @@ void close_entropic_decoder(uint8_t* hops);
 * @param bytes_lenght The lenght in bytes of the bitstream. 
 * @return Lenght of the array of hops returned. it should be img_width minus one.
 
-* @warning hops pointer must be allocated before callign thsi function.
+* @warning hops pointer must be allocated before calling this function.
 */
 int decode_line_entropic( uint8_t * bits , uint8_t * hops,  int bytes_lenght);
 

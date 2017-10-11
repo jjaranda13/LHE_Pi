@@ -12,27 +12,19 @@
 #include <stdlib.h>
 #include "entropic_decoder.h"
 
-uint8_t* init_entropic_decoder(int rlc_length, int condition_length, int width) {
-
-	if (rlc_length > 0) {
-		rlc_length_ini = rlc_length;
-	}
-	if (condition_length > 0) {
-		condition_length_ini = condition_length;
-	}
-	return (uint8_t *)malloc(sizeof(uint8_t)* (width-1));
+uint8_t* allocate_entropic_decoder(int width) {
+	return (uint8_t *)malloc(sizeof(uint8_t)* width);
 }
 
-void close_entropic_decoder(uint8_t* hops) {
-
+void free_entropic_decoder(uint8_t* hops) {
 	free(hops);
 }
 
 int decode_line_entropic(uint8_t * bits, uint8_t * hops, int bytes_lenght) {
 	int h0_counter = 0, hops_counter = 0, zeros_since_a_one = 0, hop = 0, 
 		data = 0, rlc_number =0;
-	int condition_length = condition_length_ini;
-	int rlc_lenght = rlc_length_ini;
+	int condition_length = CONDITION_LENGHT_INI;
+	int rlc_lenght = RLC_LENGHT_INI;
 	bool is_last_rlc = false;
 	
 	for (int i = 0; i < bytes_lenght << 3; i++) {
@@ -50,7 +42,7 @@ int decode_line_entropic(uint8_t * bits, uint8_t * hops, int bytes_lenght) {
 				if ((h0_counter >= condition_length)) {
 					rlc_number = get_rlc_number(bits, &i, bytes_lenght,rlc_lenght);
 					add_hop0(hops, &hops_counter, rlc_number);
-					rlc_lenght = rlc_length_ini + 1;
+					rlc_lenght = RLC_LENGHT_INI + 1;
 					is_last_rlc = true;
 					h0_counter = 0;
 				}
@@ -62,7 +54,7 @@ int decode_line_entropic(uint8_t * bits, uint8_t * hops, int bytes_lenght) {
 			}
 			else {
 				h0_counter = 0;
-				rlc_lenght = rlc_length_ini;
+				rlc_lenght = RLC_LENGHT_INI;
 				is_last_rlc = false;
 			}
 		}
