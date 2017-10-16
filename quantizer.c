@@ -281,6 +281,7 @@ for (int x=0;x<width;x++)
 
   if (emin>h1/2){ //only enter in computation if emin>threshold
 
+
   //positive hops
   //--------------
   if (oc>=hop0)

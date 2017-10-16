@@ -404,9 +404,9 @@ int umbral=38;//56;//56;
 255 -> 29.23 db
 */
 
-//if (pppx==2 && pppy==2){
-{
-printf("expanding...\n");
+if (pppx==2 && pppy==2){
+
+printf("expanding EPX...\n");
 scale_epx(result_Y,height_down_Y,width_down_Y,scaled_Y,umbral);
 scale_epx(result_U,height_down_UV,width_down_UV,scaled_U,umbral);
 scale_epx(result_V,height_down_UV,width_down_UV,scaled_V,umbral);

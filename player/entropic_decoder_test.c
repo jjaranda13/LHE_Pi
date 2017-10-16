@@ -1,4 +1,3 @@
-#pragma once
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -155,15 +154,18 @@ void test_entropic_decoder() {
 	printf("INFO: add_hop0 tests completed\n");
 
 	//Test decode_line_entropic
-
+/*
 	// HOP_P1-HOP_N2-HOP_N4-hop_0-HOP_P3-HOP_N3-HOP_0-HOP_0-HOP_P2-HOP_0-HOP_N4-HOP_N1-HOP_N2-HOP_P1
-	// 01000010 0000001 000001 00000011 10001100 00000000 10000101
-	uint8_t bits_array[7] = { 66,1,1,3,140,0,133 };
-	uint8_t syms_array[13] = { 15,15,15,15,15,15,15,15,15,15,15,15,15 };
-	uint8_t expected_syms_array[13] = { HOP_P1,HOP_N2,HOP_P4,HOP_P3,HOP_N3,HOP_0,HOP_0,HOP_P2,HOP_0,HOP_N4,HOP_N1,HOP_N2,HOP_P1 };
-	int length_obtained = decode_line_entropic(bits_array, syms_array, 13);
+	// 5     2       0       4    7      1     4   4   6    4   0       3   2     5
+	// 01   00001  00000000  1  000001 0000001 1   1  0001  1  00000000 001 00001 01
+	// 01000010 00000001 00000100 00001110 00110000 00000010 00010100
+	// 66        1           4        14      48         2       20
+	uint8_t bits_array[7] = { 66,1,4,14,48,2,20 };
+	uint8_t syms_array[14] = { 15 };
+	uint8_t expected_syms_array[14] = { HOP_P1,HOP_N2,HOP_N4,HOP_0,HOP_P3,HOP_N3,HOP_0,HOP_0,HOP_P2,HOP_0,HOP_N4,HOP_N1,HOP_N2,HOP_P1 };
+	int length_obtained = decode_line_entropic(bits_array, syms_array, 7);
 
-	if (length_obtained != 13 ) {
+	if (length_obtained != 14 ) {
 		printf("ERROR: decode_line_entropic test 1 FAILED %d\n", length_obtained);
 		return;
 	}
@@ -173,15 +175,16 @@ void test_entropic_decoder() {
 			return;
 		}
 	}
-
+*/
 	// HOP_0-HOP_0-HOP_0-HOP_0-HOP_0-HOP_0-HOP_0-{ 0 1110(x14 HOP_0)}-HOP_P1-HOP_0-HOP_0-HOP_0-HOP_0-HOP_O-HOP_0-HOP_0-{111 000000 (X77 HOP_O)}-HOP_N1-HOP_0-HOP_0-HOP_0-HOP_0-HOP_O-HOP_0-HOP_0-{1 000001 (X32 HOP_0)}
+	// 7x 4 - 14x 4 - 5 - 7x 4 - 77x 4 - 3 - 7x 4 - 16x 4
 	// 11111110 11100111 11111111 00000000 11111111 10000010
 	uint8_t bits_array_2[6] = { 254,231,255,0,255, 130};
-	uint8_t syms_array_2[146] = { 15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15};
-	uint8_t expected_syms_array_2[146] = { HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_P1,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_N1, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0 };
-	length_obtained = decode_line_entropic(bits_array_2, syms_array_2, 6);
+	uint8_t syms_array_2[130] = { 15 };
+	uint8_t expected_syms_array_2[130] = { HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_P1,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_N1, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0,HOP_0, HOP_0,HOP_0 };
+	int length_obtained = decode_line_entropic(bits_array_2, syms_array_2, 6);
 
-	if (length_obtained != 146) {
+	if (length_obtained != 130) {
 		printf("ERROR: decode_line_entropic test 3 FAILED - %d\n",length_obtained);
 		return;
 	}
@@ -194,4 +197,10 @@ void test_entropic_decoder() {
 
 	printf("INFO: decode_line_entropic tests completed\nINFO: entropic_decoder_test completed sucessfully\n");
 	return;
+}
+
+int main(int argc, char *argv[]) {
+
+	test_entropic_decoder();
+
 }
