@@ -29,26 +29,37 @@ int decode_line_entropic(uint8_t * bits, uint8_t * hops, int bytes_lenght) {
 	
 	for (int i = 0; i < bytes_lenght << 3; i++) {
 		data = get_data(bits, i, bytes_lenght);
-		if (data == 0) {
-			zeros_since_a_one++;
-		}
-		else if (data == 1) {
+		
+		if (data == 1 || zeros_since_a_one==8) {
 			hop = get_hop(zeros_since_a_one);
+			printf("Hop detectado: %d\n", hop);
 			hops[hops_counter] = hop;
 			hops_counter++;
 			zeros_since_a_one = 0;
 			if (hop == HOP_0) {
 				h0_counter++;
-				if ((h0_counter >= condition_length)) {
-					rlc_number = get_rlc_number(bits, &i, bytes_lenght,rlc_lenght);
-					add_hop0(hops, &hops_counter, rlc_number);
+				if ((h0_counter == condition_length)) {
+					i++;
+					if (get_data(bits, i, bytes_lenght) == 0) {
+						rlc_number = get_rlc_number(bits, &i, bytes_lenght, rlc_lenght);
+						add_hop0(hops, &hops_counter, rlc_number);
+					}
+					else {
+						add_hop0(hops, &hops_counter, (1<<rlc_lenght)-1);
+					}
 					rlc_lenght = RLC_LENGHT_INI + 1;
 					is_last_rlc = true;
 					h0_counter = 0;
 				}
 				else if (is_last_rlc) {
-					rlc_number = get_rlc_number(bits, &i, bytes_lenght, rlc_lenght);
-					add_hop0(hops, &hops_counter, rlc_number);
+					i++;
+					if (get_data(bits, i, bytes_lenght) == 0) {
+						rlc_number = get_rlc_number(bits, &i, bytes_lenght, rlc_lenght);
+						add_hop0(hops, &hops_counter, rlc_number);
+					}
+					else {
+						add_hop0(hops, &hops_counter, (1 << rlc_lenght) - 1);
+					}
 					h0_counter = 0;
 				}
 			}
@@ -57,6 +68,9 @@ int decode_line_entropic(uint8_t * bits, uint8_t * hops, int bytes_lenght) {
 				rlc_lenght = RLC_LENGHT_INI;
 				is_last_rlc = false;
 			}
+		}
+		else if (data == 0) {
+			zeros_since_a_one++;
 		}
 		else {
 			printf("Error tried to acces a mmeory out of range. A segfault could have been trown\n");
