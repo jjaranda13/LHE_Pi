@@ -58,11 +58,22 @@ unsigned char down_quant_sem;
 //comunicacion down y quantizer
 unsigned char *down_quant_flag;
 
+pthread_mutex_t *down_quant_mutex_Y;
+pthread_cond_t *down_quant_cv_Y;
+pthread_mutex_t *down_quant_mutex_UV;
+pthread_cond_t *down_quant_cv_UV;
+
 //Flags de lineas ent y stream
 unsigned char *ent_stream_flag;
 
 //Semaforo para comprobar la transmision y enviar si se puede
 unsigned char ent_stream_sem;
+
+pthread_mutex_t *ent_stream_mutex_Y;
+pthread_cond_t *ent_stream_cv_Y;
+pthread_mutex_t *ent_stream_mutex_UV;
+pthread_cond_t *ent_stream_cv_UV;
+
 
 //arays de imagen delta para video diferencial
 unsigned char **delta_Y;
