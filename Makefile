@@ -25,9 +25,10 @@ DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 #STB_image = ./stb_image/stb_image.h ./stb_image/stb_image_write.h
 
 #objects (files to compile), be careful to add only one file with main 
-#_OBJ= downsampler.o entropic_enc.o frame_encoder.o imgUtil.o quantizer.o camera_downsampler_test.o camera_reader.o quantizer_tester.o
+#_OBJ= downsampler.o entropic_enc.o frame_encoder.o imgUtil.o quantizer.o camera_downsampler_test.o camera_reader.o quantizer_tester.o video_encoder.o
 
-_OBJ= downsampler.o entropic_enc.o frame_encoder.o imgUtil.o quantizer.o camera_reader.o quantizer_tester.o
+_OBJ= downsampler.o entropic_enc.o frame_encoder.o imgUtil.o quantizer.o camera_reader.o  video_encoder.o
+#quantizer_tester.o
 
 
 #OBJ is concat ODIR and object file names
