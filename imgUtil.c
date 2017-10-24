@@ -43,6 +43,10 @@ if (DEBUG) printf("ENTER in load frame...\n");
 //orig_Y=stbi_load("../LHE_Pi/img/lena.bmp", &width_orig, &height_orig, &channels, 0);
 rgb=stbi_load(filename, &width_orig_Y, &height_orig_Y, &rgb_channels, 0);
 
+/* esto es nuevo*/
+//width_orig_UV=width_orig_Y;
+//height_orig_UV=height_orig_Y;
+
 
 //width_orig_Y=640;
 //height_orig_Y=480;
@@ -116,9 +120,6 @@ orig_U=malloc(height_orig_UV*sizeof (unsigned char *));
 orig_V=malloc(height_orig_UV*sizeof (unsigned char *));
 
 
-scaled_Y2=malloc(height_orig_Y*sizeof (unsigned char *));
-scaled_U2=malloc(height_orig_UV*sizeof (unsigned char *));
-scaled_V2=malloc(height_orig_UV*sizeof (unsigned char *));
 
 scaled_Y=malloc(height_orig_Y*sizeof (unsigned char *));
 scaled_U=malloc(height_orig_UV*sizeof (unsigned char *));
@@ -131,9 +132,7 @@ orig_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
 orig_U[i]=malloc(width_orig_UV* sizeof (unsigned char));
 orig_V[i]=malloc(width_orig_UV* sizeof (unsigned char));
 
-scaled_Y2[i]=malloc(width_orig_Y* sizeof (unsigned char));
-scaled_U2[i]=malloc(width_orig_UV* sizeof (unsigned char));
-scaled_V2[i]=malloc(width_orig_UV* sizeof (unsigned char));
+
 
 scaled_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
 scaled_U[i]=malloc(width_orig_UV* sizeof (unsigned char));
@@ -226,6 +225,52 @@ V'= (R-Y)*0.713
 }
 
 }
+void scale_epx_H2(unsigned char **channel, int height, int down_width, unsigned char **epx,int umbral)
+{
+int e1,e2,p,a,b,c,d,count;
+
+int t=umbral;
+  for (int y=0;y<height;y++)
+    {
+    for (int x=0;x<down_width;x++)
+      {
+       p=channel[y][x];
+       e1=p;
+       e2=p;
+
+       if (y>0 && x>0 && x<down_width-1 && y<height-1)
+        {
+        a=channel[y-1][x];
+        b=channel[y][x+1];
+        c=channel[y][x-1];
+        d=channel[y+1][x];
+        count=0;
+        if ((abs(c-a)<t) && (abs(c-d)<t)) {e1=(c+p)/2;count++;}
+        else if (abs(c-a)<t)  {e1=(a+p+c)/3;count++;}
+        else if (abs(c-d)<t)  {e1=(d+p+c)/3;count++;}
+
+        if ((abs(b-a)<t) && (abs(b-d)<t)) {e2=(b+p)/2;count++;}
+        else if (abs(b-a)<t)  {e2=(a+p+b)/3;count++;}
+        else if (abs(b-d)<t)  {e2=(d+p+b)/3;count++;}
+
+
+        //salva el disparo
+        if (count==2) {
+         e1=p;e2=p;
+         }
+
+        }
+
+
+       epx[y][x*2]=e1;
+       epx[y][x*2+1]=e2;
+
+
+      }
+    }
+
+}
+
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void scale_epx(unsigned char **channel, int c_height, int c_width, unsigned char **epx,int umbral)
 {

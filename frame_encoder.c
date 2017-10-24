@@ -198,6 +198,38 @@ quantize_subframe(i, 8);
 }
 
 }
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+void quantize_target_normal(unsigned char **res_Y,unsigned char **res_U,unsigned char **res_V)
+
+{
+ if (DEBUG) printf ("ENTER in quantizeframe()... \n");
+
+    //luminance
+    //--------------------
+
+	for (int line=0;line<height_down_Y;line++){
+      quantize_scanline( target_Y,  line, width_down_Y, hops_Y,res_Y);
+	}
+
+
+
+	//chrominance components
+	//-----------------------
+	for (int line=0;line<height_down_UV;line++){
+      quantize_scanline( target_U,  line, width_down_UV, hops_U,res_U);
+      quantize_scanline( target_V,  line, width_down_UV, hops_V,res_V);
+	}
+
+
+/*
+     int total_bits=0;
+    for (int i = 0;i <9; i++){
+        printf("hop %d: %d \n", i, hops_type[i]);
+
+        }*/
+}
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //aunque esta funcion no la vamos a usar, la he querido dejar por si la queremos para pruebas
 //cuantiza una imagen siguiendo un orden secuencial en las lineas
@@ -229,6 +261,22 @@ void quantize_frame_normal()
         printf("hop %d: %d \n", i, hops_type[i]);
 
         }*/
+}
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+int entropic_enc_frame_normal()
+{
+
+int bits = 0;
+for (int line=0;line<height_down_Y;line++) {
+    bits += entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+	//tam_bytes_Y[line]=entropic_enc(hops_Y, bits_Y, line, width_down_Y); //Consultar: Esta instruccion es para que el streamer sepa cuantos bits ocupa cada linea
+}
+for (int line=0;line<height_down_UV;line++) {
+    bits+=entropic_enc(hops_U, bits_U, line, width_down_UV);
+    bits+=entropic_enc(hops_V, bits_V, line, width_down_UV);
+}
+printf("bits: %d \n", bits);
+return bits;
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //esta funcion es la que debe ejecutar cualquier thread
@@ -404,9 +452,9 @@ int umbral=38;//56;//56;
 255 -> 29.23 db
 */
 
-//if (pppx==2 && pppy==2){
-{
-printf("expanding...\n");
+if (pppx==2 && pppy==2){
+
+printf("expanding EPX...\n");
 scale_epx(result_Y,height_down_Y,width_down_Y,scaled_Y,umbral);
 scale_epx(result_U,height_down_UV,width_down_UV,scaled_U,umbral);
 scale_epx(result_V,height_down_UV,width_down_UV,scaled_V,umbral);

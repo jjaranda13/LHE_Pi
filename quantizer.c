@@ -113,10 +113,17 @@ result_U=malloc(height_down_UV*sizeof (unsigned char *));
 result_V=malloc(height_down_UV*sizeof (unsigned char *));
 
 
+result2_Y=malloc(height_down_Y*sizeof (unsigned char *));
+result2_U=malloc(height_down_UV*sizeof (unsigned char *));
+result2_V=malloc(height_down_UV*sizeof (unsigned char *));
+
+
+
 for (int i=0;i<height_down_Y;i++)
   {
   hops_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
   result_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
+  result2_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
   }
 
 for (int i=0;i<height_down_UV;i++)
@@ -128,6 +135,10 @@ for (int i=0;i<height_down_UV;i++)
 
   result_U[i]=malloc(width_down_UV* sizeof (unsigned char));
   result_V[i]=malloc(width_down_UV* sizeof (unsigned char));
+
+  result2_U[i]=malloc(width_down_UV* sizeof (unsigned char));
+  result2_V[i]=malloc(width_down_UV* sizeof (unsigned char));
+
   }
 
 ent_stream_flag=malloc(height_down_Y* sizeof (unsigned char));
@@ -180,6 +191,7 @@ for (int i=0;i<height_down_Y;i++)
   {
   free (hops_Y[i]);
   free(result_Y[i]);
+  free(result2_Y[i]);
   }
 
 for (int i=0;i<height_down_UV;i++)
@@ -191,6 +203,10 @@ for (int i=0;i<height_down_UV;i++)
 
   free (result_U[i]);
   free (result_V[i]);
+
+  free (result2_U[i]);
+  free (result2_V[i]);
+
   }
 
 free (hops_Y);
@@ -200,6 +216,11 @@ free (hops_V);
 free (result_Y);
 free(result_U);
 free(result_V);
+
+free (result2_Y);
+free(result2_U);
+free(result2_V);
+
 
 
 quantizer_initialized=false;
@@ -280,6 +301,7 @@ for (int x=0;x<width;x++)
   emin=oc-hop0 ; if (emin<0) emin=-emin;//minimum error achieved
 
   if (emin>h1/2){ //only enter in computation if emin>threshold
+
 
   //positive hops
   //--------------

@@ -111,7 +111,33 @@ unsigned char **scaled_Y;
 unsigned char **scaled_U;
 unsigned char **scaled_V;
 
-unsigned char **scaled_Y2;
-unsigned char **scaled_U2;
-unsigned char **scaled_V2;
+
+
+
+// bufferes necesarios para video
+//------------------------------------
+//arrays downsampleados. necesitan ser alocados
+unsigned char **last_frame_player_Y;
+unsigned char **last_frame_player_U;
+unsigned char **last_frame_player_V;
+
+//esto es solo un puntero. no hay que alocarlo. apunta a orig_down o a dif
+unsigned char **target_Y;
+unsigned char **target_U;
+unsigned char **target_V;
+
+
+
+//arays de imagen resultante tras cuantizar (necesaria para la prediccion de LHE) y para calcular el siguiente delta
+//hay que allocarlos
+unsigned char **result2_Y;
+unsigned char **result2_U;
+unsigned char **result2_V;
+
+//esto es solo un puntero conmutador, no hay que alocarlo. apunta a result o a result2
+unsigned char **frame_encoded_Y;
+unsigned char **frame_encoded_U;
+unsigned char **frame_encoded_V;
+
+
 
