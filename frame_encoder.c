@@ -17,6 +17,9 @@ struct thread_info
 int start;
 int separation;
 int num_threads;
+unsigned char **res_Y;
+unsigned char **res_U;
+unsigned char **res_V;
 };
 
 double timeval_diff(struct timeval *a, struct timeval *b) {
@@ -175,6 +178,59 @@ while (line<height_down_UV)
 
 }
 
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+//         quantize_subframe
+//         -----------------
+// esta funcion procesa un grupo de lineas separadas entre si
+// comienza en start_line, despues start_line+8, despues start_line+16 etc
+// y asi hasta que llega al final de la imagen. en ese momento se detiene,
+// la formula general es line= (start_line+N*separacion)
+// en caso de tener varios threads, la separacion debe ser separacion * num_threads. de este modo
+// el th1 ejecutara la linea 0, luego la 8*3=24, luego la 48, etc
+// el th2 ejeutara la linea 8 , luego la 32, luego la 56 etc
+// el th3 ejecutara la linea 16, luego la 40, luego la 64 etc
+//------------------------------------------------------------
+void quantize_target_subframe(int start_line,int separacion,unsigned char **res_Y,unsigned char **res_U,unsigned char **res_V)
+{
+int line=start_line;
+int n=0;
+
+// primeramente procesamos todas las lineas de luminancia
+// -----------------------------------------------------
+// empezamos por la start_line
+
+while (line<height_down_Y)
+{
+  //componentes luminancia
+  if (DEBUG)  printf("line %d \n",line);
+  quantize_scanline( target_Y,  line, width_down_Y, hops_Y,res_Y);
+
+  n++;
+  line=(start_line+n*separacion);
+
+}
+
+
+// tras la luminancia, procesamos las de crominancia. son menos
+// ------------------------------------------------------------
+line=start_line;
+n=0;
+
+line=(start_line+n*8)% height_down_UV;
+while (line<height_down_UV)
+{
+  if (DEBUG) printf("line UV %d \n",line);
+  quantize_scanline( target_U,  line, width_down_UV, hops_U,res_U);
+  quantize_scanline( target_V,  line, width_down_UV, hops_V,res_V);
+  n++;
+  line=(start_line+n*separacion) ;
+}
+
+
+}
+
+
+
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //esta funcion es un ejemplo muy sencillo, solo valido para un thread
 //si tenemos 2 threads y queremos una separacion de lineas 8
@@ -198,7 +254,52 @@ quantize_subframe(i, 8);
 }
 
 }
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+void quantize_target(unsigned char **res_Y,unsigned char **res_U,unsigned char **res_V){
+
+int rc1, rc2, rc3, rc4;
+pthread_t thread1, thread2, thread3, thread4;
+
+struct thread_info *tinfo;
+int num_threads=2;
+tinfo = calloc(num_threads, sizeof(struct thread_info));
+
+
+tinfo[0].start=0;
+tinfo[0].separation=16;
+tinfo[0].num_threads=2;
+tinfo[0].res_Y=res_Y;
+tinfo[0].res_U=res_U;
+tinfo[0].res_V=res_V;
+
+tinfo[1].start=8;
+tinfo[1].separation=16;
+tinfo[1].num_threads=2;
+tinfo[1].res_Y=res_Y;
+tinfo[1].res_U=res_U;
+tinfo[1].res_V=res_V;
+
+if ((rc1=pthread_create(&thread1, NULL, &mytask_target, &tinfo[0]))){
+    printf("Thread creation failed.");
+    }
+
+if ((rc2=pthread_create(&thread2, NULL, &mytask_target, &tinfo[1]))){
+    printf("Thread creation failed.");
+    }
+
+pthread_join(thread1, NULL);
+pthread_join(thread2, NULL);
+
+
+/*
+ for (int i=0;i<8;i++)
+{
+if (DEBUG) printf ("processing lines starting at %d \n",i);
+quantize_target_subframe(i, 8,res_Y,res_U,res_V);
+}
+*/
+}
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 void quantize_target_normal(unsigned char **res_Y,unsigned char **res_U,unsigned char **res_V)
@@ -292,6 +393,23 @@ int invocaciones=separation/num_threads;
 
 for (int i=start; i< start+invocaciones;i++){
   quantize_subframe(i,separation);
+}
+
+}
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+void *mytask_target(void *arg)
+{
+struct thread_info *tinfo = arg;
+//(int start, int separation, int num_threads)
+int start=tinfo->start;
+int separation=tinfo->separation;
+int num_threads=tinfo->num_threads;
+
+int invocaciones=separation/num_threads;
+
+for (int i=start; i< start+invocaciones;i++){
+  quantize_target_subframe(i,separation,tinfo->res_Y,tinfo->res_U,tinfo->res_V);
 }
 
 }
@@ -577,6 +695,48 @@ printf ("pppx:%d , pppy:%d, pppxUV:%d, pppyUV:%d \n",pppx,pppy,pppxUV,pppyUV);
 for (int line=0;line<height_orig_UV;line+=pppyUV){
 	down_avg_horiz(orig_U,width_orig_UV,orig_down_U,line,pppxUV,pppyUV);
 	down_avg_horiz(orig_V,width_orig_UV,orig_down_V,line,pppxUV,pppyUV);
+	}
+
+
+}
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void downsample_frame_simd( int pppx,  int pppy)
+{
+/// this function downsample a frame scanline by scanline, in the same order than quantizer
+/// scanlines are processed in order module 8
+//if (DEBUG)
+printf("ENTER in downsample_frame...\n");
+
+// downsampler initialization, if needed
+//---------------------------------------
+if (downsampler_initialized==false) init_downsampler();
+
+
+//downsampling by scanlines
+//--------------------------
+//esto debe ser coregido para que recorra las scanlines salteadas modulo 8
+printf ("downsampling...");
+// component Y
+// ------------
+//si pppy==2 entonces solo se downsamplean la mitad de las lineas, logicamente
+for (int line=0;line<height_orig_Y;line+=pppy){
+	//down_avg_horiz(orig_Y,width_orig_Y,orig_down_Y,line,pppx,pppy);
+	down_avg_horiz_simd(orig_Y,width_orig_Y,orig_down_Y,line,pppx,pppy);
+	}
+
+
+
+// components U, V
+// ----------------
+// si pppy=2 se downsamplean una de cada 4 lineas
+int ratio_height_YUV=height_orig_Y/height_orig_UV;
+int ratio_width_YUV=width_orig_Y/width_orig_UV;
+int pppyUV=2*pppy/ratio_height_YUV;
+int pppxUV=2*pppx/ratio_width_YUV;
+printf ("pppx:%d , pppy:%d, pppxUV:%d, pppyUV:%d \n",pppx,pppy,pppxUV,pppyUV);
+for (int line=0;line<height_orig_UV;line+=pppyUV){
+	down_avg_horiz_simd(orig_U,width_orig_UV,orig_down_U,line,pppxUV,pppyUV);
+	down_avg_horiz_simd(orig_V,width_orig_UV,orig_down_V,line,pppxUV,pppyUV);
 	}
 
 

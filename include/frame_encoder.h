@@ -10,3 +10,4 @@ void *quantize_one();
 void *quantize_two();
 void *quantize_three();
 void *quantize_four();
+void *mytask_target(void *arg);

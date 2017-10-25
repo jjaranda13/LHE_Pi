@@ -30,15 +30,46 @@
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
+
+
+void init_videoencoder(){
+
+//inicializacion del puntero frame_encoded, donde se guardará la señal de lo que se cuantiza
+frame_encoded_Y=result_Y;
+frame_encoded_U=result_U;
+frame_encoded_V=result_V;
+
+//aloca delta
+
+delta_Y = malloc(height_down_Y*sizeof(unsigned char *));
+
+	for (int i=0;i<height_down_Y;i++) {
+		delta_Y[i]=malloc(width_down_Y*sizeof (unsigned char));
+	}
+
+	delta_U = malloc(height_down_UV*sizeof(unsigned char *));
+
+	for (int i=0;i<height_down_UV;i++) {
+		delta_U[i]=malloc(width_down_UV*sizeof (unsigned char));
+	}
+
+	delta_V = malloc(height_down_UV*sizeof(unsigned char *));
+
+	for (int i=0;i<height_down_UV;i++) {
+		delta_V[i]=malloc(width_down_UV*sizeof (unsigned char));
+	}
+
+
+}
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void suma_delta_scanline(int y, int width,unsigned char ** last_frame_player, unsigned char ** delta_scan)
+void suma_delta_scanline(int y, int width,unsigned char ** last_frame_player, unsigned char ** delta_scan, unsigned char ** frame_encoded)
 {
 //suma last_frame_player+ frame_encoded
 int delta, signo,tramo1,tramo2;
 int image;
 
-tramo1 = 52;
-tramo2 = 204;
+tramo1 = 52;//115;
+tramo2 = 204;//140;
 
   for (int x = 0; x < width; x++) {
   delta=delta_scan[y][x];
@@ -76,7 +107,8 @@ tramo2 = 204;
                 image = 1;
             }
 
-            last_frame_player[y][x] = image;
+//            last_frame_player[y][x] = image;
+            frame_encoded[y][x] = image;
 
 
         }// for x
@@ -88,12 +120,12 @@ tramo2 = 204;
 void suma_delta(){
 
 for (int y=0;y<height_down_Y;y++){
-  suma_delta_scanline(y, width_down_Y, last_frame_player_Y,delta_Y);
+  suma_delta_scanline(y, width_down_Y, last_frame_player_Y,frame_encoded_Y, frame_encoded_Y);
 }
 
 for (int y=0;y<height_down_UV;y++){
-  suma_delta_scanline(y, width_down_UV, last_frame_player_U, delta_U);
-  suma_delta_scanline(y, width_down_UV, last_frame_player_V, delta_V);
+  suma_delta_scanline(y, width_down_UV, last_frame_player_U, frame_encoded_U, frame_encoded_U);
+  suma_delta_scanline(y, width_down_UV, last_frame_player_V, frame_encoded_V, frame_encoded_V);
 
 
 }
@@ -103,18 +135,18 @@ for (int y=0;y<height_down_UV;y++){
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void compute_delta(){
-
+printf ("enter in compute_delta() \n");
 for (int y=0;y<height_down_Y;y++){
   compute_delta_scanline(y, width_down_Y, orig_down_Y, last_frame_player_Y,delta_Y);
 }
-
+printf (" Y ok\n");
 for (int y=0;y<height_down_UV;y++){
   compute_delta_scanline(y, width_down_UV, orig_down_U, last_frame_player_U, delta_U);
   compute_delta_scanline(y, width_down_UV, orig_down_V, last_frame_player_V, delta_V);
 
 
 }
-
+printf ("exit from compute_delta() \n");
 
 }
 
@@ -127,8 +159,8 @@ void compute_delta_scanline(int y, int width, unsigned char ** orig_down, unsign
 //calcula delta=orig_down-last_frame_player
 int delta_int, signo,tramo1,tramo2;
 
-tramo1 = 52;
-tramo2 = 204;
+tramo1 =52;//115;//52;
+tramo2 =204;//140;// 204;
 
 		for (int x = 0; x < width; x++) {
 
@@ -245,6 +277,10 @@ void VideoSimulation()
  //podremos medir el bitrate con varios tamaños de GOP, incluyendo GOP=1 (solo imagenes I)
 
   DEBUG=false;
+  struct timeval t_ini, t_fin;
+  double secs;
+
+
     downsampler_initialized=false;
     quantizer_initialized=false;
 
@@ -254,13 +290,12 @@ printf("frame loaded  \n");
 
 //int encoder
 pppx=2;
-pppy=1;
+pppy=2;
 init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
-//init_videoencoder(width_orig_Y,height_orig_Y,pppx,pppy);
+init_videoencoder();
 //incluir en init videoencoder
-frame_encoded_Y=result_Y;
-frame_encoded_U=result_U;
-frame_encoded_V=result_V;
+
+
 
 rgb2yuv(rgb,rgb_channels);
 printf("encoder initialized  \n");
@@ -271,12 +306,13 @@ char buffer[100];
 // -----------------------------
 int total_frames=10;
 int total_bits=0;
-for (int i=1 ; i<total_frames;i++){
+for (int i=0 ; i<total_frames;i++){
 
 
   //desplazamos la imagen original
   // ------------------------------
   shift_frame(4,4);
+  //shift_frame(0,0);
   printf(" shifted %02d \n",i);
 
   //salvamos el fotograma original
@@ -286,7 +322,14 @@ for (int i=1 ; i<total_frames;i++){
 
   //downsampling del frame original
   // ------------------------------
-  downsample_frame(pppx,pppy);
+  gettimeofday(&t_ini, NULL);
+  // esta funcion hace downsampling sin SIMD
+  //downsample_frame(pppx,pppy);
+  downsample_frame_simd(pppx,pppy);
+
+  gettimeofday(&t_fin, NULL);
+  secs = timeval_diff(&t_fin, &t_ini);
+  printf(" downsampling: %.16g ms\n", secs * 1000.0);
   sprintf(buffer,"../LHE_Pi/video/lena_down%02d.bmp",i);
   save_frame(buffer, width_down_Y, height_down_Y, 1, orig_down_Y,orig_down_U,orig_down_V,420);
 
@@ -295,26 +338,48 @@ for (int i=1 ; i<total_frames;i++){
   //identificamos el target a codificar
   // -----------------------------------
   printf(" selecting target \n",i);
-  gop_size=1000;
+  gop_size=100;
+
   if (gop_size==0 || i%gop_size==0) {
     // frame I
+    printf ("frame I \n");
     target_Y=orig_down_Y;
     target_U=orig_down_U;
     target_V=orig_down_V;
+
   }
   else {
     //frame P.
+    printf ("frame P \n");
+    gettimeofday(&t_ini, NULL);
     compute_delta();
+    gettimeofday(&t_fin, NULL);
+    secs = timeval_diff(&t_fin, &t_ini);
+    printf(" delta computation: %.16g ms\n", secs * 1000.0);
+
     target_Y=delta_Y;
     target_U=delta_U;
     target_V=delta_V;
   }
+  sprintf(buffer,"../LHE_Pi/video/lena_delta%02d.bmp",i);
+  save_frame(buffer, width_down_Y, height_down_Y, 3, delta_Y,delta_U,delta_V,420);
 
 
   //ahora codificamos el target
   // ------------------------------
   printf(" cuantizando... \n",i);
-  quantize_target_normal(frame_encoded_Y,frame_encoded_U,frame_encoded_V);
+  gettimeofday(&t_ini, NULL);
+    // esta funcion hace las scanlines de arriba a abajo
+       quantize_target_normal(frame_encoded_Y,frame_encoded_U,frame_encoded_V);
+    // esta funcion cuantiza en orden salteado , robusto a perdidas
+   // for (int k=0 ;k<100;k++){
+    //quantize_target(frame_encoded_Y,frame_encoded_U,frame_encoded_V);
+    //}
+  gettimeofday(&t_fin, NULL);
+  secs = timeval_diff(&t_fin, &t_ini);
+  printf(" LHE quantization: %.16g ms\n", secs * 1000.0);
+
+
 
   printf(" cuantizado ok \n",i);
   sprintf(buffer,"../LHE_Pi/video/lena_quant%02d.bmp",i);
@@ -322,7 +387,12 @@ for (int i=1 ; i<total_frames;i++){
 
   // ahora entra el entropico para codificar los hops
   // -----------------------------------------------
+  gettimeofday(&t_ini, NULL);
   total_bits+=entropic_enc_frame_normal();
+  gettimeofday(&t_fin, NULL);
+  secs = timeval_diff(&t_fin, &t_ini);
+  printf(" entropic encoding: %.16g ms\n", secs * 1000.0);
+
 
 
   //calculamos la imagen del player
@@ -335,17 +405,14 @@ for (int i=1 ; i<total_frames;i++){
   }
   else {
     //frame P.
-   suma_delta();
+    gettimeofday(&t_ini, NULL);
+    suma_delta();
+    gettimeofday(&t_fin, NULL);
+    secs = timeval_diff(&t_fin, &t_ini);
+    printf(" delta sumation: %.16g ms\n", secs * 1000.0);
   }
+printf(" calculando player image \n",i);
 
-
-  //expansion del last_frame_player. solo experimental. no se hace en encoder
-  int umbral=38;
-  scale_epx_H2(last_frame_player_Y,height_down_Y,width_down_Y,scaled_Y,umbral);
-  scale_epx_H2(last_frame_player_U,height_down_UV,width_down_UV,scaled_U,umbral);
-  scale_epx_H2(last_frame_player_V,height_down_UV,width_down_UV,scaled_V,umbral);
-  sprintf(buffer,"../LHE_Pi/video/lena_scaled%02d.bmp",i);
-  save_frame(buffer, width_orig_Y, height_orig_Y, 3, scaled_Y,scaled_U,scaled_V,420);
 
   //conmutamos el frame_encoded para el siguiente frame
   // --------------------------------------------------
@@ -353,11 +420,44 @@ for (int i=1 ; i<total_frames;i++){
     frame_encoded_Y=result2_Y;
     frame_encoded_U=result2_U;
     frame_encoded_V=result2_V;
+
+    last_frame_player_Y=result_Y;
+    last_frame_player_U=result_U;
+    last_frame_player_V=result_V;
+
     }else {
     frame_encoded_Y=result_Y;
     frame_encoded_U=result_U;
     frame_encoded_V=result_V;
+
+    last_frame_player_Y=result2_Y;
+    last_frame_player_U=result2_U;
+    last_frame_player_V=result2_V;
+
   }
+sprintf(buffer,"../LHE_Pi/video/lena_player_down%02d.bmp",i);
+  save_frame(buffer, width_down_Y, height_down_Y, 3, last_frame_player_Y,last_frame_player_U,last_frame_player_V,420);
+
+
+  //expansion del last_frame_player. solo experimental. no se hace en encoder
+  int umbral=38;
+  if (pppy==1) {
+  scale_epx_H2(last_frame_player_Y,height_down_Y,width_down_Y,scaled_Y,umbral);
+  scale_epx_H2(last_frame_player_U,height_down_UV,width_down_UV,scaled_U,umbral);
+  scale_epx_H2(last_frame_player_V,height_down_UV,width_down_UV,scaled_V,umbral);
+  }
+  else {
+  scale_epx(last_frame_player_Y,height_down_Y,width_down_Y,scaled_Y,umbral);
+  scale_epx(last_frame_player_U,height_down_UV,width_down_UV,scaled_U,umbral);
+  scale_epx(last_frame_player_V,height_down_UV,width_down_UV,scaled_V,umbral);
+
+
+  }
+
+  sprintf(buffer,"../LHE_Pi/video/lena_scaled%02d.bmp",i);
+  save_frame(buffer, width_orig_Y, height_orig_Y, 3, scaled_Y,scaled_U,scaled_V,420);
+
+
   double psnr2= get_PSNR_Y(scaled_Y,orig_Y, height_orig_Y,width_orig_Y);
   printf("psnr scaled: %2.2f dB\n ",(float)psnr2);
 

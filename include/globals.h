@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdint.h>
 #include <pthread.h>
 
 int cosa;
@@ -90,9 +91,9 @@ unsigned char **result_Y;
 unsigned char **result_U;
 unsigned char **result_V;
 
-unsigned long int **bits_Y;
-unsigned long int **bits_U;
-unsigned long int **bits_V;
+uint8_t **bits_Y;
+uint8_t **bits_U;
+uint8_t **bits_V;
 
 //Tamaño en bytes que ocupa cada linea tras la cuantizacion
 int *tam_bytes_Y;

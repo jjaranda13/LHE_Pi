@@ -3,6 +3,7 @@
 #include <sys/time.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <stdint.h>
 #include "include/globals.h"
 #include "include/entropic_enc.h"
 
@@ -10,234 +11,192 @@
 
 void init_entropic_enc(){
 
-	bits_Y = malloc(height_down_Y*sizeof(unsigned char *));
+	bits_Y = malloc(height_down_Y*sizeof(uint8_t *));
 
 	for (int i=0;i<height_down_Y;i++) {
-		bits_Y[i]=malloc(width_down_Y*sizeof (unsigned char));
+		bits_Y[i]=malloc(width_down_Y*sizeof (uint8_t));
 	}
 
-	bits_U = malloc(height_down_UV*sizeof(unsigned char *));
+	bits_U = malloc(height_down_UV*sizeof(uint8_t *));
 
 	for (int i=0;i<height_down_UV;i++) {
-		bits_U[i]=malloc(width_down_UV*sizeof (unsigned char));
+		bits_U[i]=malloc(width_down_UV*sizeof (uint8_t));
 	}
 
-	bits_V = malloc(height_down_UV*sizeof(unsigned char *));
+	bits_V = malloc(height_down_UV*sizeof(uint8_t *));
 
 	for (int i=0;i<height_down_UV;i++) {
-		bits_V[i]=malloc(width_down_UV*sizeof (unsigned char));
+		bits_V[i]=malloc(width_down_UV*sizeof (uint8_t));
 	}
+
 	//tam_bytes_Y=malloc(height_down_Y*sizeof(unsigned char *));//Para inicializar esta variable que se usa en el streamer
 } //Los pongo a cero porque voy a usar máscaras para colocar los bits
 
 //#define LENGTH 32
 #define LENGTH sizeof(mask)*CHAR_BIT
+#define HUFFMAN 0
+#define RLC1    1
+#define RLC2    2
 int prueba = 0;
 
-int entropic_enc(unsigned char **hops, unsigned long int **bits, unsigned int line, unsigned int line_width) {
 
-	unsigned int counterh0 = 0;
-	unsigned char mode = 0; //0=huffman, 1=rlc
-	unsigned char mode_prev = mode;
-	unsigned char rlc_length_ini = 4;
-	unsigned char condition_length_ini = 7;
-	unsigned int bytes = 0;
-	unsigned int moves = 1;
-	unsigned long int mask = 1UL << (sizeof(mask)*(CHAR_BIT))-1;
-	unsigned long int aux = 0;
-	int hop = 0;
 
-	rlc_length = rlc_length_ini;
-	condition_length = condition_length_ini;
-	for (int i = 0; i < line_width; i++) {
-        hop = hops[line][i];
-		if (hop==4){
-			counterh0+=1;
-			if (mode==0 && counterh0==condition_length) {
-				mode=1;
-				counterh0=0;
-				aux |= mask;
-				mask = (mask >> 1) | (mask << (LENGTH-1));
-				moves += 1;
-				if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-			}
-		} else {
-            if (mode_prev == 0) {counterh0 = 0;}
-			mode=0;
-		}
 
-        if (mode == 0 && mode_prev == 0) {
-			switch (hop) {
-                case 4:
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 5:
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 3:
-                    mask = (mask >> 2) | (mask << (LENGTH-2));
-                    moves += 2;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 6:
-                    mask = (mask >> 3) | (mask << (LENGTH-3));
-                    moves += 3;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 2:
-                    mask = (mask >> 4) | (mask << (LENGTH-4));
-                    moves += 4;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 7:
-                    mask = (mask >> 5) | (mask << (LENGTH-5));
-                    moves += 5;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 1:
-                    mask = (mask >> 6) | (mask << (LENGTH-6));
-                    moves += 6;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 8:
-                    mask = (mask >> 7) | (mask << (LENGTH-7));
-                    moves += 7;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 0:
-                    mask = (mask >> 8) | (mask << (LENGTH-8));
-                    moves += 8;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-            }
-		} else if (mode_prev==1 && mode==0) {
-			for (int b = rlc_length-1; b >= 0; b--){
-				aux |= (testBit(counterh0, b) * mask);
-				mask = (mask >> 1) | (mask << (LENGTH-1));
-                moves += 1;
-                if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-			}
-			condition_length=condition_length_ini;
-			rlc_length=rlc_length_ini;
-			counterh0=0;
 
-			switch (hop) {
-                case 5:
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 3:
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 6:
-                    mask = (mask >> 2) | (mask << (LENGTH-2));
-                    moves += 2;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 2:
-                    mask = (mask >> 3) | (mask << (LENGTH-3));
-                    moves += 3;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 7:
-                    mask = (mask >> 4) | (mask << (LENGTH-4));
-                    moves += 4;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 1:
-                    mask = (mask >> 5) | (mask << (LENGTH-5));
-                    moves += 5;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 8:
-                    mask = (mask >> 6) | (mask << (LENGTH-6));
-                    moves += 6;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    aux |= mask;
-                    mask = (mask >> 1) | (mask << (LENGTH-1));
-                    moves += 1;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-                case 0:
-                    mask = (mask >> 7) | (mask << (LENGTH-7));
-                    moves += 7;
-                    if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-                    break;
-            }
-		} else if (mode==1 && ((rlc_length==4 && counterh0==15) || (rlc_length==5 && counterh0==31))){
-			counterh0=0;
-			rlc_length=5;
-			aux |= mask;
-			mask = (mask >> 1) | (mask << (LENGTH-1));
-			moves += 1;
-            if (moves >= LENGTH) {bits[line][bytes]=aux; aux=0; bytes++; moves-=LENGTH;}
-		}
 
-		mode_prev = mode;
 
-	}
-	bits[line][bytes]=aux;
-	int bits_count = (bytes-1)*32+moves;
-	return bits_count;
+
+
+#ifndef AV_WB32
+#   define AV_WB32(p, val) do {                 \
+        uint32_t d = (val);                     \
+        ((uint8_t*)(p))[3] = (d);               \
+        ((uint8_t*)(p))[2] = (d)>>8;            \
+        ((uint8_t*)(p))[1] = (d)>>16;           \
+        ((uint8_t*)(p))[0] = (d)>>24;           \
+    } while(0)
+#endif
+
+/**
+ * Initialize the PutBitContext s.
+ *
+ * @param buffer the buffer where to put bits
+ * @param buffer_size the size in bytes of buffer
+ */
+static inline void init_put_bits(PutBitContext *s, uint8_t *buffer,
+                                 int buffer_size)
+{
+    if (buffer_size < 0) {
+        buffer_size = 0;
+        buffer      = NULL;
+    }
+
+    s->size_in_bits = 8 * buffer_size;
+    s->buf          = buffer;
+    s->buf_end      = s->buf + buffer_size;
+    s->buf_ptr      = s->buf;
+    s->bit_left     = 32;
+    s->bit_buf      = 0;
+}
+
+/**
+ * @return the total number of bits written to the bitstream.
+ */
+static inline int put_bits_count(PutBitContext *s)
+{
+    return (s->buf_ptr - s->buf) * 8 + 32 - s->bit_left;
+}
+
+
+/**
+ * Write up to 31 bits into a bitstream.
+ * Use put_bits32 to write 32 bits.
+ */
+static inline void put_bits(PutBitContext *s, int n, unsigned int value)
+{
+    unsigned int bit_buf;
+    int bit_left;
+
+    if (n <= 31 && value < (1U << n)){}
+    else {
+        printf("Error!!!!!!!! n > 31\n");
+        abort();
+    }
+
+    bit_buf  = s->bit_buf;
+    bit_left = s->bit_left;
+
+    if (n < bit_left) {
+        bit_buf     = (bit_buf << n) | value;
+        bit_left   -= n;
+    } else {
+        bit_buf   <<= bit_left;
+        bit_buf    |= value >> (n - bit_left);
+        if (3 < s->buf_end - s->buf_ptr) {
+            AV_WB32(s->buf_ptr, bit_buf);
+            s->buf_ptr += 4;
+        } else {
+            printf("Internal error, put_bits buffer too small\n");
+            abort();
+        }
+        bit_left   += 32 - n;
+        bit_buf     = value;
+    }
+
+    s->bit_buf  = bit_buf;
+    s->bit_left = bit_left;
+}
+
+
+
+
+
+int entropic_enc(unsigned char **hops, uint8_t **bits, unsigned int line, unsigned int line_width) {
+
+    int xini, yini, xfin_downsampled, yfin_downsampled, pix, dif_pix;
+    PutBitContext s;
+
+    int mode = HUFFMAN, h0_counter = 0, hops_counter = 0;
+    int condition_length = 7;
+    int rlc_length = 4;
+
+
+
+    uint8_t hop = 0;
+    uint8_t number[9] = { 0,1,1,1,1,1,1,1,1 };
+    uint8_t longi[9] = { 8,7,5,3,1,2,4,6,8 };
+
+    init_put_bits(&s, bits[line], line_width);
+
+    for (int x = 0; x < line_width; x++) {
+
+        hop = hops[line][x];
+        if (hop == 4) h0_counter++;
+
+        switch(mode){
+            case HUFFMAN:
+                put_bits(&s, longi[hop], number[hop]);
+                if(hop != 4) h0_counter = 0;
+                if (h0_counter == condition_length) {
+                    mode = RLC1;
+                    h0_counter = 0;
+                }
+            break;
+            case RLC1:
+                if (hop == 4 && h0_counter == 15) {
+                    put_bits(&s, 1, 1);
+                    mode = RLC2;
+                    rlc_length++;
+                    h0_counter = 0;
+                } else if (hop != 4) {
+                    put_bits(&s, rlc_length+1, h0_counter);
+                    put_bits(&s, longi[hop]-1, number[hop]);
+                    h0_counter = 0;
+                    mode = HUFFMAN;
+                }
+            break;
+            case RLC2:
+                if (hop == 4 && h0_counter == 31) {
+                    put_bits(&s, 1, 1);
+                    h0_counter = 0;
+                } else if (hop != 4) {
+                    put_bits(&s, rlc_length+1, h0_counter);
+                    put_bits(&s, longi[hop]-1, number[hop]);
+                    rlc_length = 4;
+                    h0_counter = 0;
+                    mode = HUFFMAN;
+                }
+            break;
+        }
+
+    }
+
+    if (h0_counter != 0 && mode != HUFFMAN) put_bits(&s, rlc_length+1, h0_counter);
+
+    return put_bits_count(&s);
 
 }
+
 
 
 /*
