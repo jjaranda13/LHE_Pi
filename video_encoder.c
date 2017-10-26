@@ -96,8 +96,8 @@ void suma_delta_scanline(int y, int width,unsigned char ** last_frame_player, un
 int delta, signo,tramo1,tramo2;
 int image;
 
-tramo1 = 52;//115;
-tramo2 = 204;//140;
+tramo1 = 0;//52;//115;
+tramo2 = 255;//204;//140;
 
   for (int x = 0; x < width; x++) {
   delta=delta_scan[y][x];
@@ -187,8 +187,8 @@ void compute_delta_scanline(int y, int width, unsigned char ** orig_down, unsign
 //calcula delta=orig_down-last_frame_player
 int delta_int, signo,tramo1,tramo2;
 
-tramo1 =52;//115;//52;
-tramo2 =204;//140;// 204;
+tramo1 =0;//52;//115;//52;
+tramo2 =255;//204;//140;// 204;
 
 		for (int x = 0; x < width; x++) {
 
@@ -348,7 +348,7 @@ char buffer[100];
 
 // bucle infinito de movimiento
 // -----------------------------
-int total_frames=100;
+int total_frames=10;
 int total_bits=0;
 for (int i=0 ; i<total_frames;i++){
 
@@ -392,7 +392,7 @@ for (int i=0 ; i<total_frames;i++){
   //identificamos el target a codificar
   // -----------------------------------
   printf(" selecting target \n",i);
-  gop_size=0;
+  gop_size=0;//1000;
 
   if (gop_size==0 || i%gop_size==0) {
     // frame I
@@ -446,6 +446,8 @@ pthread_join(thread[i], NULL);
   printf(" LHE quantization: %.16g ms\n", secs * 1000.0);
 
 
+   loss_packets();
+
 
 
   if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena_quant%02d.bmp",i);
@@ -458,8 +460,10 @@ pthread_join(thread[i], NULL);
 
   //esto se hace ya en la fase de cuantizacion
   //total_bits+=entropic_enc_frame_normal();
-  total_bits+=tinfo[0].bits_count+tinfo[1].bits_count;
-
+  for (int i=0;i<num_threads;i++)
+  {
+  total_bits+=tinfo[i].bits_count;
+  }
   gettimeofday(&t_fin, NULL);
   secs = timeval_diff(&t_fin, &t_ini);
   printf(" entropic encoding: %.16g ms\n", secs * 1000.0);
@@ -545,6 +549,44 @@ float bpp=(float)total_bits/(total_frames*width_orig_Y*height_orig_Y);
 printf(" bpp= %f \n",bpp);
 float bitrate=(30.0*(float)total_bits)/total_frames;
 printf(" bitrate= %f \n",bitrate);
+
+
+}
+
+void loss_packets()
+{
+
+printf ("packet loss...\n");
+float perdidas=0.0f;//1f;
+
+int num_lost_lines=(int)(perdidas*height_down_Y);
+bool flag= true;
+int line=0;
+for (int i=0;i<num_lost_lines;i++)
+{
+
+  line=rand() % height_down_Y;
+  while (line<2 || line>height_down_Y-4)
+  line=rand() % height_down_Y;
+
+
+
+  for (int x=0;x<width_orig_Y;x++){
+
+  frame_encoded_Y[line][x]=0;
+  if (flag) frame_encoded_Y[line][x]=(frame_encoded_Y[line-1][x]+frame_encoded_Y[line+1][x])/2;
+}
+
+  for (int x=0;x<width_orig_UV;x++){
+  frame_encoded_U[line/2][x]=0;
+  frame_encoded_V[line/2][x]=0;
+
+  if (flag) frame_encoded_U[line/2][x]=(frame_encoded_U[line/2-1][x]+frame_encoded_U[line/2+1][x])/2;
+ if (flag)  frame_encoded_V[line/2][x]=(frame_encoded_V[line/2-1][x]+frame_encoded_V[line/2+1][x])/2;
+  }
+
+
+}
 
 
 }
