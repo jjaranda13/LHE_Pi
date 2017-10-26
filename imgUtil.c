@@ -120,10 +120,10 @@ orig_U=malloc(height_orig_UV*sizeof (unsigned char *));
 orig_V=malloc(height_orig_UV*sizeof (unsigned char *));
 
 
-
-scaled_Y=malloc(height_orig_Y*sizeof (unsigned char *));
-scaled_U=malloc(height_orig_UV*sizeof (unsigned char *));
-scaled_V=malloc(height_orig_UV*sizeof (unsigned char *));
+//esto esta en frame_encoder init
+//scaled_Y=malloc(height_orig_Y*sizeof (unsigned char *));
+//scaled_U=malloc(height_orig_UV*sizeof (unsigned char *));
+//scaled_V=malloc(height_orig_UV*sizeof (unsigned char *));
 
 
 for (int i=0;i<height_orig_Y;i++)
@@ -133,10 +133,10 @@ orig_U[i]=malloc(width_orig_UV* sizeof (unsigned char));
 orig_V[i]=malloc(width_orig_UV* sizeof (unsigned char));
 
 
-
-scaled_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
-scaled_U[i]=malloc(width_orig_UV* sizeof (unsigned char));
-scaled_V[i]=malloc(width_orig_UV* sizeof (unsigned char));
+//esto esta en frame_encoder init
+//scaled_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
+//scaled_U[i]=malloc(width_orig_UV* sizeof (unsigned char));
+//scaled_V[i]=malloc(width_orig_UV* sizeof (unsigned char));
 
 
 }

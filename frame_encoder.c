@@ -12,15 +12,6 @@
 #include "include/entropic_enc.h"
 
 
-struct thread_info
-{
-int start;
-int separation;
-int num_threads;
-unsigned char **res_Y;
-unsigned char **res_U;
-unsigned char **res_V;
-};
 
 double timeval_diff(struct timeval *a, struct timeval *b) {
 	return ((double)(a->tv_sec +(double)a->tv_usec/1000000)-(double)(b->tv_sec + (double)b->tv_usec/1000000));
@@ -47,6 +38,21 @@ void init_framecoder(int width, int height,int px, int py)
     init_quantizer();
     init_entropic_enc();
 
+
+
+scaled_Y=malloc(height_orig_Y*sizeof (unsigned char *));
+scaled_U=malloc(height_orig_UV*sizeof (unsigned char *));
+scaled_V=malloc(height_orig_UV*sizeof (unsigned char *));
+
+for (int i=0;i<height_orig_Y;i++)
+{
+
+scaled_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
+scaled_U[i]=malloc(width_orig_UV* sizeof (unsigned char));
+scaled_V[i]=malloc(width_orig_UV* sizeof (unsigned char));
+
+
+}
 }
 
 void *quantize_pair() {
@@ -190,10 +196,14 @@ while (line<height_down_UV)
 // el th2 ejeutara la linea 8 , luego la 32, luego la 56 etc
 // el th3 ejecutara la linea 16, luego la 40, luego la 64 etc
 //------------------------------------------------------------
-void quantize_target_subframe(int start_line,int separacion,unsigned char **res_Y,unsigned char **res_U,unsigned char **res_V)
+void quantize_target_subframe(int start_line,int separacion,unsigned char **res_Y,unsigned char **res_U,unsigned char **res_V, int *bits_count)
 {
 int line=start_line;
 int n=0;
+
+
+
+
 
 // primeramente procesamos todas las lineas de luminancia
 // -----------------------------------------------------
@@ -204,6 +214,7 @@ while (line<height_down_Y)
   //componentes luminancia
   if (DEBUG)  printf("line %d \n",line);
   quantize_scanline( target_Y,  line, width_down_Y, hops_Y,res_Y);
+  *bits_count+=entropic_enc(hops_Y, bits_Y, line, width_down_Y);
 
   n++;
   line=(start_line+n*separacion);
@@ -221,7 +232,11 @@ while (line<height_down_UV)
 {
   if (DEBUG) printf("line UV %d \n",line);
   quantize_scanline( target_U,  line, width_down_UV, hops_U,res_U);
+  *bits_count+=entropic_enc(hops_U, bits_U, line, width_down_UV);
+
   quantize_scanline( target_V,  line, width_down_UV, hops_V,res_V);
+  *bits_count+=entropic_enc(hops_V, bits_V, line, width_down_UV);
+
   n++;
   line=(start_line+n*separacion) ;
 }
@@ -259,37 +274,65 @@ quantize_subframe(i, 8);
 void quantize_target(unsigned char **res_Y,unsigned char **res_U,unsigned char **res_V){
 
 int rc1, rc2, rc3, rc4;
-pthread_t thread1, thread2, thread3, thread4;
+//pthread_t thread1, thread2, thread3, thread4;
 
-struct thread_info *tinfo;
-int num_threads=2;
-tinfo = calloc(num_threads, sizeof(struct thread_info));
+//pthread_t thread[num_threads];
+pthread_attr_t attr;
+pthread_attr_init(&attr);
+pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
 
+//struct thread_info *tinfo;// la hacemos global
+//int num_threads=2;
+
+//esto no se puede hacer aqui
+//tinfo = calloc(num_threads, sizeof(struct thread_info));
+
+
+/*
 tinfo[0].start=0;
 tinfo[0].separation=16;
-tinfo[0].num_threads=2;
 tinfo[0].res_Y=res_Y;
 tinfo[0].res_U=res_U;
 tinfo[0].res_V=res_V;
+tinfo[0].bits_count=0;
+tinfo[0].id=0;
 
 tinfo[1].start=8;
 tinfo[1].separation=16;
-tinfo[1].num_threads=2;
 tinfo[1].res_Y=res_Y;
 tinfo[1].res_U=res_U;
 tinfo[1].res_V=res_V;
+tinfo[1].bits_count=0;
+tinfo[1].id=1;
+*/
 
-if ((rc1=pthread_create(&thread1, NULL, &mytask_target, &tinfo[0]))){
+for (int i = 0; i < num_threads; i++){
+tinfo[i].start=i*8;
+tinfo[i].separation=8*num_threads;
+tinfo[i].res_Y=res_Y;
+tinfo[i].res_U=res_U;
+tinfo[i].res_V=res_V;
+tinfo[i].bits_count=0;
+tinfo[i].id=i;
+}
+
+
+for (int i=0; i< num_threads;i++)
+{
+if ((rc1=pthread_create(&thread[i], &attr, &mytask_target, &tinfo[i]))){
     printf("Thread creation failed.");
     }
+}
+//if ((rc2=pthread_create(&thread2, NULL, &mytask_target, &tinfo[1]))){
+//    printf("Thread creation failed.");
+//    }
 
-if ((rc2=pthread_create(&thread2, NULL, &mytask_target, &tinfo[1]))){
-    printf("Thread creation failed.");
-    }
 
-pthread_join(thread1, NULL);
-pthread_join(thread2, NULL);
+
+
+//pthread_join(thread1, NULL);
+//pthread_join(thread2, NULL);
 
 
 /*
@@ -387,7 +430,6 @@ struct thread_info *tinfo = arg;
 //(int start, int separation, int num_threads)
 int start=tinfo->start;
 int separation=tinfo->separation;
-int num_threads=tinfo->num_threads;
 
 int invocaciones=separation/num_threads;
 
@@ -404,13 +446,20 @@ struct thread_info *tinfo = arg;
 //(int start, int separation, int num_threads)
 int start=tinfo->start;
 int separation=tinfo->separation;
-int num_threads=tinfo->num_threads;
 
 int invocaciones=separation/num_threads;
 
+//mutex
+//th_done[tinfo->id]=PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_init(&th_done[tinfo->id],NULL);
+pthread_mutex_lock(&th_done[tinfo->id]);
+
+
 for (int i=start; i< start+invocaciones;i++){
-  quantize_target_subframe(i,separation,tinfo->res_Y,tinfo->res_U,tinfo->res_V);
+  quantize_target_subframe(i,separation,tinfo->res_Y,tinfo->res_U,tinfo->res_V,&(tinfo->bits_count));
 }
+
+pthread_mutex_unlock(&th_done[tinfo->id]);
 
 }
 

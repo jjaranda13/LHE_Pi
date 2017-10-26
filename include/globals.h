@@ -2,6 +2,9 @@
 #include <stdint.h>
 #include <pthread.h>
 
+
+#define num_threads 4
+
 int cosa;
 bool DEBUG;//for execution in debug mode and show more traces
 
@@ -139,6 +142,26 @@ unsigned char **result2_V;
 unsigned char **frame_encoded_Y;
 unsigned char **frame_encoded_U;
 unsigned char **frame_encoded_V;
+
+
+//esto lo hacemos global para poder recoger la cantidad de bits del entropico
+
+struct thread_info
+{
+int start;
+int separation;
+unsigned char **res_Y;
+unsigned char **res_U;
+unsigned char **res_V;
+int bits_count;
+int id;
+};
+
+struct thread_info *tinfo;
+
+
+pthread_mutex_t th_done[num_threads];
+pthread_t thread[num_threads];
 
 
 
