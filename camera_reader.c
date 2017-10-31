@@ -276,11 +276,6 @@ void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
     callback_data = (PORT_USERDATA *)port->userdata;
     frame_counter++;
 
-    if (callback_data->previous_buffer) // release the previous buffer back to the pool
-    {
-        mmal_buffer_header_release(callback_data->previous_buffer);
-    }
-
     if (!pthread_mutex_trylock(&cam_down_mutex)) // Downsampler finished its work so the global pointers can b modified.
     {
 
@@ -305,13 +300,16 @@ void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 
         pthread_cond_signal(&cam_down_cv);
         pthread_mutex_unlock(&cam_down_mutex);
+        if (callback_data->previous_buffer) // release the previous buffer back to the pool
+        {
+            mmal_buffer_header_release(callback_data->previous_buffer);
+        }
         callback_data->previous_buffer = buffer;
         if (DEBUG) printf("%s:%s:%d:DEBUG: Processed frame\n", __FILE__,__func__ ,__LINE__);
 
     } else {
 
         // Do not copy the image and drop the frame
-        callback_data->previous_buffer = NULL;
         mmal_buffer_header_release(buffer);
         printf("%s:%s:%d:INFO: Dropped frame %d\n", __FILE__,__func__ ,__LINE__, frame_counter);
     }
