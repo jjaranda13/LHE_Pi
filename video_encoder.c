@@ -371,8 +371,10 @@ for (int i=0 ; i<total_frames;i++){
 
   //salvamos el fotograma original
   // -------------------------------
-  if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena%02d.bmp",i);
-  if (DEBUG) save_frame(buffer, width_orig_Y, height_orig_Y, 3, orig_Y,orig_U,orig_V,420);
+  //if (DEBUG)
+  sprintf(buffer,"../LHE_Pi/video/lena%02d.bmp",i);
+  //if (DEBUG)
+  save_frame(buffer, width_orig_Y, height_orig_Y, 3, orig_Y,orig_U,orig_V,420);
 
   //downsampling del frame original
   // ------------------------------

@@ -63,7 +63,7 @@ for (int hop0=0;hop0<=255;hop0++){
  int hop_min=1;
  int hop_max=255-hop_min;
  h=min(hop_max,h);h=max(h,hop_min);
- cache_hops[hop0][hop1-4][0] = (unsigned char)h;//(hop0-hop1*rneg*rneg*rneg);
+ cache_hops[hop0][hop1-4][0] = 0;//(unsigned char)h;//(hop0-hop1*rneg*rneg*rneg);
 
  h=(int)(hop0-hop1*rneg*rneg);
  h=min(hop_max,h);h=max(h,hop_min);
@@ -254,6 +254,9 @@ if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
  unsigned char hop_value=0;//data from cache
  unsigned char hop_number=4;// final assigned hop
 
+ //mejora de prediccion
+ int grad=0;
+
  //unsigned char prev_color=128;
  //char * result_signal=result_YUV[y];
  //char * result_hops=hops[y];
@@ -295,6 +298,11 @@ for (int x=0;x<width;x++)
    }
 
   //-------------------------PHASE 2: HOPS COMPUTATION-------------------------------
+
+  hop0=hop0+grad;
+  if (hop0>255) hop0=255;
+  else if (hop0<1) hop0=1;
+
   hop_number=4;// prediction corresponds with hop_number=4
   quantum=hop0;//this is the initial predicted quantum, the value of prediction
   small_hop=true;//i supossed initially that hop will be small (3,4,5)
@@ -324,7 +332,7 @@ for (int x=0;x<width;x++)
        emin=error;
        quantum+=h1;
 
-       if (emin<4) goto phase3;
+       //if (emin<4) goto phase3;
        }
      else goto phase3;
 
@@ -346,7 +354,7 @@ for (int x=0;x<width;x++)
           emin=error;
           quantum=hop_value;
 
-          if (emin<4) break;// go to phase 3
+          //if (emin<4) break;// go to phase 3
           }
          else break;
         }
@@ -372,7 +380,7 @@ for (int x=0;x<width;x++)
        hop_number=3;
        emin=error;
        quantum-=h1;
-       if (emin<4) goto phase3;
+       //if (emin<4) goto phase3;
        }
       else goto phase3;
 
@@ -391,7 +399,7 @@ for (int x=0;x<width;x++)
           hop_number=i;
           emin=error;
           quantum=hop_value;
-          if (emin<4) break;// go to phase 3
+          //if (emin<4) break;// go to phase 3
           }
          else break;
         }
@@ -430,6 +438,11 @@ for (int x=0;x<width;x++)
   last_small_hop=small_hop;
 //  printf("%d,",hop_number);
 //if (h1<min_h1 || h1>max_h1) printf("fatal error %d \n", h1);
+
+   if (hop_number==5) grad=1;
+   else if (hop_number==3) grad=-1;
+   else if (!small_hop) grad=0;
+
 
 
   }
