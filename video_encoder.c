@@ -96,8 +96,8 @@ void suma_delta_scanline(int y, int width,unsigned char ** last_frame_player, un
 int delta, signo,tramo1,tramo2;
 int image;
 
-tramo1 = 0;//52;//115;
-tramo2 = 255;//204;//140;
+tramo1 = 52;//115;
+tramo2 = 204;//140;
 
   for (int x = 0; x < width; x++) {
   delta=delta_scan[y][x];
@@ -187,8 +187,8 @@ void compute_delta_scanline(int y, int width, unsigned char ** orig_down, unsign
 //calcula delta=orig_down-last_frame_player
 int delta_int, signo,tramo1,tramo2;
 
-tramo1 =0;//52;//115;//52;
-tramo2 =255;//204;//140;// 204;
+tramo1 =52;//115;//52;
+tramo2 =204;//140;// 204;
 
 		for (int x = 0; x < width; x++) {
 
