@@ -122,16 +122,19 @@ int write_socket (int fd, struct sockaddr *remote,	socklen_t long_remote, unsign
   /*Devolvemos el total de caracteres leidos*/
 	return escrito;
 }
+int divup(int dividend, int divisor){//Division entera redondeando hacia arriba
+  return (dividend+(divisor / 2) / divisor);
+}
 
-void sendData(){
-  //Descriptor del socket y buffer de datos
-  int socket_con_server;
-  unsigned long int data;
+void initSocket(){//struct sockaddr_in server, socklen_t long_server, int socket_con_server){
+    //Descriptor del socket y buffer de datos
+  //int socket_con_server;
+  //unsigned long int data;
 
   //Para llamadas a funciones de sockets
   int leidos;
-  struct sockaddr_in server; //Direccion del servidor
-  socklen_t long_server;     //Tamaño estr. server
+  //struct sockaddr_in server; //Direccion del servidor
+  //socklen_t long_server;     //Tamaño estr. server
 
   //Abrimos socket
   struct sockaddr_in direccion;
@@ -160,75 +163,106 @@ void sendData(){
   Ahora rellenamos la estructura server para enviarle un mensaje*/
   server.sin_family = AF_INET;
   server.sin_port = htons(3000);
-  inet_aton("192.168.1.52", &server.sin_addr.s_addr);//La direccion del otro ordenador
+  inet_aton("192.168.43.169", &server.sin_addr.s_addr);//La direccion del otro ordenador
   long_server = sizeof(server);
 
+  //Construccion paquete
 
   int tam_linea;
-  //ENVIO PRIMERO EL HEIGHT DOWN
-  sendto(socket_con_server, (int *)&height_down_Y, sizeof(height_down_Y), 0, (struct sockaddr *)&server, long_server );
-  for(int i=0;i<height_down_Y;i++){
-    //Mando num linea
-    //sendto(socket_con_server, (int *)&i, sizeof(i), 0, (struct sockaddr *)&server, long_server );
-    //Mando tamaño de linea
-    tam_linea=tam_bytes_Y[i];
-    printf("Linea %d de %d bytes\n",i,tam_linea);
-    sendto(socket_con_server, (int *)&tam_bytes_Y[i], sizeof(int), 0, (struct sockaddr *)&server, long_server );
-    //Mando los bytes de la linea
-    sendto(socket_con_server, (int *)&bits_Y[i][0], tam_linea, 0, (struct sockaddr *)&server, long_server );
+  paquete = malloc(height_down_Y*sizeof(unsigned char *));
+  for (int i=0;i<height_down_Y;i++) {
+    tam_linea = (tam_bytes_Y[i]/4)+(tam_bytes_U[i]/4)+(tam_bytes_V[i]/4);
+    //tam_linea = (1+((tam_bytes_Y[i]-1)/4))+(1+((tam_bytes_U[i]-1)/4))+(1+((tam_bytes_V[i]-1)/4));
+    //printf("La linea %d mide %d\n",i,tam_linea);
+		paquete[i]=malloc((tam_linea+4)*sizeof (unsigned long int));//char));
   }
-  FILE *fp = fopen("client.lhe","wb");
+  //int i=0;
   for (int i=0;i<height_down_Y;i++){
-    tam_linea=tam_bytes_Y[i];
-    fwrite(&bits_Y[i][0],tam_linea,1,fp);
-  }
-  fclose(fp);
+    //printf("Tamaños redondeados: Y=%d U=%d V=%d\n",tamY,tamU,tamV);
 
-  //Enviar imagen en paquetes de ul
-  /*int k=0;//Con esto cuento todos los elementos
-  int elems_linea, resto_linea;
-  int tam_total=0;
-  int linea_total;
-  //ENVIO PRIMERO EL HEIGHT DOWN
-  sendto(socket_con_server, (int *)&height_down_Y, sizeof(height_down_Y), 0, (struct sockaddr *)&server, long_server );
-  sendto(socket_con_server, (int *)&width_down_Y, sizeof(width_down_Y), 0, (struct sockaddr *)&server, long_server );
-  int i=167;//Linea de pruebas en la que sobra 1 byte
-  //for (int i=0;i<height_down_Y;i++){
-    elems_linea=tam_bytes_Y[i]/4;//tambytes me da el numero de bytes, y quiero pasarlos de 32 en 32 no de 8 en 8 por eso el /4
-    resto_linea=tam_bytes_Y[i]%4;
-    tam_total+=elems_linea+resto_linea;
-    printf("En la linea %d hay %d bytes.\n", i, tam_bytes_Y[i]);
-    printf("El resto entre 4 es %d\n", tam_bytes_Y[i]%4);
-    printf("Envío %d ul's y %d bytes que sobran\n", elems_linea, resto_linea);
-    linea_total = elems_linea + resto_linea;
-    printf("El ancho de la linea %d es %d uls y %d bytes\n",i,linea_total,tam_bytes_Y[i]);
-    sendto(socket_con_server, (int *)&linea_total, sizeof(int), 0, (struct sockaddr *)&server, long_server );*/
+    int tamY=tam_bytes_Y[i]/4;
+    int tamU=tam_bytes_U[i]/4;
+    int tamV=tam_bytes_V[i]/4;;
 
-    /*for(int j=0;j<elems_linea+resto_linea;j++){
-        //printf("%d,%d=>%lu\n",i,j,bits_Y[i][j]);
-        //Envío losdatos de cada bits_Y
-        data=bits_Y[i][j];
-        //printf("Escribo %d bytes\n",write_socket(socket_con_server, (struct sockaddr *)&server, long_server, (unsigned long int *)&data, sizeof(data)));
-        //write_socket(socket_con_server, (struct sockaddr *)&server, long_server, (unsigned long int *)&data, sizeof(data));
-        sendto(socket_con_server, (unsigned long int *)&data, sizeof(data), 0, (struct sockaddr *)&server, long_server );
-        //printf("%d\n",k);
-        printf("%d: Datos: %lu\n",k, data);
-        k++;
-    }*/
-    //&printf("Info de pruebas: El byte del resto era %d\n", bits_Y[i][(elems_linea+resto_linea)-1]);
-
-  //}
-    //=====================================================================Test de paso de linea entera
-    /*for (int i=0;i<linea_total;i++){
-        printf("%d: %lu con direccion %lu\n",i,bits_Y[167][i],&bits_Y[167][i]);
-
+    int l=0;
+    paquete[i][0]=i;
+    paquete[i][1]=tam_bytes_Y[i];
+    while (l<tamY){//tam_bytes_Y[i]/4){
+      paquete[i][l+2]=bits_Y[i][l];
+      l++;
     }
-    data=bits_Y[167][0];
-    printf("Voy a enviar a la direccion: %lu\n",&data);
-    printf("Voy a enviar a la direccion: %lu\n",&bits_Y[167][0]);
+    int k=0;
+    //paquete[i][(tam_bytes_Y[i]/4)+2]=tam_bytes_U[i];
+    paquete[i][(tamY)+2]=tam_bytes_U[i];
+    while (k<tamU){//tam_bytes_U[i]/4){
+      paquete[i][l+3]=bits_U[i][k];
+      l++;
+      k++;
+    }
+    int m=0;
+    //paquete[i][((tam_bytes_Y[i]/4)+(tam_bytes_U[i]/4))+3]=tam_bytes_V[i];
+    paquete[i][tamY+tamU+3]=tam_bytes_V[i];
+    while (m<tamV){//tam_bytes_V[i]/4){
+      paquete[i][l+4]=bits_V[i][m];
+      l++;
+      m++;
+    }
+  }
+}
 
-    sendto(socket_con_server, &bits_Y[167][0], 756, 0, (struct sockaddr *)&server, long_server );
-    FILE *fp = fopen("test.file","wb");
-    fwrite(&bits_Y[167][0],756,1,fp);
-    fclose(fp);*/
+void sendData(){//struct sockaddr_in server, socklen_t long_server, int socket_con_server){
+
+  int tam_linea;
+  unsigned long int dir;
+  unsigned long int next_dir;
+  //Construccion de paquetes
+  int payload=1000;
+  int carga=0;
+  int j = 0;
+
+
+  //Mando cabecera del frame
+  /*
+  int height_orig_Y;
+int width_orig_Y;
+
+int height_orig_UV;
+int width_orig_UV;
+
+//ancho y alto de imagen downsampleada
+int height_down_Y;
+int height_down_UV;
+int width_down_Y;
+int width_down_UV;*/
+  int cabecera[8]={height_orig_Y,height_orig_UV,width_orig_Y,width_orig_UV,height_down_Y,height_down_UV,width_down_Y,width_down_UV};
+  printf("Tamaño paquete %d\n",sendto(socket_con_server, (int *)&cabecera[0], 256, 0, (struct sockaddr *)&server, long_server ));
+
+  while(j<height_down_Y){
+    tam_linea=(tam_bytes_Y[j]/4)+(tam_bytes_U[j]/4)+(tam_bytes_V[j]/4);
+    //tam_linea = (1+((tam_bytes_Y[j]-1)/4))+(1+((tam_bytes_U[j]-1)/4))+(1+((tam_bytes_V[j]-1)/4));
+    carga+=tam_linea;
+
+    if(carga>payload){
+      printf("Tamaño paquete %d\n",sendto(socket_con_server, (int *)&paquete[j][0], carga, 0, (struct sockaddr *)&server, long_server ));
+      //sendto(socket_con_server, (int *)&paquete[j][0], carga, 0, (struct sockaddr *)&server, long_server );
+      carga = 0;
+      //j++;
+    }
+    j++;
+  }
+
+  //Print de la primera lines de los datos enviados
+  /*j=0;
+  int tamY=tam_bytes_Y[0]/4;
+  int tamU=tam_bytes_U[0]/4;
+  int tamV=tam_bytes_V[0]/4;
+  //for(int i=0;i<(tam_bytes_Y[0]/4)+(tam_bytes_U[0]/4)+(tam_bytes_V[0]/4)+4;i++){
+  for(int i=0;i<(tamY)+(tamU)+(tamV)+4;i++){
+    printf("datos de paquete en linea 0,%i son %lu\n",i,paquete[0][i]);
+    j++;
+  }*/
+
+  //Pruebas de cosas pequeñas para el socket de windows
+  //printf("Tamaño paquete %d\n",sendto(socket_con_server, (int *)&height_down_Y, 32, 0, (struct sockaddr *)&server, long_server ));
+
 }
