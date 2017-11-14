@@ -26,6 +26,7 @@
 #include "include/frame_encoder.h"
 #include "include/entropic_enc.h"
 #include "include/camera_reader.h"
+#include "include/video_encoder_simd.h"
 
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
@@ -207,7 +208,7 @@ tramo2 =204;//140;// 204;
 				//if (delta_int <= 6) delta_int = 0;
 			} else {// if (delta_int < tramo2) {
 				delta_int = delta_int - tramo1;
-				delta_int = tramo1 + delta_int/2;
+				delta_int = tramo1 + (delta_int>>2);
 			} /*else {
 				delta_int = delta_int - tramo2;
 				delta_int = dif_tramo + delta_int/4;
@@ -220,6 +221,19 @@ tramo2 =204;//140;// 204;
 			delta[y][x] = delta_int;
 
 		}
+
+}
+void compute_delta_scanline_simd(int y, int width, unsigned char ** orig_down, unsigned char ** last_frame_player, unsigned char ** delta)
+{
+    for (int x = 0; x < width; x+=8)
+    {
+        if( x> width-8)
+        {
+            x= width-8;
+        }
+        _compute_delta_simd( orig_down[y]+x, last_frame_player[y]+x, delta[y]+x);
+
+    }
 
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

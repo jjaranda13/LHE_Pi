@@ -19,15 +19,15 @@ LIBS=-lm /opt/vc/lib/libmmal_vc_client.so /opt/vc/lib/libmmal.so /opt/vc/lib/lib
 #-pg
 
 #dependencies ( headers)
-_DEPS=downsampler.h entropic_enc.h frame_encoder.h globals.h imgUtil.h quantizer.h camera_reader.h downsampler_simd.h
+_DEPS=downsampler.h entropic_enc.h frame_encoder.h globals.h imgUtil.h quantizer.h camera_reader.h downsampler_simd.h video_encoder_simd.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 #STB_image = ./stb_image/stb_image.h ./stb_image/stb_image_write.h
 
-#objects (files to compile), be careful to add only one file with main 
+#objects (files to compile), be careful to add only one file with main
 #_OBJ= downsampler.o entropic_enc.o frame_encoder.o imgUtil.o quantizer.o camera_downsampler_test.o camera_reader.o quantizer_tester.o video_encoder.o
 
-_OBJ= downsampler.o downsampler_simd.o entropic_enc.o frame_encoder.o imgUtil.o quantizer.o camera_reader.o  video_encoder.o
+_OBJ= downsampler.o downsampler_simd.o entropic_enc.o frame_encoder.o imgUtil.o quantizer.o camera_reader.o video_encoder_simd.o video_encoder.o
 #quantizer_tester.o
 
 #OBJ is concat ODIR and object file names
