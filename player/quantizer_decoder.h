@@ -36,8 +36,12 @@
 /**
 * @brief Percentage of the rest of the range that will be covered.
 */
-#define RANGE 0.55f
+#define RANGE 0.70f
 
+/**
+* @brief defines if the gradient technique should be used.
+*/
+#define IS_GRADIENT 1
 
 /**
 * @brief List of symbols for the hops.
@@ -92,7 +96,7 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_l
 /**
 * @brief Adapts h1 for the next pixel.
 *
-* This function performs the h1 adapatation using the current hop and the
+* This function performs the h1 adaptationn using the current hop and the
 * last_small_hop. The hop1 returned will be used as hop1 for the next pixel
 * of the scaline.
 *
@@ -103,6 +107,17 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_l
 * @return Hop1 to be used in the next pixel
 */
 int adapt_h1(int h1, uint8_t actual_hop, bool * last_small_hop);
+
+/**
+* @brief Calculates the gradient value for the next iteration.
+*
+* This function performs the gradient calculation suing the actual hop. The 
+* value returned can be used as the gradient for the enxt iteration.
+*
+* @param actual_hop The hop of the current pixel.
+* @return gradient to be used in the next pixel
+*/
+int adapt_gradient(uint8_t actual_hop)
 
 /**
 * @brief Calcules the ratios the ranges for LHE longer hops.

@@ -19,7 +19,7 @@ void free_quantizer_decoder(uint8_t* component_value) {
 
 void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_lenght) {
 
-	int  h1 = START_H1;
+	int  h1 = START_H1, gradient=0;
 	uint8_t actual_hop = 0;
 	uint8_t hop0 = 0;
 	bool last_small_hop = true;
@@ -32,6 +32,9 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_l
 		}
 		else {
 			hop0 = component_value[x - 1];
+		}
+		if (!(hop0 == 0 && gradient < 0) || (hop0 == 255 && gradient < 0) && IS_GRADIENT) { // Checks that there wont be overflow plus if gradient is activated.
+			hop0 += gradient;
 		}
 		calculate_ranges(hop0, h1, &positive_ratio, &negative_ratio);
 
@@ -69,15 +72,22 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_l
 			break;
 		}
 		h1 = adapt_h1(h1, actual_hop, &last_small_hop);
+		if(IS_GRADIENT) {
+			gradient = adapt_gradient(actual_hop);
+		}
+		
 	}
 	
 }
 int adapt_h1(int h1, uint8_t actual_hop, bool * last_small_hop) {
 
-	bool small_hop = true;
+	bool small_hop;
 
 	if (actual_hop > HOP_P1 || actual_hop < HOP_N1) {
 		small_hop = false;
+	}
+	else {
+		small_hop = true;
 	}
 	if (small_hop * *last_small_hop) {
 
@@ -90,6 +100,28 @@ int adapt_h1(int h1, uint8_t actual_hop, bool * last_small_hop) {
 	}
 	*last_small_hop = small_hop;
 	return h1;
+}
+
+int adapt_gradient(uint8_t actual_hop) {
+
+	bool small_hop;
+
+	if (actual_hop > HOP_P1 || actual_hop < HOP_N1) {
+		small_hop = false;
+	}
+	else {
+		small_hop = true;
+	}
+
+	if (actual_hop == HOP_P1) {
+		return 1;
+	}
+	else if (actual_hop == HOP_N1) {
+		return -1;
+	}
+	else if (!small_hop) {
+		return 0;
+	}
 }
 
 void calculate_ranges(uint8_t hop0, uint8_t hop1, double * positive_ratio, double * negative_ratio) {
