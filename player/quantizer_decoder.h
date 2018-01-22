@@ -117,7 +117,7 @@ int adapt_h1(int h1, uint8_t actual_hop, bool * last_small_hop);
 * @param actual_hop The hop of the current pixel.
 * @return gradient to be used in the next pixel
 */
-int adapt_gradient(uint8_t actual_hop)
+int adapt_gradient(uint8_t actual_hop, int prev_gradient);
 
 /**
 * @brief Calcules the ratios the ranges for LHE longer hops.

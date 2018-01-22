@@ -19,7 +19,7 @@
 void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_value, int component_value_width, int upsample_value_width, int mode) {
 	
 	float ppx = ((float)upsample_value_width) / (float)component_value_width;
-	float int_part, fract_part;
+	double int_part, fract_part;
 	int prev_index;
 
 	if (mode == BILINEAR) {
