@@ -7,7 +7,7 @@
 void suma_delta_scanline(uint8_t * delta_values, uint8_t * previous_values, uint8_t * frame_encoded, int lenght)
 {
 
-	int delta, signo, image;
+	int delta, image;
 	bool negative;
 
 	for (int x = 0; x < lenght; x++) {

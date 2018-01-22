@@ -73,7 +73,7 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_l
 		}
 		h1 = adapt_h1(h1, actual_hop, &last_small_hop);
 		if(IS_GRADIENT) {
-			gradient = adapt_gradient(actual_hop);
+			gradient = adapt_gradient(actual_hop, gradient);
 		}
 		
 	}
@@ -102,7 +102,7 @@ int adapt_h1(int h1, uint8_t actual_hop, bool * last_small_hop) {
 	return h1;
 }
 
-int adapt_gradient(uint8_t actual_hop) {
+int adapt_gradient(uint8_t actual_hop, int prev_gradient) {
 
 	bool small_hop;
 
@@ -121,6 +121,9 @@ int adapt_gradient(uint8_t actual_hop) {
 	}
 	else if (!small_hop) {
 		return 0;
+	}
+	else {
+		return prev_gradient;
 	}
 }
 
