@@ -53,7 +53,12 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_l
 			component_value[x] = hop0 + (uint8_t)(h1*positive_ratio*positive_ratio);
 			break;
 		case HOP_P4:
-			component_value[x] = hop0 + (uint8_t)(h1*positive_ratio*positive_ratio*positive_ratio);
+			if (IS_MAX_HOPS) {
+				component_value[x] = (uint8_t)255;
+			}
+			else {
+				component_value[x] = hop0 + (uint8_t)(h1*positive_ratio*positive_ratio*positive_ratio);
+			}
 			break;
 		case HOP_N1:
 			component_value[x] = hop0 - h1;
@@ -65,7 +70,12 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_l
 			component_value[x] = hop0 - (uint8_t)(h1*negative_ratio*negative_ratio);
 			break;
 		case HOP_N4:
-			component_value[x] = hop0 - (uint8_t)(h1*negative_ratio*negative_ratio*negative_ratio);
+			if (IS_MAX_HOPS) {
+				component_value[x] = (uint8_t)0;
+			}
+			else {
+				component_value[x] = hop0 - (uint8_t)(h1*negative_ratio*negative_ratio*negative_ratio);
+			}
 			break;
 		default:
 			printf("ERROR: Unexpected symbol were found.");
