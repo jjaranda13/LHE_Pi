@@ -143,8 +143,12 @@ int entropic_enc(unsigned char **hops, uint8_t **bits, unsigned int line, unsign
 
 
     uint8_t hop = 0;
-    uint8_t number[9] = { 0,1,1,1,1,1,1,1,1 };
-    uint8_t longi[9] = { 8,7,5,3,1,2,4,6,8 };
+    //uint8_t number[9] = { 0,1,1,1,1,1,1,1,1 };
+    //uint8_t longi[9] = { 8,7,5,3,1,2,4,6,8 };
+
+    uint8_t number[9] = { 1,1,1,1,1,1,1,1,1 };
+    uint8_t longi[9] = { 9,7,5,3,1,2,4,6,8 };
+
 
     init_put_bits(&s, bits[line], line_width);
 

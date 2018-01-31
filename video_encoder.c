@@ -400,6 +400,10 @@ for (int i=0 ; i<total_frames;i++){
   //downsample_frame(pppx,pppy);
   downsample_frame_simd(pppx,pppy);
 
+
+  if (camera) pthread_mutex_unlock (&cam_down_mutex);
+
+
   if (DEBUG) gettimeofday(&t_fin, NULL);
   if (DEBUG) secs = timeval_diff(&t_fin, &t_ini);
   if (DEBUG) printf(" downsampling: %.16g ms\n", secs * 1000.0);
@@ -470,9 +474,11 @@ pthread_join(thread[i], NULL);
 
 
 
-  if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena_quant%02d.bmp",i);
+  //if (DEBUG)
+  sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant%02d.bmp",i);
 
-  if (DEBUG) save_frame(buffer, width_down_Y, height_down_Y, 1, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
+  //if (DEBUG)
+  save_frame(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
 
   // ahora entra el entropico para codificar los hops
   // -----------------------------------------------
@@ -554,8 +560,10 @@ if (DEBUG) printf(" escalando...\n",i);
 if (DEBUG) printf(" escaled ok \n",i);
 
 
-  if (DEBUG) sprintf(buffer,"../LHE_Pi/video/result_video/frame_scaled%02d.bmp",i);
-  if (DEBUG) save_frame(buffer, width_orig_Y, height_orig_Y, 3, scaled_Y,scaled_U,scaled_V,420);
+  //if (DEBUG)
+  sprintf(buffer,"../LHE_Pi/video/result_video/frame_scaled_bin%02d.bmp",i);
+  //if (DEBUG)
+  save_frame(buffer, width_orig_Y, height_orig_Y, 3, scaled_Y,scaled_U,scaled_V,420);
 
     double psnr2;
   if (DEBUG) psnr2= get_PSNR_Y(scaled_Y,orig_Y, height_orig_Y,width_orig_Y);
@@ -563,7 +571,7 @@ if (DEBUG) printf(" escaled ok \n",i);
 
   stream_frame();
 
-if (camera) pthread_mutex_unlock (&cam_down_mutex);
+//if (camera) pthread_mutex_unlock (&cam_down_mutex);
 
 
 
