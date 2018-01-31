@@ -44,6 +44,13 @@
 #define IS_GRADIENT 1
 
 /**
+* @brief Defines the behaviour of the maximum hops. If activated the maximum 
+* hops lead to the maximum range. If not the behaviour is the normal jumping 
+* using the normal ratio.
+*/
+#define IS_MAX_HOPS 1
+
+/**
 * @brief List of symbols for the hops.
 *
 * This table shows the equivalent number that is used to represent the hops now on.
