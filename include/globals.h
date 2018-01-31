@@ -99,7 +99,10 @@ uint8_t **bits_U;
 uint8_t **bits_V;
 
 //Tamaño en bytes que ocupa cada linea tras la cuantizacion
-int *tam_bytes_Y;
+int * tam_bits_Y;
+int * tam_bits_U;
+int * tam_bits_V;
+
 
 unsigned char *huff_table;
 unsigned char rlc_length, condition_length;

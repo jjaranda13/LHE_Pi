@@ -15,4 +15,5 @@
 int read_socket(int fd, struct sockaddr *remote, socklen_t *long_remote, unsigned long int * data, int long_data);
 int write_socket (int fd, struct sockaddr *remote,	socklen_t long_remote, unsigned long int *data, int long_data);
 void sendData();
-
+void stream_line(uint8_t ** bits, int bits_lenght, int line);
+void stream_frame();

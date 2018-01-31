@@ -311,7 +311,7 @@ void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 
         // Do not copy the image and drop the frame
         mmal_buffer_header_release(buffer);
-        printf("%s:%s:%d:INFO: Dropped frame %d\n", __FILE__,__func__ ,__LINE__, frame_counter);
+        if (DEBUG) printf("%s:%s:%d:INFO: Dropped frame %d\n", __FILE__,__func__ ,__LINE__, frame_counter);
     }
 
     // and send one back to the port (if still open)

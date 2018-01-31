@@ -35,7 +35,7 @@
 -Buffer de taos donde se quiere que aparezca el mensaje
 -Longitud de datos del buffer anterior
 Devuelve el numero de bytes leidos o -1 en caso de error.*/
-
+/*
 int read_socket(int fd, struct sockaddr *remote, socklen_t *long_remote, unsigned long int * data, int long_data){
   int leido=0;
   int aux = 0;
@@ -43,26 +43,26 @@ int read_socket(int fd, struct sockaddr *remote, socklen_t *long_remote, unsigne
   if((fd == -1)||(data == NULL)||(long_data < 1)||(remote == NULL)||(long_remote == NULL)){
     return -1;
   }
-  /*Mientras no hayamos todos los datos solicitados*/
+  //Mientras no hayamos todos los datos solicitados
   while (leido < long_data){
     aux = recvfrom(fd, data+leido, long_data - leido, 0, remote, long_remote);
 	//printf("aux me da: %d\n",aux);
 
     if (aux > 0){
-      /*aumentamos leido con lo que hemos leido*/
+      //aumentamos leido con lo que hemos leido
       leido= leido + aux;
     }
     else {
-      /*Si el recvfrom devuelve 0, es que se ha cerrado el socket. Devolvemos lo leido hasta el momento*/
+      //Si el recvfrom devuelve 0, es que se ha cerrado el socket. Devolvemos lo leido hasta el momento
       if (aux == 0){
         return leido;
       }
       if (aux == -1){
-        /*En caso de error, tenemos el error en errno.
-        EINTR -> Si ha habido alguna interrupción del sistema antes de leer algun dato
-        EGAIN -> El socket no esta disponible de momento
-        En ambos casos se espera 100microseg y se vuelve a intentar
-        Si es otro error nos salimos*/
+        //En caso de error, tenemos el error en errno.
+        //EINTR -> Si ha habido alguna interrupción del sistema antes de leer algun dato
+        //EGAIN -> El socket no esta disponible de momento
+        //En ambos casos se espera 100microseg y se vuelve a intentar
+        //Si es otro error nos salimos
         switch (errno){
           case EINTR:
           case EAGAIN:
@@ -74,10 +74,10 @@ int read_socket(int fd, struct sockaddr *remote, socklen_t *long_remote, unsigne
       }
     }
   }
-  /*devolvemos el total de caracteres leidos*/
+  //devolvemos el total de caracteres leidos
   return leido;
 }
-
+*/
 /**
 Escribe dato en el socket cliente.
 - fd es el descriptor del socket.
@@ -87,13 +87,13 @@ Escribe dato en el socket cliente.
 - Longitud_Datos es el tamaño del mensaje en bytes.
 Devuelve numero de bytes escritos, o -1 si hay error.*/
 
-
+/*
 int write_socket (int fd, struct sockaddr *remote,	socklen_t long_remote, unsigned long int *data, int long_data){
 
 	int escrito = 0;
 	int aux = 0;
 
-	/*Comprobacion de los parametros de entrada	*/
+	//Comprobacion de los parametros de entrada
 	if ((fd == -1) || (data == NULL) || (long_data < 1)||(remote == NULL)){
 		return -1;
    }
@@ -119,13 +119,14 @@ int write_socket (int fd, struct sockaddr *remote,	socklen_t long_remote, unsign
 		}
 	}
 	escrito = sendto (fd, data, long_data, 0, remote, long_remote);
-  /*Devolvemos el total de caracteres leidos*/
+  //Devolvemos el total de caracteres leidos
 	return escrito;
 }
 int divup(int dividend, int divisor){//Division entera redondeando hacia arriba
   return (dividend+(divisor / 2) / divisor);
 }
-
+*/
+/*
 void initSocket(){//struct sockaddr_in server, socklen_t long_server, int socket_con_server){
     //Descriptor del socket y buffer de datos
   //int socket_con_server;
@@ -142,12 +143,12 @@ void initSocket(){//struct sockaddr_in server, socklen_t long_server, int socket
   descriptor = socket(AF_INET, SOCK_DGRAM, 0);
   if(descriptor == -1){socket_con_server = -1;}
 
-  /*Rellenamos la estructura de datos para hacer el bind*/
+  //Rellenamos la estructura de datos para hacer el bind
   direccion.sin_family = AF_INET; //Socket inet ipv4
   direccion.sin_addr.s_addr = htonl(INADDR_ANY); //Cualquier dirección ip
   direccion.sin_port = htons(3000);
 
-  /*Hacemos el bind*/
+  //Hacemos el bind
   if(bind(descriptor, (struct sockaddr *)&direccion, sizeof(direccion)) == -1){
     close(descriptor);
     socket_con_server = -1;
@@ -159,8 +160,8 @@ void initSocket(){//struct sockaddr_in server, socklen_t long_server, int socket
     exit(-1);
   }
 
-  /*Ya esta conectado el socket
-  Ahora rellenamos la estructura server para enviarle un mensaje*/
+  //Ya esta conectado el socket
+  //Ahora rellenamos la estructura server para enviarle un mensaje
   server.sin_family = AF_INET;
   server.sin_port = htons(3000);
   inet_aton("192.168.43.169", &server.sin_addr.s_addr);//La direccion del otro ordenador
@@ -182,7 +183,7 @@ void initSocket(){//struct sockaddr_in server, socklen_t long_server, int socket
 
     int tamY=tam_bytes_Y[i]/4;
     int tamU=tam_bytes_U[i]/4;
-    int tamV=tam_bytes_V[i]/4;;
+    int tamV=tam_bytes_V[i]/4;
 
     int l=0;
     paquete[i][0]=i;
@@ -209,7 +210,9 @@ void initSocket(){//struct sockaddr_in server, socklen_t long_server, int socket
     }
   }
 }
+*/
 
+/*
 void sendData(){//struct sockaddr_in server, socklen_t long_server, int socket_con_server){
 
   int tam_linea;
@@ -222,18 +225,18 @@ void sendData(){//struct sockaddr_in server, socklen_t long_server, int socket_c
 
 
   //Mando cabecera del frame
-  /*
-  int height_orig_Y;
-int width_orig_Y;
 
-int height_orig_UV;
-int width_orig_UV;
+  //int height_orig_Y;
+//int width_orig_Y;
+
+//int height_orig_UV;
+//int width_orig_UV;
 
 //ancho y alto de imagen downsampleada
-int height_down_Y;
-int height_down_UV;
-int width_down_Y;
-int width_down_UV;*/
+//int height_down_Y;
+//int height_down_UV;
+//int width_down_Y;
+//int width_down_UV;
   int cabecera[8]={height_orig_Y,height_orig_UV,width_orig_Y,width_orig_UV,height_down_Y,height_down_UV,width_down_Y,width_down_UV};
   printf("Tamaño paquete %d\n",sendto(socket_con_server, (int *)&cabecera[0], 256, 0, (struct sockaddr *)&server, long_server ));
 
@@ -252,17 +255,68 @@ int width_down_UV;*/
   }
 
   //Print de la primera lines de los datos enviados
-  /*j=0;
-  int tamY=tam_bytes_Y[0]/4;
-  int tamU=tam_bytes_U[0]/4;
-  int tamV=tam_bytes_V[0]/4;
+  //j=0;
+  //int tamY=tam_bytes_Y[0]/4;
+  //int tamU=tam_bytes_U[0]/4;
+  //int tamV=tam_bytes_V[0]/4;
   //for(int i=0;i<(tam_bytes_Y[0]/4)+(tam_bytes_U[0]/4)+(tam_bytes_V[0]/4)+4;i++){
-  for(int i=0;i<(tamY)+(tamU)+(tamV)+4;i++){
-    printf("datos de paquete en linea 0,%i son %lu\n",i,paquete[0][i]);
-    j++;
-  }*/
+  //for(int i=0;i<(tamY)+(tamU)+(tamV)+4;i++){
+    //printf("datos de paquete en linea 0,%i son %lu\n",i,paquete[0][i]);
+    //j++;
+  }
 
   //Pruebas de cosas pequeñas para el socket de windows
   //printf("Tamaño paquete %d\n",sendto(socket_con_server, (int *)&height_down_Y, 32, 0, (struct sockaddr *)&server, long_server ));
+
+}
+*/
+void stream_line(uint8_t ** bits, int bits_lenght, int line)
+{
+
+    uint16_t line_id=line;
+    uint16_t line_size_bytes=(bits_lenght/8)+1;
+    fwrite(&line_id,sizeof(uint16_t),1,stdout);
+    fwrite(&line_size_bytes,sizeof(uint16_t),1,stdout);
+
+    fwrite(bits[line], sizeof(uint8_t), (bits_lenght/8)+1, stdout);
+}
+
+void stream_frame()
+{
+
+    int separacion=8, line ;
+
+    for(int i =0 ; i <separacion; i++)
+    {
+        line =i;
+
+        while (line<height_down_Y)
+        {
+           // printf("numero de linea: %d\n", line);
+          stream_line(bits_Y, tam_bits_Y[line],line);
+
+          line=line+separacion;
+
+        }
+    }
+    for(int i =0 ; i <separacion; i++)
+    {
+        line =i;
+        while (line<height_down_UV)
+        {
+          stream_line(bits_U, tam_bits_U[line],line);
+          line=line+separacion;
+        }
+    }
+    for(int i =0 ; i <separacion; i++)
+    {
+        line =i;
+        while (line<height_down_UV)
+        {
+          stream_line(bits_V, tam_bits_V[line],line);
+          line=line+separacion;
+
+        }
+    }
 
 }

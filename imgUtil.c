@@ -58,7 +58,7 @@ if (DEBUG) printf(" image loaded. width=%d, height=%d",width_orig_Y,height_orig_
 
 //printf("%d  , %d\n",i, channels);
 //stbi_image_free( orig_Y );
-printf("exit from load_frame...\n");
+if (DEBUG) printf("exit from load_frame...\n");
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void save_frame(char const* filename, int width, int height, int channels, unsigned char **Y,unsigned char **U, unsigned char **V, int yuvmodel)
@@ -277,7 +277,7 @@ void scale_epx(unsigned char **channel, int c_height, int c_width, unsigned char
 
 int a,b,c,d,t,e1,e2,e3,e4,p,count;
 t=umbral;
-printf ("pppx %d pppy %d", pppx,pppy);
+if (DEBUG) printf ("pppx %d pppy %d", pppx,pppy);
 
 
 int pppx=2;
@@ -337,7 +337,7 @@ for (int y=0;y<c_height;y++)
 void yuv2rgb(unsigned char **y, unsigned char **u, unsigned char ** v, int channels, int width, int height, char *data,int yuvmodel) {
 
 //if (DEBUG)
-printf ("ENTER in yuv2rgb()...\n");
+if (DEBUG) printf ("ENTER in yuv2rgb()...\n");
 
 
 //memory allocation ESTO ES UN POTENCIAL BUG, NO DEBEMOS HACER MALLOCS FUERA DE INIT
@@ -361,7 +361,7 @@ return;
 //imagenes con crominancia
 //------------------------
 if (channels ==3){
-printf (" 3 channels... \n");
+if (DEBUG) printf (" 3 channels... \n");
 for (int line=0;line<height;line++)
 {
 /*
@@ -381,7 +381,7 @@ else if (yuvmodel==420) {
 divisorUV=2;
 }
 else{
-printf ("yuv2rgb() :model YUV incorrect  %d", yuvmodel);
+if (DEBUG) printf ("yuv2rgb() :model YUV incorrect  %d", yuvmodel);
 exit(0);
 }
 for (int x=0;x<width*3;x+=3)//channels)
@@ -461,7 +461,7 @@ R = 1.164(Y - 16) + 1.596(V - 128)
   }
 
 }
-printf(" 3 channels done \n");
+if (DEBUG) printf(" 3 channels done \n");
 }
 
 
@@ -584,7 +584,7 @@ R = 1.164(Y - 16) + 1.596(V - 128)
   }
 
 }
-printf(" 3 channels done \n");
+if (DEBUG) printf(" 3 channels done \n");
 }
 
 

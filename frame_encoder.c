@@ -214,7 +214,10 @@ while (line<height_down_Y)
   //componentes luminancia
   if (DEBUG)  printf("line %d \n",line);
   quantize_scanline( target_Y,  line, width_down_Y, hops_Y,res_Y);
-  *bits_count+=entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+  tam_bits_Y[line] = entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+  *bits_count+=tam_bits_Y[line];
+
+
 
   n++;
   line=(start_line+n*separacion);
@@ -232,10 +235,12 @@ while (line<height_down_UV)
 {
   if (DEBUG) printf("line UV %d \n",line);
   quantize_scanline( target_U,  line, width_down_UV, hops_U,res_U);
-  *bits_count+=entropic_enc(hops_U, bits_U, line, width_down_UV);
+  tam_bits_U[line] = entropic_enc(hops_U, bits_U, line, width_down_UV);
+  *bits_count+=tam_bits_U[line];
 
   quantize_scanline( target_V,  line, width_down_UV, hops_V,res_V);
-  *bits_count+=entropic_enc(hops_V, bits_V, line, width_down_UV);
+  tam_bits_V[line] = entropic_enc(hops_V, bits_V, line, width_down_UV);
+  *bits_count+=tam_bits_V[line];
 
   n++;
   line=(start_line+n*separacion) ;
@@ -321,7 +326,7 @@ tinfo[i].id=i;
 for (int i=0; i< num_threads;i++)
 {
 if ((rc1=pthread_create(&thread[i], &attr, &mytask_target, &tinfo[i]))){
-    printf("Thread creation failed.");
+    if (DEBUG) printf("Thread creation failed.");
     }
 }
 //if ((rc2=pthread_create(&thread2, NULL, &mytask_target, &tinfo[1]))){
@@ -419,7 +424,7 @@ for (int line=0;line<height_down_UV;line++) {
     bits+=entropic_enc(hops_U, bits_U, line, width_down_UV);
     bits+=entropic_enc(hops_V, bits_V, line, width_down_UV);
 }
-printf("bits: %d \n", bits);
+if (DEBUG) printf("bits: %d \n", bits);
 return bits;
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -476,7 +481,7 @@ load_frame("../LHE_Pi/img/lena.bmp");
 //load_frame("../LHE_Pi/img/mario.bmp");
 //load_frame("../LHE_Pi/img/baboon.bmp");
 //load_frame("../LHE_Pi/img/mountain.bmp");
-printf("frame loaded  \n");
+if (DEBUG) printf("frame loaded  \n");
 
 pppx=2;
 pppy=2;
@@ -486,7 +491,7 @@ int rc1, rc2, rc3, rc4;
 pthread_t thread1, thread2, thread3, thread4;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-printf ("init ok");
+if (DEBUG) printf ("init ok");
 rgb2yuv(rgb,rgb_channels);
 
 //ahora esta en YUV444
@@ -498,12 +503,12 @@ yuv2rgb(orig_Y,orig_U,orig_V,3,width_orig_Y,height_orig_Y, rgb,444);
 int i = stbi_write_bmp("../LHE_Pi/img/orig_RGB_YUV_RGB.bmp", width_orig_Y, height_orig_Y, 3, rgb);
 
 
-printf("rgb2yuv done \n");
+if (DEBUG) printf("rgb2yuv done \n");
 
 downsample_frame(pppx,pppy);
 
 
-printf("down done\n");
+if (DEBUG) printf("down done\n");
 /*
 gettimeofday(&t_ini, NULL);
 int veces=100;
@@ -530,7 +535,7 @@ gettimeofday(&t_fin, NULL);
 printf("quantization done\n");
 secs = timeval_diff(&t_fin, &t_ini)/veces;
 */
-printf("quantizing...\n");
+if (DEBUG) printf("quantizing...\n");
 gettimeofday(&t_ini, NULL);
 int veces=1;
 
@@ -597,7 +602,7 @@ pthread_join(thread4, NULL);
 }
 */
 gettimeofday(&t_fin, NULL);
-printf("quantization done !\n");
+if (DEBUG) printf("quantization done !\n");
 secs = timeval_diff(&t_fin, &t_ini)/veces;
 
 
@@ -606,7 +611,7 @@ secs = timeval_diff(&t_fin, &t_ini)/veces;
 
 
 
-printf("quantization in %.16g ms\n", secs * 1000.0);
+if (DEBUG) printf("quantization in %.16g ms\n", secs * 1000.0);
 int umbral=38;//56;//56;
 /*
 0  -> 29.23 db
@@ -621,7 +626,7 @@ int umbral=38;//56;//56;
 
 if (pppx==2 && pppy==2){
 
-printf("expanding EPX...\n");
+if (DEBUG) printf("expanding EPX...\n");
 scale_epx(result_Y,height_down_Y,width_down_Y,scaled_Y,umbral);
 scale_epx(result_U,height_down_UV,width_down_UV,scaled_U,umbral);
 scale_epx(result_V,height_down_UV,width_down_UV,scaled_V,umbral);
@@ -649,11 +654,11 @@ for (int line=0;line<height_down_UV;line++) {
     bits+=entropic_enc(hops_V, bits_V, line, width_down_UV);
 }
 }
-printf("Bits: %d\n", bits);
+if (DEBUG) printf("Bits: %d\n", bits);
 float bpp = (float)bits/(float)pixels;
-printf("bpp: %f\n", bpp);
+if (DEBUG) printf("bpp: %f\n", bpp);
 gettimeofday(&t_fin, NULL);
-printf("entropic coding done\n");
+if (DEBUG) printf("entropic coding done\n");
 secs = timeval_diff(&t_fin, &t_ini)/veces;
 
 
@@ -666,7 +671,7 @@ secs = timeval_diff(&t_fin, &t_ini)/veces;
 
 
 
-printf("entropic coding in %.16g ms\n", secs * 1000.0);
+if (DEBUG) printf("entropic coding in %.16g ms\n", secs * 1000.0);
 
 /*Para probar el streamer
 //Streamer
@@ -697,12 +702,12 @@ save_frame("../LHE_Pi/img/orig_down_YUV.bmp", width_down_Y, height_down_Y, 3, or
 printf("save done \n");
 
 double psnr= get_PSNR_Y(result_Y,orig_down_Y,height_down_Y,width_down_Y);
-printf("psnr down: %2.2f dB\n ",psnr);
+if (DEBUG) printf("psnr down: %2.2f dB\n ",psnr);
 
 //if (pppx==2 && pppy==2)
 {
 double psnr2= get_PSNR_Y(scaled_Y,orig_Y, height_orig_Y,width_orig_Y);
-printf("psnr scaled: %2.2f dB\n ",(float)psnr2);
+if (DEBUG) printf("psnr scaled: %2.2f dB\n ",(float)psnr2);
 }
 
 
@@ -713,7 +718,7 @@ void downsample_frame( int pppx,  int pppy)
 /// this function downsample a frame scanline by scanline, in the same order than quantizer
 /// scanlines are processed in order module 8
 //if (DEBUG)
-printf("ENTER in downsample_frame...\n");
+if (DEBUG) printf("ENTER in downsample_frame...\n");
 
 // downsampler initialization, if needed
 //---------------------------------------
@@ -723,7 +728,7 @@ if (downsampler_initialized==false) init_downsampler();
 //downsampling by scanlines
 //--------------------------
 //esto debe ser coregido para que recorra las scanlines salteadas modulo 8
-printf ("downsampling...");
+if (DEBUG) printf ("downsampling...");
 // component Y
 // ------------
 //si pppy==2 entonces solo se downsamplean la mitad de las lineas, logicamente
@@ -740,7 +745,7 @@ int ratio_height_YUV=height_orig_Y/height_orig_UV;
 int ratio_width_YUV=width_orig_Y/width_orig_UV;
 int pppyUV=2*pppy/ratio_height_YUV;
 int pppxUV=2*pppx/ratio_width_YUV;
-printf ("pppx:%d , pppy:%d, pppxUV:%d, pppyUV:%d \n",pppx,pppy,pppxUV,pppyUV);
+if (DEBUG) printf ("pppx:%d , pppy:%d, pppxUV:%d, pppyUV:%d \n",pppx,pppy,pppxUV,pppyUV);
 for (int line=0;line<height_orig_UV;line+=pppyUV){
 	down_avg_horiz(orig_U,width_orig_UV,orig_down_U,line,pppxUV,pppyUV);
 	down_avg_horiz(orig_V,width_orig_UV,orig_down_V,line,pppxUV,pppyUV);
@@ -754,7 +759,7 @@ void downsample_frame_simd( int pppx,  int pppy)
 /// this function downsample a frame scanline by scanline, in the same order than quantizer
 /// scanlines are processed in order module 8
 //if (DEBUG)
-printf("ENTER in downsample_frame...\n");
+if (DEBUG) printf("ENTER in downsample_frame...\n");
 
 // downsampler initialization, if needed
 //---------------------------------------
@@ -764,7 +769,7 @@ if (downsampler_initialized==false) init_downsampler();
 //downsampling by scanlines
 //--------------------------
 //esto debe ser coregido para que recorra las scanlines salteadas modulo 8
-printf ("downsampling...");
+if (DEBUG) printf ("downsampling...");
 // component Y
 // ------------
 //si pppy==2 entonces solo se downsamplean la mitad de las lineas, logicamente
@@ -782,7 +787,7 @@ int ratio_height_YUV=height_orig_Y/height_orig_UV;
 int ratio_width_YUV=width_orig_Y/width_orig_UV;
 int pppyUV=2*pppy/ratio_height_YUV;
 int pppxUV=2*pppx/ratio_width_YUV;
-printf ("pppx:%d , pppy:%d, pppxUV:%d, pppyUV:%d \n",pppx,pppy,pppxUV,pppyUV);
+if (DEBUG) printf ("pppx:%d , pppy:%d, pppxUV:%d, pppyUV:%d \n",pppx,pppy,pppxUV,pppyUV);
 for (int line=0;line<height_orig_UV;line+=pppyUV){
 	down_avg_horiz_simd(orig_U,width_orig_UV,orig_down_U,line,pppxUV,pppyUV);
 	down_avg_horiz_simd(orig_V,width_orig_UV,orig_down_V,line,pppxUV,pppyUV);
