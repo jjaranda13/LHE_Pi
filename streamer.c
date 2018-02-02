@@ -274,7 +274,7 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line)
 {
 
     uint16_t line_id=line;
-    uint16_t line_size_bytes=(bits_lenght/8)+1;
+    uint16_t line_size_bytes = (bits_lenght%8 == 0)? bits_lenght/8 : line_size_bytes=(bits_lenght/8)+1;
     uint8_t cero=0;
     fwrite(&cero,sizeof(uint8_t),1,stdout);
     fwrite(&line_id,sizeof(uint16_t),1,stdout);

@@ -247,7 +247,7 @@ MMAL_COMPONENT_T * init_camera(CAMERA_OPTIONS *options)
         }
     }
     if (DEBUG) printf ("%s:%s:%d:DEBUG: Port filled with buffers\n", __FILE__,__func__ ,__LINE__);
-    printf ("%s:%s:%d:INFO: Camera Started\n", __FILE__,__func__ ,__LINE__);
+    if (DEBUG) printf ("%s:%s:%d:INFO: Camera Started\n", __FILE__,__func__ ,__LINE__);
 
     return camera;
 
