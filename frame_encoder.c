@@ -462,6 +462,10 @@ pthread_mutex_lock(&th_done[tinfo->id]);
 
 for (int i=start; i< start+invocaciones;i++){
   quantize_target_subframe(i,separation,tinfo->res_Y,tinfo->res_U,tinfo->res_V,&(tinfo->bits_count));
+
+   //separation ya es 8* numthreads, pues asi la inicializa quantize_target()
+  lanza_streamer_subframe(i,separation);
+  //printf ("lanzado %d \n",i);
 }
 
 pthread_mutex_unlock(&th_done[tinfo->id]);

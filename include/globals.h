@@ -159,12 +159,22 @@ unsigned char **res_V;
 int bits_count;
 int id;
 };
-
 struct thread_info *tinfo;
+
+struct thread_streamer_info
+{
+int start;
+int separation;
+};
+
+struct thread_streamer_info *tsinfo;
 
 
 pthread_mutex_t th_done[num_threads];
 pthread_t thread[num_threads];
 
+pthread_t streamer_thread[num_threads*8];
+
+pthread_mutex_t stream_subframe_mutex;
 
 

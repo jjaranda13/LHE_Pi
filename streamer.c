@@ -270,17 +270,95 @@ void sendData(){//struct sockaddr_in server, socklen_t long_server, int socket_c
 
 }
 */
+
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void init_streamer()
+{
+pthread_mutex_init(&stream_subframe_mutex,NULL);
+
+
+
+}
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void *mytask_stream(void *arg)
+{
+struct thread_streamer_info *tinfo = arg;
+//(int start, int separation, int num_threads)
+int start=tinfo->start;
+int separation=tinfo->separation;
+
+//mutex
+//th_done[tinfo->id]=PTHREAD_MUTEX_INITIALIZER;
+//pthread_mutex_init(&stream_subframe_mutex,NULL);
+
+pthread_mutex_lock(&stream_subframe_mutex);
+
+//printf(" hola  %d \n",start);
+
+//luminancias
+int line=start;
+while (line<height_down_Y)
+{
+  stream_line(bits_Y, tam_bits_Y[line],line);
+
+  line+=separation;
+}
+
+
+//crominancias
+line=start;
+while (line<height_down_UV)
+{
+stream_line(bits_U, tam_bits_U[line],line);
+stream_line(bits_V, tam_bits_V[line],line);
+  line+=separation;
+}
+
+
+
+
+pthread_mutex_unlock(&stream_subframe_mutex);
+
+}
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void lanza_streamer_subframe(int startline,int separation)
+{
+pthread_attr_t attr;
+pthread_attr_init(&attr);
+pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+//struct thread_streamer_info tinfo;
+
+tsinfo[startline].start=startline;
+tsinfo[startline].separation=separation;
+
+//crear thread
+//pthread_t mithread;
+
+//printf ("streaming %d \n", startline);
+//pthread_create(&mithread, &attr, &mytask_stream, &tsinfo[startline]);
+
+pthread_create(&streamer_thread[startline], &attr, &mytask_stream, &tsinfo[startline]);
+//pthread_join(mithread, NULL);
+
+
+}
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 void stream_line(uint8_t ** bits, int bits_lenght, int line)
 {
 
     uint16_t line_id=line;
-    uint16_t line_size_bytes = (bits_lenght%8 == 0)? bits_lenght/8 : line_size_bytes=(bits_lenght/8)+1;
+    uint16_t line_size_bytes = (bits_lenght%8 == 0)? bits_lenght/8 : (bits_lenght/8)+1;
     uint8_t cero=0;
     fwrite(&cero,sizeof(uint8_t),1,stdout);
     fwrite(&line_id,sizeof(uint16_t),1,stdout);
     //fwrite(&line_size_bytes,sizeof(uint16_t),1,stdout);
 
-    fwrite(bits[line], sizeof(uint8_t), (bits_lenght/8)+1, stdout);
+    fwrite(bits[line], sizeof(uint8_t), line_size_bytes, stdout);
 }
 
 void stream_frame()

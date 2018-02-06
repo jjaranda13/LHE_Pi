@@ -43,6 +43,10 @@ void init_videoencoder(){
 //tinfo = calloc(num_threads, sizeof(struct thread_info));
 tinfo = calloc(num_threads, sizeof(struct thread_info));
 
+//esto es para el streamer
+//tsinfo = calloc(height_down_Y, sizeof(struct thread_streamer_info));
+tsinfo = calloc(num_threads*8, sizeof(struct thread_streamer_info));
+
 //inicializacion del puntero frame_encoded, donde se guardará la señal de lo que se cuantiza
 frame_encoded_Y=result_Y;
 frame_encoded_U=result_U;
@@ -73,6 +77,7 @@ tam_bits_U = malloc(height_down_UV*sizeof(int));
 tam_bits_V = malloc(height_down_UV*sizeof(int));
 
 
+init_streamer();
 
 }
 
@@ -367,6 +372,7 @@ char buffer[100];
 // -----------------------------
 int total_frames=1;//1000;
 int total_bits=0;
+float contador_tiempo=0;
 for (int i=0 ; i<total_frames;i++){
 
 
@@ -392,6 +398,9 @@ for (int i=0 ; i<total_frames;i++){
   if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena%02d.bmp",i);
   //if (DEBUG)
   if (DEBUG) save_frame(buffer, width_orig_Y, height_orig_Y, 3, orig_Y,orig_U,orig_V,420);
+
+
+//gettimeofday(&t_ini, NULL);
 
   //downsampling del frame original
   // ------------------------------
@@ -453,12 +462,14 @@ for (int i=0 ; i<total_frames;i++){
       quantize_target(frame_encoded_Y,frame_encoded_U,frame_encoded_V);
     //}
 
+/*
    for (int i=0;i<num_threads;i++)
    {
    //pthread_cond_wait (&cam_down_cv,&cam_down_mutex);
     pthread_mutex_lock(&th_done[i]);
     pthread_mutex_unlock(&th_done[i]);
     }
+*/
 
 for (int i=0; i< num_threads;i++)
 {
@@ -466,11 +477,25 @@ pthread_join(thread[i], NULL);
 }
   if (DEBUG) gettimeofday(&t_fin, NULL);
   if (DEBUG) gettimeofday(&t_fin, NULL);
-  secs = timeval_diff(&t_fin, &t_ini);
+
+
+for (int i=0; i< num_threads*8;i++)
+{
+pthread_join(streamer_thread[i], NULL);
+}
+
+  //gettimeofday(&t_fin, NULL);
+  //secs = timeval_diff(&t_fin, &t_ini);
+  //contador_tiempo+=secs;
+  //printf(" FRAME ENCODING & STREAMING: %.16g ms\n", secs * 1000.0);
+  //secs = timeval_diff(&t_fin, &t_ini);
   if (DEBUG) printf(" LHE quantization: %.16g ms\n", secs * 1000.0);
 
 
-   //loss_packets();
+
+
+
+//   loss_packets();
 
 
 
@@ -561,7 +586,7 @@ if (DEBUG) printf(" escaled ok \n",i);
 
 
   //if (DEBUG)
-  sprintf(buffer,"../LHE_Pi/video/result_video/frame_scaled_bin%02d.bmp",i);
+  sprintf(buffer,"../LHE_Pi/video/result_video/frame_scaled%02d.bmp",i);
   //if (DEBUG)
   save_frame(buffer, width_orig_Y, height_orig_Y, 3, scaled_Y,scaled_U,scaled_V,420);
 
@@ -569,7 +594,9 @@ if (DEBUG) printf(" escaled ok \n",i);
   if (DEBUG) psnr2= get_PSNR_Y(scaled_Y,orig_Y, height_orig_Y,width_orig_Y);
   if (DEBUG) printf("psnr scaled: %2.2f dB\n ",(float)psnr2);
 
-  stream_frame();
+
+
+  //stream_frame();
 
 //if (camera) pthread_mutex_unlock (&cam_down_mutex);
 
@@ -578,6 +605,10 @@ if (DEBUG) printf(" escaled ok \n",i);
 
 
 }//end for frames
+
+
+//printf(" AVERAGE FRAME ENCODING & STREAMING: %.16g ms\n", (contador_tiempo/total_frames) * 1000.0);
+
 
 float bpp=(float)total_bits/(total_frames*width_orig_Y*height_orig_Y);
 if (DEBUG) printf(" bpp= %f \n",bpp);
@@ -592,10 +623,10 @@ void loss_packets()
 {
 
 if (DEBUG) printf ("packet loss...\n");
-float perdidas=0.2f;//1f;
+float perdidas=0.6f;//1f;
 
 int num_lost_lines=(int)(perdidas*height_down_Y);
-bool flag= true;//false;//true;
+bool flag= false;//true;
 int line=0;
 int victims_Y[height_down_Y];
 for (int i = 0; i < height_down_Y; i++){
@@ -699,7 +730,7 @@ int count = 0;
 for (int i = 0; i < height_down_Y; i++){
     if(victims_Y[i] == 1) count++;
 }
-//printf("LLLLLLLLLLLLLLLLLLLLLLcontador de perdidas: %d\n", (count*100)/height_down_Y);
+printf("LLLLLLLLLLLLLLLLLLLLLLcontador de perdidas: %d\n", (count*100)/height_down_Y);
 }
 
 /*
