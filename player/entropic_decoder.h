@@ -16,7 +16,8 @@
 *   HOP_P3 = 000001
 *   HOP_N3 = 0000001
 *   HOP_P4 = 00000001
-*   HOP_N4 = 00000000
+*   HOP_N4 = 000000001
+*   BREAK  = 000000000
 *
 * For more:
 * @see https://github.com/jjaranda13/LHE_Pi
@@ -87,8 +88,9 @@ void free_entropic_decoder(uint8_t* hops);
 
 * @warning hops pointer must be allocated before calling this function.
 */
-int decode_line_entropic( uint8_t * bits , uint8_t * hops,  int bytes_lenght);
+int decode_line_entropic( uint8_t * bytes , uint8_t * hops,  int bytes_lenght);
 
+int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, int hops_lenght, int * readed_bytes);
 /////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS. NOT TO BE CALLED FROM OUTSIDE
 /////////////////////////////////////////////////////////////////////////
@@ -126,8 +128,7 @@ uint8_t set_bit(uint8_t data, int possition);
 * @param bytes_lenght Total lenght of the bitstream @p bits.
 * @return One if the bit is one, zero if the required bit is zero, -1 if error.
 */
-int get_data(uint8_t * bits, int sub_index, int bytes_lenght);
-
+int get_data(uint8_t * bits, int sub_index);
 /**
 * get_hop
 * Returns the hop number using the number of zeros that were readed previously.
@@ -149,7 +150,7 @@ uint8_t get_hop(int zeros_since_a_one);
 * @param rlc_lenght Number of bits used to represent the number of hops0.
 * @return The number of hops0 codified used RLE.
 */
-int get_rlc_number(uint8_t * bits, int * sub_index, int bits_lenght, int rlc_lenght);
+int get_rlc_number(uint8_t * bits, int * sub_index, int rlc_lenght);
 
 /**
 * add_hop0

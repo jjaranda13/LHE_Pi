@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "entropic_decoder.h"
 
 uint8_t* allocate_entropic_decoder(int width) {
@@ -24,35 +25,40 @@ void free_entropic_decoder(uint8_t* hops) {
 #define RLC2 1
 #define HUFFMAN 2
 
-int decode_line_entropic(uint8_t * bits, uint8_t * hops, int bytes_length) {
+int decode_line_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght) {
     int mode = HUFFMAN, h0_counter = 0, hops_counter = 0, zero_counter = 0, hop = 15, data = 3, rlc_number = 0;
     int condition_length = CONDITION_LENGHT_INI;
     int rlc_length = RLC_LENGHT_INI;
-    int last_mode = HUFFMAN;
-    for (int i = 0; i < bytes_length << 3; i++) {
-        data = get_data(bits, i, bytes_length);
+    for (int i = 0; i < bytes_lenght << 3; i++) {
+        data = get_data(bytes, i);
         switch (mode){
             case HUFFMAN:
-            printf("Modo HUFFMAN\n");
-                if (data == 0) zero_counter++;
-                if (data == 1 || zero_counter == 8){
+				if (data == 0) {
+					zero_counter++;
+				}
+                if (data == 1) {
                     hop = get_hop(zero_counter);
-                    printf("Hop detectado: %d\n", hop);
-                    if (hop == HOP_0) h0_counter++;
-                    else h0_counter = 0;
-                    if (h0_counter == condition_length) mode = RLC1;
+                    //printf("Hop detectado: %d\n", hop);
+					if (hop == HOP_0) {
+						h0_counter++;
+					}
+					else {
+						h0_counter = 0;
+					}
+					if (h0_counter == condition_length) {
+						mode = RLC1;
+					}
                     hops[hops_counter] = hop;
                     hops_counter++;
                     zero_counter = 0;
                 }
             break;
             case RLC1:
-                printf("Modo RLC1\n");
+                //printf("Modo RLC1\n");
                 if (data == 0) {
-                    //i++;
-                    rlc_number = get_rlc_number(bits, &i, bytes_length, rlc_length);
+                    rlc_number = get_rlc_number(bytes, &i, rlc_length);
                     add_hop0(hops, &hops_counter, rlc_number);
-                    printf("Sale de RLC1. \n");
+                    //printf("Sale de RLC1. \n");
                     mode = HUFFMAN;
                 } else {
                     add_hop0(hops, &hops_counter, 15);
@@ -61,13 +67,12 @@ int decode_line_entropic(uint8_t * bits, uint8_t * hops, int bytes_length) {
                 }
             break;
             case RLC2:
-                printf("Modo RLC2\n");
+                //printf("Modo RLC2\n");
                 if (data == 0) {
-                    //i++;
-                    rlc_number = get_rlc_number(bits, &i, bytes_length, rlc_length);
+                    rlc_number = get_rlc_number(bytes, &i, rlc_length);
                     add_hop0(hops, &hops_counter, rlc_number);
                     rlc_length = RLC_LENGHT_INI;
-                    printf("Sale de RLC2. \n");
+                    //printf("Sale de RLC2. \n");
                     mode = HUFFMAN;
                 } else {
                     add_hop0(hops, &hops_counter, 31);
@@ -77,78 +82,71 @@ int decode_line_entropic(uint8_t * bits, uint8_t * hops, int bytes_length) {
     }
     return hops_counter;
 }
-/*
-int decode_line_entropic(uint8_t * bits, uint8_t * hops, int bytes_lenght) {
-	int h0_counter = 0, hops_counter = 0, zeros_since_a_one = 0, hop = 0,
-		data = 0, rlc_number =0, mode = 0;
+int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, int hops_lenght, int * readed_bytes) {
+	int mode = HUFFMAN, h0_counter = 0, hops_counter = 0, zero_counter = 0,
+		hop = 15, data = 3, rlc_number = 0;
 	int condition_length = CONDITION_LENGHT_INI;
-	int rlc_lenght = RLC_LENGHT_INI;
-	bool is_last_rlc = false;
+	int rlc_length = RLC_LENGHT_INI;
+	int i = 0;
+	bool break_seq = false;
+	while (hops_counter < hops_lenght && i/8<bytes_lenght && !break_seq) {
 
-	for (int i = 0; i < bytes_lenght << 3; i++) {
-		data = get_data(bits, i, bytes_lenght);
-
-        if (data == 0 && mode == 0) {
-			zeros_since_a_one++;
-			//printf("zeros_since_a_one: %d\n", zeros_since_a_one);
-		}
-		if (data == 1 || zeros_since_a_one==8) {
-			//printf("zeros_since_a_one: %d\n", zeros_since_a_one);
-			hop = get_hop(zeros_since_a_one);
-			printf("Hop detectado: %d\n", hop);
-
-			hops[hops_counter] = hop;
-			hops_counter++;
-			zeros_since_a_one = 0;
-
-			if (hop == HOP_0) {
-				h0_counter++;
-				if ((h0_counter == condition_length)) {
-
-				    printf("entro en RLC \n");
-				    mode = 1;
-					i++;
-					if (get_data(bits, i, bytes_lenght) == 0) {
-						rlc_number = get_rlc_number(bits, &i, bytes_lenght, rlc_lenght);
-						add_hop0(hops, &hops_counter, rlc_number);
-						mode = 0;
-						h0_counter = 0;
-                        rlc_lenght = RLC_LENGHT_INI;
-						printf ("sale de RLC \n");
-					}
-					else {
-						add_hop0(hops, &hops_counter, (1<<rlc_lenght)-1);
-						rlc_lenght = RLC_LENGHT_INI + 1;
-                        is_last_rlc = true;
-                        h0_counter = 0;
-					}
-
+		data = get_data(bytes, i);
+		switch (mode) {
+		case HUFFMAN:
+			if (data == 0) {
+				zero_counter++;
+				if (zero_counter == 9) {
+					printf(" I have found a newline code before hops_lenght\n");
+					i -= 9;
+					break_seq = true;
 				}
-				else if (is_last_rlc) {
-					i++;
-					if (get_data(bits, i, bytes_lenght) == 0) {
-						rlc_number = get_rlc_number(bits, &i, bytes_lenght, rlc_lenght);
-						add_hop0(hops, &hops_counter, rlc_number);
-						mode = 0;
-						h0_counter = 0;
-                        rlc_lenght = RLC_LENGHT_INI;
-						printf ("sale de RLC \n");
-					}
-					else {
-						add_hop0(hops, &hops_counter, (1 << rlc_lenght) - 1);
-					}
+			}
+			if (data == 1) {
+				hop = get_hop(zero_counter);
+				if (hop == HOP_0) {
+					h0_counter++;
+				}
+				else {
 					h0_counter = 0;
 				}
+				if (h0_counter == condition_length) {
+					mode = RLC1;
+				}
+				hops[hops_counter] = hop;
+				hops_counter++;
+				zero_counter = 0;
+			}
+			break;
+		case RLC1:
+			if (data == 0) {
+				rlc_number = get_rlc_number(bytes, &i, rlc_length);
+				add_hop0(hops, &hops_counter, rlc_number);
+				mode = HUFFMAN;
 			}
 			else {
-				is_last_rlc = false;
+				add_hop0(hops, &hops_counter, 15);
+				rlc_length += 1;
+				mode = RLC2;
 			}
-
+			break;
+		case RLC2:
+			if (data == 0) {
+				rlc_number = get_rlc_number(bytes, &i, rlc_length);
+				add_hop0(hops, &hops_counter, rlc_number);
+				rlc_length = RLC_LENGHT_INI;
+				mode = HUFFMAN;
+			}
+			else {
+				add_hop0(hops, &hops_counter, 31);
+			}
+			break;
 		}
+		i++;
 	}
+	*readed_bytes = i % 8 ? (i / 8) + 1: i / 8 ; 
 	return hops_counter;
 }
-*/
 
 bool test_bit(uint8_t data, int possition) {
 
@@ -169,14 +167,10 @@ uint8_t set_bit(uint8_t data, int possition) {
 	return mask;
 }
 
-
-int get_data(uint8_t * bits, int sub_index, int bytes_lenght) {
+int get_data(uint8_t * bits, int sub_index) {
 
 	int index = sub_index >> 3;
-	if (index >=bytes_lenght) {
-		return -1;
-	}
-	int position = 7- (sub_index % 8);
+	int position = 7 - (sub_index % 8);
 	if (test_bit(bits[index], position)) {
 		return 1;
 	}
@@ -218,11 +212,11 @@ uint8_t get_hop(int zeros_since_a_one) {
 
 }
 
-int get_rlc_number(uint8_t * bits, int * sub_index, int bytes_lenght, int rlc_lenght) {
+int get_rlc_number(uint8_t * bits, int * sub_index, int rlc_lenght) {
 	int rlc_number = 0;
 	for (int j = rlc_lenght - 1; j >= 0; j--) {
 		*sub_index = *sub_index +1;
-		if (get_data(bits, *sub_index, bytes_lenght) == 1) {
+		if (get_data(bits, *sub_index) == 1) {
 			rlc_number = set_bit(rlc_number, j);
 		}
 	}
@@ -230,10 +224,8 @@ int get_rlc_number(uint8_t * bits, int * sub_index, int bytes_lenght, int rlc_le
 }
 
 void add_hop0(uint8_t * hops, int *hops_counter, int count) {
-    printf("Saca %d hops0\n", count);
 	for (int i = 0; i < count; i++) {
 		hops[*hops_counter] = HOP_0;
 		*hops_counter= (*hops_counter +1);
-		printf("Hop detectado: %d\n", 4);
 	}
 }
