@@ -84,7 +84,7 @@ static inline void init_put_bits(PutBitContext *s, uint8_t *buffer,
  */
 static inline int put_bits_count(PutBitContext *s)
 {
-    return (s->buf_ptr - s->buf) * 8 + 32 - s->bit_left;
+    return (s->buf_ptr - s->buf) * 8 - s->bit_left;
 }
 
 
@@ -127,7 +127,26 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
     s->bit_left = bit_left;
 }
 
+static inline void put_bits_flush(PutBitContext *s)
+{
+    unsigned int bit_buf;
+    int bit_left;
 
+    bit_buf  = s->bit_buf;
+    bit_left = s->bit_left;
+
+    bit_buf   <<= bit_left;
+    if (3 < s->buf_end - s->buf_ptr)
+    {
+        AV_WB32(s->buf_ptr, bit_buf);
+        s->buf_ptr += 4;
+    }
+    else
+    {
+        printf("Internal error, put_bits buffer too small\n");
+        abort();
+    }
+}
 
 
 
@@ -196,7 +215,7 @@ int entropic_enc(unsigned char **hops, uint8_t **bits, unsigned int line, unsign
     }
 
     if (h0_counter != 0 && mode != HUFFMAN) put_bits(&s, rlc_length+1, h0_counter);
-
+    put_bits_flush(&s);
     return put_bits_count(&s);
 
 }

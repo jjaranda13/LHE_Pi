@@ -351,13 +351,14 @@ pthread_create(&streamer_thread[startline], &attr, &mytask_stream, &tsinfo[start
 void stream_line(uint8_t ** bits, int bits_lenght, int line)
 {
 
-    uint16_t line_id=line;
+    uint8_t line_low = (uint8_t) line;
+    uint8_t line_high = (uint8_t) line >> 8;
     uint16_t line_size_bytes = (bits_lenght%8 == 0)? bits_lenght/8 : (bits_lenght/8)+1;
     uint8_t cero=0;
-    fwrite(&cero,sizeof(uint8_t),1,stdout);
-    fwrite(&line_id,sizeof(uint16_t),1,stdout);
-    //fwrite(&line_size_bytes,sizeof(uint16_t),1,stdout);
 
+    fwrite(&cero,sizeof(uint8_t),1,stdout);
+    fwrite(&line_high,sizeof(uint8_t),1,stdout);
+    fwrite(&line_low,sizeof(uint8_t),1,stdout);
     fwrite(bits[line], sizeof(uint8_t), line_size_bytes, stdout);
 }
 
