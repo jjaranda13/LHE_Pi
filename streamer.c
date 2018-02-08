@@ -294,6 +294,9 @@ int separation=tinfo->separation;
 
 pthread_mutex_lock(&stream_subframe_mutex);
 
+
+//file_pipe=fdopen(pipe_desc[1],"w");
+
 //printf(" hola  %d \n",start);
 
 //luminancias
@@ -316,7 +319,7 @@ stream_line(bits_V, tam_bits_V[line],line);
 }
 
 
-
+fflush(stdout);
 
 pthread_mutex_unlock(&stream_subframe_mutex);
 
@@ -356,16 +359,31 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line)
     uint16_t line_size_bytes = (bits_lenght%8 == 0)? bits_lenght/8 : (bits_lenght/8)+1;
     uint8_t cero=0;
 
+   // freopen(stdout);
+
     fwrite(&cero,sizeof(uint8_t),1,stdout);
     fwrite(&line_high,sizeof(uint8_t),1,stdout);
     fwrite(&line_low,sizeof(uint8_t),1,stdout);
     fwrite(bits[line], sizeof(uint8_t), line_size_bytes, stdout);
-}
+/*
+    char *texto;
+    texto = "Hola que ase asdljhkajsfhdjkah uiowyerouhkasjnf ljdflk ajsdlfn,m alsdfj lkajdfasdf aasdfasdfde\n";
+    fwrite (texto, sizeof(char), line_size_bytes, stdout);
+*/
 
+    //fflush(stdout);
+    //fclose(stdout);
+
+}
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+/*
 void stream_frame()
 {
 
     int separacion=8, line ;
+
+//file_pipe=fdopen(pipe_desc[1],"w");
 
     for(int i =0 ; i <separacion; i++)
     {
@@ -399,5 +417,7 @@ void stream_frame()
 
         }
     }
-
+ //fclose (stdout);
+ //fclose(file_pipe);
 }
+*/

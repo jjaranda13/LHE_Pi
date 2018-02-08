@@ -47,6 +47,8 @@ tinfo = calloc(num_threads, sizeof(struct thread_info));
 //tsinfo = calloc(height_down_Y, sizeof(struct thread_streamer_info));
 tsinfo = calloc(num_threads*8, sizeof(struct thread_streamer_info));
 
+
+
 //inicializacion del puntero frame_encoded, donde se guardará la señal de lo que se cuantiza
 frame_encoded_Y=result_Y;
 frame_encoded_U=result_U;
@@ -370,7 +372,7 @@ char buffer[100];
 
 // bucle infinito de movimiento
 // -----------------------------
-int total_frames=1000;//1000;
+int total_frames=100000;//1000;
 int total_bits=0;
 float contador_tiempo=0;
 
@@ -489,7 +491,10 @@ pthread_join(streamer_thread[i], NULL);
   gettimeofday(&t_fin, NULL);
   secs = timeval_diff(&t_fin, &t_ini);
   contador_tiempo+=secs;
-  //fprintf(stderr, " FRAME ENCODING & STREAMING: %.16g ms\n", secs * 1000.0);
+  if (i % 20 == 0) {
+    fprintf(stderr, " FRAME ENCODING & STREAMING: %.16g ms\n", (contador_tiempo/20) * 1000.0);
+    contador_tiempo = 0;
+  }
   //secs = timeval_diff(&t_fin, &t_ini);
   if (DEBUG) printf(" LHE quantization: %.16g ms\n", secs * 1000.0);
 
@@ -611,7 +616,7 @@ if (DEBUG){ printf(" escalando...\n",i);
 }//end for frames
 
 
-fprintf(stderr, " AVERAGE FRAME ENCODING & STREAMING: %.16g ms\n", (contador_tiempo/total_frames) * 1000.0);
+//fprintf(stderr, " AVERAGE FRAME ENCODING & STREAMING: %.16g ms\n", (contador_tiempo/total_frames) * 1000.0);
 
 
 float bpp=(float)total_bits/(total_frames*width_orig_Y*height_orig_Y);

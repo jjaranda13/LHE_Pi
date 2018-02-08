@@ -176,5 +176,3 @@ pthread_t thread[num_threads];
 pthread_t streamer_thread[num_threads*8];
 
 pthread_mutex_t stream_subframe_mutex;
-
-
