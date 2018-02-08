@@ -370,16 +370,17 @@ char buffer[100];
 
 // bucle infinito de movimiento
 // -----------------------------
-int total_frames=1;//1000;
+int total_frames=100;//1000;
 int total_bits=0;
 float contador_tiempo=0;
+
+
+
 for (int i=0 ; i<total_frames;i++){
 
 
   //desplazamos la imagen original
   // ------------------------------
-
-
 
   if (camera)
   {
@@ -387,7 +388,8 @@ for (int i=0 ; i<total_frames;i++){
   pthread_cond_wait (&cam_down_cv,&cam_down_mutex);
   }
   else
-  {shift_frame(4,4);
+  {
+  shift_frame(4,4);
   }
 
   if (DEBUG) printf(" frame preparado %02d \n",i);
@@ -400,7 +402,7 @@ for (int i=0 ; i<total_frames;i++){
   if (DEBUG) save_frame(buffer, width_orig_Y, height_orig_Y, 3, orig_Y,orig_U,orig_V,420);
 
 
-//gettimeofday(&t_ini, NULL);
+gettimeofday(&t_ini, NULL);
 
   //downsampling del frame original
   // ------------------------------
@@ -471,10 +473,10 @@ for (int i=0 ; i<total_frames;i++){
     }
 */
 
-for (int i=0; i< num_threads;i++)
-{
-pthread_join(thread[i], NULL);
-}
+    for (int i=0; i< num_threads;i++)
+    {
+    pthread_join(thread[i], NULL);
+    }
   if (DEBUG) gettimeofday(&t_fin, NULL);
   if (DEBUG) gettimeofday(&t_fin, NULL);
 
@@ -484,10 +486,10 @@ for (int i=0; i< num_threads*8;i++)
 pthread_join(streamer_thread[i], NULL);
 }
 
-  //gettimeofday(&t_fin, NULL);
-  //secs = timeval_diff(&t_fin, &t_ini);
-  //contador_tiempo+=secs;
-  //printf(" FRAME ENCODING & STREAMING: %.16g ms\n", secs * 1000.0);
+  gettimeofday(&t_fin, NULL);
+  secs = timeval_diff(&t_fin, &t_ini);
+  contador_tiempo+=secs;
+  fprintf(stderr, " FRAME ENCODING & STREAMING: %.16g ms\n", secs * 1000.0);
   //secs = timeval_diff(&t_fin, &t_ini);
   if (DEBUG) printf(" LHE quantization: %.16g ms\n", secs * 1000.0);
 
@@ -500,10 +502,10 @@ pthread_join(streamer_thread[i], NULL);
 
 
   //if (DEBUG)
-  sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant%02d.bmp",i);
+  //sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant%02d.bmp",i);
 
   //if (DEBUG)
-  save_frame(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
+  //save_frame(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
 
   // ahora entra el entropico para codificar los hops
   // -----------------------------------------------
@@ -586,9 +588,9 @@ if (DEBUG) printf(" escaled ok \n",i);
 
 
   //if (DEBUG)
-  sprintf(buffer,"../LHE_Pi/video/result_video/frame_scaled%02d.bmp",i);
+  //sprintf(buffer,"../LHE_Pi/video/result_video/frame_scaled%02d.bmp",i);
   //if (DEBUG)
-  save_frame(buffer, width_orig_Y, height_orig_Y, 3, scaled_Y,scaled_U,scaled_V,420);
+  //save_frame(buffer, width_orig_Y, height_orig_Y, 3, scaled_Y,scaled_U,scaled_V,420);
 
     double psnr2;
   if (DEBUG) psnr2= get_PSNR_Y(scaled_Y,orig_Y, height_orig_Y,width_orig_Y);
@@ -607,7 +609,7 @@ if (DEBUG) printf(" escaled ok \n",i);
 }//end for frames
 
 
-//printf(" AVERAGE FRAME ENCODING & STREAMING: %.16g ms\n", (contador_tiempo/total_frames) * 1000.0);
+fprintf(stderr, " AVERAGE FRAME ENCODING & STREAMING: %.16g ms\n", (contador_tiempo/total_frames) * 1000.0);
 
 
 float bpp=(float)total_bits/(total_frames*width_orig_Y*height_orig_Y);

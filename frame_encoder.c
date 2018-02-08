@@ -203,8 +203,6 @@ int n=0;
 
 
 
-
-
 // primeramente procesamos todas las lineas de luminancia
 // -----------------------------------------------------
 // empezamos por la start_line
@@ -469,6 +467,7 @@ for (int i=start; i< start+invocaciones;i++){
 }
 
 pthread_mutex_unlock(&th_done[tinfo->id]);
+//pthread_exit(NULL);
 
 }
 
