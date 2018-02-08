@@ -95,6 +95,8 @@ yuv2rgb(Y,U,V,3,width,height, data,yuvmodel);
 
 }
 int i = stbi_write_bmp(filename, width, height, channels, data);
+
+free(data);
 if (DEBUG) printf ("resultado save file = %d \n",i);
 
 }

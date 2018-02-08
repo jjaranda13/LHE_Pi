@@ -370,7 +370,7 @@ char buffer[100];
 
 // bucle infinito de movimiento
 // -----------------------------
-int total_frames=100;//1000;
+int total_frames=1000;//1000;
 int total_bits=0;
 float contador_tiempo=0;
 
@@ -489,7 +489,7 @@ pthread_join(streamer_thread[i], NULL);
   gettimeofday(&t_fin, NULL);
   secs = timeval_diff(&t_fin, &t_ini);
   contador_tiempo+=secs;
-  fprintf(stderr, " FRAME ENCODING & STREAMING: %.16g ms\n", secs * 1000.0);
+  //fprintf(stderr, " FRAME ENCODING & STREAMING: %.16g ms\n", secs * 1000.0);
   //secs = timeval_diff(&t_fin, &t_ini);
   if (DEBUG) printf(" LHE quantization: %.16g ms\n", secs * 1000.0);
 
@@ -501,11 +501,9 @@ pthread_join(streamer_thread[i], NULL);
 
 
 
-  //if (DEBUG)
-  //sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant%02d.bmp",i);
+  if (DEBUG) sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant%02d.bmp",i);
 
-  //if (DEBUG)
-  //save_frame(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
+  if (DEBUG) save_frame(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
 
   // ahora entra el entropico para codificar los hops
   // -----------------------------------------------
@@ -568,8 +566,10 @@ if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena_player_down%02d.bmp",i);
 
 
 
-if (DEBUG) printf(" escalando...\n",i);
+if (DEBUG){ printf(" escalando...\n",i);
   //expansion del last_frame_player. solo experimental. no se hace en encoder
+
+
   int umbral=38;
   if (pppy==1) {
   scale_epx_H2(last_frame_player_Y,height_down_Y,width_down_Y,scaled_Y,umbral);
@@ -584,7 +584,9 @@ if (DEBUG) printf(" escalando...\n",i);
 
 
   }
-if (DEBUG) printf(" escaled ok \n",i);
+  printf(" escaled ok \n",i);
+
+  }
 
 
   //if (DEBUG)
