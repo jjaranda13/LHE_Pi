@@ -90,6 +90,20 @@ void free_entropic_decoder(uint8_t* hops);
 */
 int decode_line_entropic( uint8_t * bytes , uint8_t * hops,  int bytes_lenght);
 
+/**
+* @brief Decodes a scanline from binary data into symbols.
+*
+* This function fills an array of hops using the bitstream. It implements the
+* static huffman table and the automatic RLE. The pointer to hop must be
+* inizialized before calling the function.
+
+* @param bits The pointer to the bitstream of data.
+* @param hops The resulting array of hops is stored in this pointer.
+* @param bytes_lenght The lenght in bytes of the bitstream.
+* @return Lenght of the array of hops returned. it should be img_width minus one.
+
+* @warning hops pointer must be allocated before calling this function.
+*/
 int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, int hops_lenght, int * readed_bytes);
 /////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS. NOT TO BE CALLED FROM OUTSIDE
