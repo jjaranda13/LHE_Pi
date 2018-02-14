@@ -26,7 +26,9 @@
 
 #include "include/globals.h"
 #include "include/streamer.h"
-
+int total_frames=0;
+int total_time=0;
+bool newframe=false;
 
 /*Leemos de un socket, los parámetros son:
 -Descriptor del socket
@@ -279,6 +281,8 @@ pthread_mutex_init(&stream_subframe_mutex,NULL);
 
 nal_byte_counter=0;
 
+frame_byte_counter=0;
+
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -307,6 +311,9 @@ pthread_mutex_lock(&stream_subframe_mutex);
 
 //luminancias
 int line=start;
+
+if (line==0 ) newframe=true;//flag de nuevo frame
+
 while (line<height_down_Y)
 {
   stream_line(bits_Y, tam_bits_Y[line],line);
@@ -370,8 +377,23 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line)
      //uint8_t kk= 1+(uint8_t) line >>8;
     // fprintf(stderr, " sale %d  \n",kk);
 
+//fprintf (stderr," line: %d \n", line);
+ //if (line==0) //este if no vale porque el subframe que hace la linea Y tambien hace la linea U y la V,
+  //if (line==0 && frame_byte_counter>15000) //solo sirve si el frame es suficientemente grande
+  if (newframe)
+  {
+  total_frames+=1;
+  total_time+=frame_byte_counter;
+  int average_frame=total_time/total_frames;
+
+  fprintf (stderr," average frame bytes: %d , this frame:%d \n", average_frame, frame_byte_counter);
+  frame_byte_counter=0;
+  newframe=false;
+  }
+  frame_byte_counter+=line_size_bytes;
 
    if (nal_byte_counter>1000)
+
    {
 
    const uint8_t frame[] = {0x00, 0x00, 0x00,0x01, 0x65}; //nal tipo 5

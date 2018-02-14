@@ -180,3 +180,4 @@ pthread_mutex_t stream_subframe_mutex;
 
 
 int nal_byte_counter;
+int frame_byte_counter;
