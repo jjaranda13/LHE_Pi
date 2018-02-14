@@ -387,8 +387,8 @@ rgb2yuv(rgb,rgb_channels);
 if (DEBUG) printf("frame loaded  \n");
 
 //int encoder
-pppx=1;
-pppy=1;
+pppx=2;
+pppy=2;
 
 init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
 init_videoencoder();
