@@ -277,9 +277,10 @@ void init_streamer()
 {
 pthread_mutex_init(&stream_subframe_mutex,NULL);
 
-
+nal_byte_counter=0;
 
 }
+
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void *mytask_stream(void *arg)
 {
@@ -294,10 +295,15 @@ int separation=tinfo->separation;
 
 pthread_mutex_lock(&stream_subframe_mutex);
 
+ //const uint8_t frame[] = {0x00, 0x00, 0x00,0x01, 0x65}; //nal tipo 5
+ //son 3 bits, 1 bit para el forbiden cero, dos para ref idc y 5 bits para el tipo
+ // es decir  xxx xx xxxxx -> 0 11 00001 nal tipo 1 (coded slice of a non idr picture)
+ //-> 0 11 00111 nal tipo 7 (sequence parameter set)
+ //-> 0 11 00101 nal tipo 5 (coded slice of idr picture)
 
-//file_pipe=fdopen(pipe_desc[1],"w");
+ //fwrite(&frame,sizeof(uint8_t),5,stdout);
 
-//printf(" hola  %d \n",start);
+
 
 //luminancias
 int line=start;
@@ -319,11 +325,14 @@ stream_line(bits_V, tam_bits_V[line],line);
 }
 
 
+
 fflush(stdout);
+
 
 pthread_mutex_unlock(&stream_subframe_mutex);
 
 }
+
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void lanza_streamer_subframe(int startline,int separation)
@@ -354,31 +363,60 @@ pthread_create(&streamer_thread[startline], &attr, &mytask_stream, &tsinfo[start
 void stream_line(uint8_t ** bits, int bits_lenght, int line)
 {
 
-    uint8_t line_low = (uint8_t) line;
-    uint8_t line_high = (uint8_t) line >> 8;
+    uint8_t line_low =  line % 255;//comenzamos en line=1
+    uint8_t line_high  =line >> 8 + 1;
     uint16_t line_size_bytes = (bits_lenght%8 == 0)? bits_lenght/8 : (bits_lenght/8)+1;
     uint8_t cero=0;
+     //uint8_t kk= 1+(uint8_t) line >>8;
+    // fprintf(stderr, " sale %d  \n",kk);
 
-   // freopen(stdout);
 
-    fwrite(&cero,sizeof(uint8_t),1,stdout);
+   if (nal_byte_counter>1000)
+   {
+
+   const uint8_t frame[] = {0x00, 0x00, 0x00,0x01, 0x65}; //nal tipo 5
+   //son 3 bits, 1 bit para el forbiden cero, dos para ref idc y 5 bits para el tipo
+   // es decir  xxx xx xxxxx -> 0 11 00001 nal tipo 1 (coded slice of a non idr picture)
+   //-> 0 11 00111 nal tipo 7 (sequence parameter set)
+   //-> 0 11 00101 nal tipo 5 (coded slice of idr picture)
+   fwrite(&frame,sizeof(uint8_t),5,stdout);
+   nal_byte_counter=line_size_bytes;
+
+   }
+   else nal_byte_counter+=line_size_bytes;
+
+
+
+
+
+
+   // fputc(23,stdout);
+    //fwrite(&cero,sizeof(uint8_t),1,stdout);
+    //fwrite(&cero,sizeof(uint8_t),1,stdout);
+    //fwrite(&line_size_bytes,sizeof(uint16_t),1,stdout);
     fwrite(&line_high,sizeof(uint8_t),1,stdout);
     fwrite(&line_low,sizeof(uint8_t),1,stdout);
+
     fwrite(bits[line], sizeof(uint8_t), line_size_bytes, stdout);
+    //bits[line][0]=0;
+    //fputc(255,stdout);
+    //fwrite(bits[line], sizeof(char), line_size_bytes, stdout);
+
 /*
     char *texto;
     texto = "Hola que ase asdljhkajsfhdjkah uiowyerouhkasjnf ljdflk ajsdlfn,m alsdfj lkajdfasdf aasdfasdfde\n";
     fwrite (texto, sizeof(char), line_size_bytes, stdout);
 */
 
+
+
     //fflush(stdout);
     //fclose(stdout);
 
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-/*
 void stream_frame()
+//esta funcion no se usa, salvo con fines experimentales y de medicion
 {
 
     int separacion=8, line ;
@@ -420,4 +458,4 @@ void stream_frame()
  //fclose (stdout);
  //fclose(file_pipe);
 }
-*/
+

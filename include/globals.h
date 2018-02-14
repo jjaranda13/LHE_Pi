@@ -3,7 +3,8 @@
 #include <pthread.h>
 
 
-#define num_threads 4
+#define num_threads 3
+
 
 int cosa;
 bool DEBUG;//for execution in debug mode and show more traces
@@ -176,3 +177,6 @@ pthread_t thread[num_threads];
 pthread_t streamer_thread[num_threads*8];
 
 pthread_mutex_t stream_subframe_mutex;
+
+
+int nal_byte_counter;

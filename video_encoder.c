@@ -311,11 +311,40 @@ for (int y=dy;y<height_orig_UV;y++){
 
 
 }
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void sendH264header()
+{
+//sequence parameter set. afecta a N picture
+const uint8_t sps[] = {0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x00, 0x0a, 0xf8, 0x41, 0xa2};
+//picture parameter set . afecta a 1 pictures
+const uint8_t pps[] = {0x00, 0x00, 0x00, 0x01, 0x68, 0xce, 0x38, 0x80};
+const uint8_t frame[] = {0x00, 0x00, 0x00, 0x01, 0x65};
+fwrite("He mandado cabecera H264\n", sizeof(uint8_t), 25, stderr);
+
+fwrite(&sps,sizeof(uint8_t),11,stdout);
+fflush(stdout);
+fwrite(&pps,sizeof(uint8_t),8,stdout);
+fflush(stdout);
+fwrite(&frame,sizeof(uint8_t),5,stdout);
+//printf("\n");
+fflush(stdout);
+
+
+
+}
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 int main(int argc, char* argv[]) {
 
+if (argc==2)
+{
+ if (!strcmp(argv[1], "-rtp"))
+ {
+ sendH264header();
+ }
+ }
 VideoSimulation();
 
 }
@@ -358,8 +387,8 @@ rgb2yuv(rgb,rgb_channels);
 if (DEBUG) printf("frame loaded  \n");
 
 //int encoder
-pppx=2;
-pppy=2;
+pppx=1;
+pppy=1;
 
 init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
 init_videoencoder();
@@ -376,7 +405,7 @@ int total_frames=100000;//1000;
 int total_bits=0;
 float contador_tiempo=0;
 
-
+//setbuf(stdout,NULL);//esto le hace daño a testraspi
 
 for (int i=0 ; i<total_frames;i++){
 
@@ -416,6 +445,7 @@ gettimeofday(&t_ini, NULL);
 
   if (camera) pthread_mutex_unlock (&cam_down_mutex);
 
+//  if (i < 100) continue;
 
   if (DEBUG) gettimeofday(&t_fin, NULL);
   if (DEBUG) secs = timeval_diff(&t_fin, &t_ini);
@@ -480,20 +510,38 @@ gettimeofday(&t_ini, NULL);
     pthread_join(thread[i], NULL);
     }
   if (DEBUG) gettimeofday(&t_fin, NULL);
-  if (DEBUG) gettimeofday(&t_fin, NULL);
 
 
-for (int i=0; i< num_threads*8;i++)
+//stream_frame();
+//gettimeofday(&t_fin, NULL);
+
+for (int j=0; j< num_threads*8;j++)
 {
-pthread_join(streamer_thread[i], NULL);
+pthread_join(streamer_thread[j], NULL);
 }
+
+
 
   gettimeofday(&t_fin, NULL);
   secs = timeval_diff(&t_fin, &t_ini);
   contador_tiempo+=secs;
+
+  //if (secs>100) __fpurge(stdout);
+
   if (i % 20 == 0) {
-    fprintf(stderr, " FRAME ENCODING & STREAMING: %.16g ms\n", (contador_tiempo/20) * 1000.0);
+    fprintf(stderr, " (avg 20frames) FRAME ENCODING & STREAMING: %.16g ms\n", (contador_tiempo/20) * 1000.0);
     contador_tiempo = 0;
+
+//const uint8_t frame[] = {0x00, 0x00, 0x00, 0x01, 0x65};
+//fwrite(&frame,sizeof(uint8_t),5,stdout);
+    //float k=(contador_tiempo/20) * 1000.0;
+    //if (k>100) {
+    //sleep (3);
+    //contador_tiempo=0;
+      //  __fpurge(stdout);
+       // sendH264header();
+    //}
+
   }
   //secs = timeval_diff(&t_fin, &t_ini);
   if (DEBUG) printf(" LHE quantization: %.16g ms\n", secs * 1000.0);
@@ -506,9 +554,11 @@ pthread_join(streamer_thread[i], NULL);
 
 
 
-  if (DEBUG) sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant%02d.bmp",i);
+  if (DEBUG)
+  sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant%02d.bmp",i);
 
-  if (DEBUG) save_frame(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
+  if (DEBUG)
+  save_frame(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
 
   // ahora entra el entropico para codificar los hops
   // -----------------------------------------------
