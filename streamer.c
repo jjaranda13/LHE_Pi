@@ -27,7 +27,7 @@
 #include "include/globals.h"
 #include "include/streamer.h"
 int total_frames=0;
-int total_time=0;
+int total_bytes=0;
 bool newframe=false;
 
 /*Leemos de un socket, los parámetros son:
@@ -282,7 +282,8 @@ pthread_mutex_init(&stream_subframe_mutex,NULL);
 nal_byte_counter=0;
 
 frame_byte_counter=0;
-
+total_bytes=0;
+total_frames=0;
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -400,11 +401,16 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line)
   if (newframe)
   {
   total_frames+=1;
-  total_time+=frame_byte_counter;
-  int average_frame=total_time/total_frames;
+  total_bytes+=frame_byte_counter;
+  int average_frame=total_bytes/total_frames;
 
   fprintf (stderr," average frame bytes: %d , this frame:%d \n", average_frame, frame_byte_counter);
   frame_byte_counter=0;
+  if (total_frames==20)
+  {
+  total_frames--;
+  total_bytes-=average_frame;
+  }
   newframe=false;
   }
   frame_byte_counter+=line_size_bytes;
