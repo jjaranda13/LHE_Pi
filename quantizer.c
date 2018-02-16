@@ -455,7 +455,11 @@ for (int x=0;x<width;x++)
    else if (hop_number==3) grad=-1;
    else if (!small_hop) grad=0;
 
-   if (hop_number>5 || hop_number<3) softline=false;
+
+   //if (hop_number>4 || hop_number<4) softline=false; // soft = h0,h1
+   if (hop_number>5 || hop_number<3) softline=false; // soft = h0,h1
+   //if (hop_number>6 || hop_number<2) softline=false; //soft =h0,h1,h2
+   //if (hop_number>7 || hop_number<1) softline=false; //soft =h0,h1,h2,h3
 
 
   }
