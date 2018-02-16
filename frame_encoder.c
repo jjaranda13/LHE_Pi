@@ -211,7 +211,7 @@ while (line<height_down_Y)
 {
   //componentes luminancia
   if (DEBUG)  printf("line %d \n",line);
-  quantize_scanline( target_Y,  line, width_down_Y, hops_Y,res_Y);
+  inteligent_discard_Y[line]=quantize_scanline( target_Y,  line, width_down_Y, hops_Y,res_Y);
   tam_bits_Y[line] = entropic_enc(hops_Y, bits_Y, line, width_down_Y);
   *bits_count+=tam_bits_Y[line];
 
@@ -232,11 +232,11 @@ line=(start_line+n*8)% height_down_UV;
 while (line<height_down_UV)
 {
   if (DEBUG) printf("line UV %d \n",line);
-  quantize_scanline( target_U,  line, width_down_UV, hops_U,res_U);
+  inteligent_discard_U[line]=quantize_scanline( target_U,  line, width_down_UV, hops_U,res_U);
   tam_bits_U[line] = entropic_enc(hops_U, bits_U, line, width_down_UV);
   *bits_count+=tam_bits_U[line];
 
-  quantize_scanline( target_V,  line, width_down_UV, hops_V,res_V);
+  inteligent_discard_V[line]=quantize_scanline( target_V,  line, width_down_UV, hops_V,res_V);
   tam_bits_V[line] = entropic_enc(hops_V, bits_V, line, width_down_UV);
   *bits_count+=tam_bits_V[line];
 

@@ -177,6 +177,11 @@ printf( "y=%d h1=%d h%d=%d \n",hop0,hop1,hn+3,cache_hops[hop0][hop1-4][hn]);
 
 */
 
+inteligent_discard_Y=malloc(height_down_Y*sizeof(bool));
+inteligent_discard_U=malloc(height_down_UV*sizeof(bool));
+inteligent_discard_V=malloc(height_down_UV*sizeof(bool));
+
+
 quantizer_initialized=true;
 
 }// end function
@@ -221,17 +226,24 @@ free (result2_Y);
 free(result2_U);
 free(result2_V);
 
-
+//inteliigent discard
+free (inteligent_discard_Y);
+free (inteligent_discard_U);
+free (inteligent_discard_V);
 
 quantizer_initialized=false;
 
 }//end close quantizer
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void quantize_scanline(unsigned char **orig_YUV, int y,int width, unsigned char **hops,unsigned char **result_YUV) {
+bool quantize_scanline(unsigned char **orig_YUV, int y,int width, unsigned char **hops,unsigned char **result_YUV) {
 /// this function quantize the luminances or chrominances of one scanline
 /// inputs : orig_YUV (which can be orig_down_Y, orig_down_U or orig_down_V), line, width,
 /// outputs: hops, result_YUV (which can be result_Y, result_U or result_V)
+
+
+//inteligent discard
+bool softline=true;
 
 
 if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
@@ -423,7 +435,7 @@ for (int x=0;x<width;x++)
   //hops_type[hop_number]++;
 
   //------------- PHASE 4: h1 logic  --------------------------
-  if (hop_number>5 || hop_number<3) small_hop=false; //true by default
+  if (hop_number>5 || hop_number<3) {small_hop=false; }//true by default
 
   //if (small_hop==true && last_small_hop==true){
  if (small_hop * last_small_hop){
@@ -443,10 +455,13 @@ for (int x=0;x<width;x++)
    else if (hop_number==3) grad=-1;
    else if (!small_hop) grad=0;
 
+   if (hop_number>5 || hop_number<3) softline=false;
 
 
   }
 //  printf("\n");
+//if (softline) fprintf(stderr, "linea descartada \n ");
 
 
+return softline;
 }

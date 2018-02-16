@@ -308,16 +308,26 @@ pthread_mutex_lock(&stream_subframe_mutex);
  //fwrite(&frame,sizeof(uint8_t),5,stdout);
 
 
+//inteligent discard
+bool discard=true;
 
 //luminancias
 int line=start;
 
 if (line==0 ) newframe=true;//flag de nuevo frame
 
+if (line%2==1) inteligent_discard_Y[line]=true;
+
 while (line<height_down_Y)
 {
-  stream_line(bits_Y, tam_bits_Y[line],line);
 
+
+//  if (!(discard && line<10 && inteligent_discard_Y[line]==true));
+//if (!discard || inteligent_discard_Y[line]==false || line%2==0)
+if (!discard || line%2==0|| inteligent_discard_Y[line]==false)
+    {
+    stream_line(bits_Y, tam_bits_Y[line],line);
+    }
   line+=separation;
 }
 
@@ -326,8 +336,15 @@ while (line<height_down_Y)
 line=start;
 while (line<height_down_UV)
 {
-stream_line(bits_U, tam_bits_U[line],line);
-stream_line(bits_V, tam_bits_V[line],line);
+if (!discard || line%2==1 || inteligent_discard_U[line]==false);
+    {
+    stream_line(bits_U, tam_bits_U[line],line);
+    }
+
+if (!discard && line%2==1 || inteligent_discard_V[line]==false);
+    {
+    stream_line(bits_V, tam_bits_V[line],line);
+    }
   line+=separation;
 }
 

@@ -170,14 +170,21 @@ int separation;
 
 struct thread_streamer_info *tsinfo;
 
-
+//threads de codificacion (quantizer + entropic)
 pthread_mutex_t th_done[num_threads];
 pthread_t thread[num_threads];
 
-pthread_t streamer_thread[num_threads*8];
 
+//threads de streaming y mutex de esos threads
+pthread_t streamer_thread[num_threads*8];
 pthread_mutex_t stream_subframe_mutex;
 
-
+//contador de bytes de NAL y de frame
 int nal_byte_counter;
 int frame_byte_counter;
+
+
+//descarte inteligente de scanlines
+bool *inteligent_discard_Y;
+bool *inteligent_discard_U;
+bool *inteligent_discard_V;
