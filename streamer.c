@@ -316,7 +316,7 @@ int line=start;
 
 if (line==0 ) newframe=true;//flag de nuevo frame
 
-if (line%2==1) inteligent_discard_Y[line]=true;
+
 
 while (line<height_down_Y)
 {

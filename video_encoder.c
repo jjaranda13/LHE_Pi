@@ -549,9 +549,12 @@ pthread_join(streamer_thread[j], NULL);
 
 
 
-
-//   loss_packets();
-
+if (DEBUG)
+{
+   intelligent_loss();
+  sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant_rebuilt%02d.bmp",i);
+  save_frame(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
+}
 
 
   if (DEBUG)
@@ -676,7 +679,7 @@ if (DEBUG) printf(" bitrate= %f \n",bitrate);
 
 
 }
-
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 void loss_packets()
 {
@@ -696,6 +699,9 @@ int victims_UV[height_down_UV];
 for (int i = 0; i < height_down_UV; i++){
     victims_UV[i] = 0;
 }
+
+
+
 
 for (int i=0;i<num_lost_lines;i++)
 {
@@ -752,6 +758,124 @@ for (int i = 0; i < height_down_Y; i++){
         }
     }
 }
+
+for (int i = 0; i < height_down_UV; i++){
+
+    int superior = i - 1;
+    int inferior = i + 1;
+    if (victims_UV[i] == 0) continue;
+    else {
+        int j = i-1;
+        while(victims_UV[j] == 1 && j > 0) j--;
+        superior = j;
+        j = i+1;
+        while(victims_UV[j]==1 && j < height_down_UV) j++;
+        inferior = j;
+    }
+
+    if (superior > -1 && inferior < height_down_UV) {
+        for (int x=0;x<width_orig_UV;x++){
+            if (flag) frame_encoded_U[i][x]=(frame_encoded_U[superior][x]+frame_encoded_U[inferior][x])/2;
+            if (flag) frame_encoded_V[i][x]=(frame_encoded_V[superior][x]+frame_encoded_V[inferior][x])/2;
+        }
+    } else if (superior > -1) {
+        for (int x=0;x<width_orig_UV;x++){
+            if (flag) frame_encoded_U[i][x]=frame_encoded_U[superior][x];
+            if (flag) frame_encoded_V[i][x]=frame_encoded_V[superior][x];
+        }
+    } else {
+        for (int x=0;x<width_orig_UV;x++){
+            if (flag) frame_encoded_V[i][x]=frame_encoded_V[inferior][x];
+            if (flag) frame_encoded_U[i][x]=frame_encoded_U[inferior][x];
+        }
+    }
+}
+
+int count = 0;
+for (int i = 0; i < height_down_Y; i++){
+    if(victims_Y[i] == 1) count++;
+}
+printf("LLLLLLLLLLLLLLLLLLLLLLcontador de perdidas: %d\n", (count*100)/height_down_Y);
+}
+
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void intelligent_loss()
+{
+
+if (DEBUG) printf ("packet loss...\n");
+
+bool flag= true;//true; flag de reconstruccion
+int line=0;
+int victims_Y[height_down_Y];
+
+
+for (int i = 0; i < height_down_Y; i++){
+    victims_Y[i] = 0;
+}
+
+int victims_UV[height_down_UV];
+for (int i = 0; i < height_down_UV; i++){
+    victims_UV[i] = 0;
+}
+
+
+for (int i=0;i<height_down_Y;i++)
+{
+
+  if (i%2==1 && inteligent_discard_Y[i]==true)  victims_Y[i] = 1;
+  //if (i%2==1)  victims_Y[i] = 1;
+  else continue;
+
+   line=i;
+  //fprintf(stderr," linea lost %d \n",i);
+  for (int x=0;x<width_orig_Y;x++){
+  frame_encoded_Y[line][x]=0;
+  //if (flag) frame_encoded_Y[line][x]=(frame_encoded_Y[line-1][x]+frame_encoded_Y[line+1][x])/2;
+  }
+
+  for (int x=0;x<width_orig_UV;x++){
+  frame_encoded_U[line/2][x]=0;
+  frame_encoded_V[line/2][x]=0;
+  victims_UV[line/2] = 1;
+
+  //if (flag) frame_encoded_U[line/2][x]=(frame_encoded_U[line/2-1][x]+frame_encoded_U[line/2+1][x])/2;
+  //if (flag)  frame_encoded_V[line/2][x]=(frame_encoded_V[line/2-1][x]+frame_encoded_V[line/2+1][x])/2;
+  }
+}
+
+
+
+
+for (int i = 0; i < height_down_Y; i++){
+
+    int superior = i - 1;
+    int inferior = i + 1;
+    if (victims_Y[i] == 0) continue;
+    else {
+        int j = i-1;
+        while(victims_Y[j] == 1 && j > 0) j--;
+        superior = j;
+        j = i+1;
+        while(victims_Y[j]==1 && j < height_down_Y) j++;
+        inferior = j;
+    }
+
+    if (superior > -1 && inferior < height_down_Y) {
+        for (int x=0;x<width_orig_Y;x++){
+            if (flag) frame_encoded_Y[i][x]=(frame_encoded_Y[superior][x]+frame_encoded_Y[inferior][x])/2;
+        }
+    } else if (superior > -1) {
+        for (int x=0;x<width_orig_Y;x++){
+            if (flag) frame_encoded_Y[i][x]=frame_encoded_Y[superior][x];
+        }
+    } else {
+        for (int x=0;x<width_orig_Y;x++){
+            if (flag) frame_encoded_Y[i][x]=frame_encoded_Y[inferior][x];
+        }
+    }
+}
+
 
 for (int i = 0; i < height_down_UV; i++){
 

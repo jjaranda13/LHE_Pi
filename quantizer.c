@@ -456,11 +456,12 @@ for (int x=0;x<width;x++)
    else if (!small_hop) grad=0;
 
 
+   //softline=false; //nunca
    //if (hop_number>4 || hop_number<4) softline=false; // soft = h0,h1
-   if (hop_number>5 || hop_number<3) softline=false; // soft = h0,h1
-   //if (hop_number>6 || hop_number<2) softline=false; //soft =h0,h1,h2
+   //if (hop_number>5 || hop_number<3) softline=false; // soft = h0,h1
+   if (hop_number>6 || hop_number<2) softline=false; //soft =h0,h1,h2
    //if (hop_number>7 || hop_number<1) softline=false; //soft =h0,h1,h2,h3
-
+   //si no pongo nada es true siempre
 
   }
 //  printf("\n");
