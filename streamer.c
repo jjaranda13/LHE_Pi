@@ -29,7 +29,7 @@
 int total_frames=0;
 int total_bytes=0;
 bool newframe=false;
-
+bool line_Y=false;
 /*Leemos de un socket, los parámetros son:
 -Descriptor del socket
 -Estructura remoto: en la que se devolveran los datos del que ha enviado el mensaje que Leemos
@@ -317,7 +317,7 @@ int line=start;
 
 if (line==0 ) newframe=true;//flag de nuevo frame
 
-
+line_Y=true;
 
 while (line<height_down_Y)
 {
@@ -332,6 +332,7 @@ if (!discard || line%2==0|| inteligent_discard_Y[line]==false)
   line+=separation;
 }
 
+line_Y=false;
 
 //crominancias
 line=start;
@@ -415,7 +416,7 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line)
   }
   frame_byte_counter+=line_size_bytes;
 
-   if (nal_byte_counter>1000)
+   if (nal_byte_counter>1000 && line_Y==true)
 
    {
 

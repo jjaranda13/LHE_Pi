@@ -260,7 +260,7 @@ if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
  int emin=255;//error min
  int error=0;//computed error
 
- unsigned char oc=orig_YUV[y][0];//original color
+ unsigned char oc=127;//orig_YUV[y][0];//original color
  unsigned char hop0=0; //prediction
  unsigned char quantum=oc; //final quantum asigned value
  unsigned char hop_value=0;//data from cache
