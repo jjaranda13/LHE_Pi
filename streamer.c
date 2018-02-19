@@ -393,14 +393,14 @@ pthread_create(&streamer_thread[startline], &attr, &mytask_stream, &tsinfo[start
 
 void stream_line(uint8_t ** bits, int bits_lenght, int line)
 {
+    int line_aux=line;
+    if (line_type==0) line_aux+=4000;
+    else if (line_type==1) line_aux+=2000;
 
-    if (line_type==0) line+=4000;
-    else if (line_type==1) line+=2000;
 
 
-
-    uint8_t line_low =  line % 255;//comenzamos en line=1
-    uint8_t line_high  =line >> 8 + 1;
+    uint8_t line_low =  line_aux % 255;//comenzamos en line=1
+    uint8_t line_high  =line_aux >> 8 + 1;
     uint16_t line_size_bytes = (bits_lenght%8 == 0)? bits_lenght/8 : (bits_lenght/8)+1;
     uint8_t cero=0;
      //uint8_t kk= 1+(uint8_t) line >>8;
