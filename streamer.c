@@ -29,7 +29,7 @@
 int total_frames=0;
 int total_bytes=0;
 bool newframe=false;
-bool line_Y=false;
+int line_type=0;
 /*Leemos de un socket, los parámetros son:
 -Descriptor del socket
 -Estructura remoto: en la que se devolveran los datos del que ha enviado el mensaje que Leemos
@@ -317,7 +317,7 @@ int line=start;
 
 if (line==0 ) newframe=true;//flag de nuevo frame
 
-line_Y=true;
+
 
 while (line<height_down_Y)
 {
@@ -327,12 +327,14 @@ while (line<height_down_Y)
 //if (!discard || inteligent_discard_Y[line]==false || line%2==0)
 if (!discard || line%2==0|| inteligent_discard_Y[line]==false)
     {
+    line_type=0;
     stream_line(bits_Y, tam_bits_Y[line],line);
     }
+
   line+=separation;
 }
 
-line_Y=false;
+
 
 //crominancias
 line=start;
@@ -340,11 +342,14 @@ while (line<height_down_UV)
 {
 if (!discard || line%2==1 || inteligent_discard_U[line]==false);
     {
+    line_type=1;
     stream_line(bits_U, tam_bits_U[line],line);
     }
 
+
 if (!discard && line%2==1 || inteligent_discard_V[line]==false);
     {
+    line_type=2;
     stream_line(bits_V, tam_bits_V[line],line);
     }
   line+=separation;
@@ -389,6 +394,11 @@ pthread_create(&streamer_thread[startline], &attr, &mytask_stream, &tsinfo[start
 void stream_line(uint8_t ** bits, int bits_lenght, int line)
 {
 
+    if (line_type==0) line+=4000;
+    else if (line_type==1) line+=2000;
+
+
+
     uint8_t line_low =  line % 255;//comenzamos en line=1
     uint8_t line_high  =line >> 8 + 1;
     uint16_t line_size_bytes = (bits_lenght%8 == 0)? bits_lenght/8 : (bits_lenght/8)+1;
@@ -416,7 +426,8 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line)
   }
   frame_byte_counter+=line_size_bytes;
 
-   if (nal_byte_counter>1000 && line_Y==true)
+   //if (nal_byte_counter>1000 && line_Y==true)
+   if (nal_byte_counter>1000)
 
    {
 
