@@ -549,9 +549,9 @@ pthread_join(streamer_thread[j], NULL);
 
 
 
-if (DEBUG)
+//if (DEBUG)
 {
-   intelligent_loss();
+  intelligent_loss();
   sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant_rebuilt%02d.bmp",i);
   save_frame(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
 }
@@ -834,6 +834,9 @@ for (int i=0;i<height_down_Y;i++)
   //if (flag) frame_encoded_Y[line][x]=(frame_encoded_Y[line-1][x]+frame_encoded_Y[line+1][x])/2;
   }
 
+
+/*
+
   for (int x=0;x<width_orig_UV;x++){
   frame_encoded_U[line/2][x]=0;
   frame_encoded_V[line/2][x]=0;
@@ -842,6 +845,7 @@ for (int i=0;i<height_down_Y;i++)
   //if (flag) frame_encoded_U[line/2][x]=(frame_encoded_U[line/2-1][x]+frame_encoded_U[line/2+1][x])/2;
   //if (flag)  frame_encoded_V[line/2][x]=(frame_encoded_V[line/2-1][x]+frame_encoded_V[line/2+1][x])/2;
   }
+  */
 }
 
 
@@ -876,7 +880,7 @@ for (int i = 0; i < height_down_Y; i++){
     }
 }
 
-
+/*
 for (int i = 0; i < height_down_UV; i++){
 
     int superior = i - 1;
@@ -908,7 +912,7 @@ for (int i = 0; i < height_down_UV; i++){
         }
     }
 }
-
+*/
 int count = 0;
 for (int i = 0; i < height_down_Y; i++){
     if(victims_Y[i] == 1) count++;

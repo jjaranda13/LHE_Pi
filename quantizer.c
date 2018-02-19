@@ -63,7 +63,8 @@ for (int hop0=0;hop0<=255;hop0++){
  int hop_min=1;
  int hop_max=255-hop_min;
  h=min(hop_max,h);h=max(h,hop_min);
- cache_hops[hop0][hop1-4][0] = 0;//(unsigned char)h;//(hop0-hop1*rneg*rneg*rneg);
+ //cache_hops[hop0][hop1-4][0] = 0;//(unsigned char)h;//(hop0-hop1*rneg*rneg*rneg);
+cache_hops[hop0][hop1-4][0] = (unsigned char)h;//(hop0-hop1*rneg*rneg*rneg);
 
  h=(int)(hop0-hop1*rneg*rneg);
  h=min(hop_max,h);h=max(h,hop_min);
