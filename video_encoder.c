@@ -401,14 +401,17 @@ char buffer[100];
 
 // bucle infinito de movimiento
 // -----------------------------
-int total_frames=100000;//1000;
+int total_frames=30;//1000;
 int total_bits=0;
 float contador_tiempo=0;
 
 //setbuf(stdout,NULL);//esto le hace daño a testraspi
-
-for (int i=0 ; i<total_frames;i++){
-
+int i=0;
+while (true)
+{
+//for (int i=0 ; i<total_frames;i++){
+i++;
+if (i==total_frames) i=0;
 
   //desplazamos la imagen original
   // ------------------------------
@@ -549,7 +552,7 @@ pthread_join(streamer_thread[j], NULL);
 
 
 
-//if (DEBUG)
+if (DEBUG)
 {
   intelligent_loss();
   sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant_rebuilt%02d.bmp",i);
