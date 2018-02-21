@@ -99,17 +99,17 @@ int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, i
 	int condition_length = CONDITION_LENGHT_INI;
 	int rlc_length = RLC_LENGHT_INI;
 	int i = 0;
-	bool break_seq = false;
-	while (hops_counter < hops_lenght && i / 8 < bytes_lenght && !break_seq) {
+	bool nal_found = false;
+	while (hops_counter < hops_lenght && i / 8 < bytes_lenght && !nal_found) {
 
 		data = get_data(bytes, i);
 		switch (mode) {
 		case HUFFMAN:
 			if (data == 0) {
 				zero_counter++;
-				if (zero_counter == 9) {
-					i -= 9;
-					break_seq = true;
+				if (zero_counter == 24) {
+					i -= 24;
+					nal_found = true;
 				}
 			}
 			if (data == 1) {
@@ -131,9 +131,9 @@ int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, i
 		case PRE_HUFFMAN:
 			if (data == 0) {
 				zero_counter++;
-				if (zero_counter == 9) {
-					i -= 9;
-					break_seq = true;
+				if (zero_counter == 24) {
+					i -= 24;
+					nal_found = true;
 				}
 			}
 			else if (data == 1) {

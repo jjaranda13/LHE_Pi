@@ -48,7 +48,7 @@
 * hops lead to the maximum range. If not the behaviour is the normal jumping 
 * using the normal ratio.
 */
-#define IS_MAX_HOPS 1
+#define IS_MAX_HOPS 0
 
 /**
 * @brief List of symbols for the hops.
