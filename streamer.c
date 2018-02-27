@@ -393,80 +393,59 @@ pthread_create(&streamer_thread[startline], &attr, &mytask_stream, &tsinfo[start
 
 void stream_line(uint8_t ** bits, int bits_lenght, int line)
 {
-    int line_aux=line;
-    if (line_type==0) line_aux+=4000;
-    else if (line_type==1) line_aux+=2000;
+    uint8_t line_low, line_high, line_size_bytes;
 
+    line_low = (uint8_t) line;
+    line_high = (uint8_t) (line >> 8);
+    line_high &= ~(0xC0); // Set line_type to zeros
+    if (line_type == 0) // Y component
+    {
+        line_high |= 0xC0;
+    }
+    else if (line_type == 1) // U component
+    {
+        line_high |= 0x80;
+    }
+    else // When line_type == 2  V component
+    {
+        line_high |= 0x40;
+    }
 
+    line_size_bytes = (bits_lenght%8 == 0)? bits_lenght/8 : (bits_lenght/8)+1;
 
-    uint8_t line_low =  line_aux % 255;//comenzamos en line=1
-    uint8_t line_high  =line_aux >> 8 + 1;
-    uint16_t line_size_bytes = (bits_lenght%8 == 0)? bits_lenght/8 : (bits_lenght/8)+1;
-    uint8_t cero=0;
-     //uint8_t kk= 1+(uint8_t) line >>8;
-    // fprintf(stderr, " sale %d  \n",kk);
+    if (newframe)
+    {
+        total_frames+=1;
+        total_bytes+=frame_byte_counter;
+        int average_frame=total_bytes/total_frames;
 
-//fprintf (stderr," line: %d \n", line);
- //if (line==0) //este if no vale porque el subframe que hace la linea Y tambien hace la linea U y la V,
-  //if (line==0 && frame_byte_counter>15000) //solo sirve si el frame es suficientemente grande
-  if (newframe)
-  {
-  total_frames+=1;
-  total_bytes+=frame_byte_counter;
-  int average_frame=total_bytes/total_frames;
+        fprintf (stderr," average frame bytes: %d , this frame:%d \n", average_frame, frame_byte_counter);
+        frame_byte_counter=0;
+        if (total_frames==20)
+        {
+            total_frames--;
+            total_bytes-=average_frame;
+        }
+        newframe=false;
+    }
+    frame_byte_counter+=line_size_bytes;
 
-  fprintf (stderr," average frame bytes: %d , this frame:%d \n", average_frame, frame_byte_counter);
-  frame_byte_counter=0;
-  if (total_frames==20)
-  {
-  total_frames--;
-  total_bytes-=average_frame;
-  }
-  newframe=false;
-  }
-  frame_byte_counter+=line_size_bytes;
+    if (nal_byte_counter>1000)
+    {
 
-   //if (nal_byte_counter>1000 && line_Y==true)
-   if (nal_byte_counter>1000)
+       const uint8_t frame[] = {0x00, 0x00, 0x00,0x01, 0x65}; //nal tipo 5
+       //son 3 bits, 1 bit para el forbiden cero, dos para ref idc y 5 bits para el tipo
+       // es decir  xxx xx xxxxx -> 0 11 00001 nal tipo 1 (coded slice of a non idr picture)
+       //-> 0 11 00111 nal tipo 7 (sequence parameter set)
+       //-> 0 11 00101 nal tipo 5 (coded slice of idr picture)
+       fwrite(&frame,sizeof(uint8_t),5,stdout);
+       nal_byte_counter=line_size_bytes;
+    }
+    else nal_byte_counter+=line_size_bytes;
 
-   {
-
-   const uint8_t frame[] = {0x00, 0x00, 0x00,0x01, 0x65}; //nal tipo 5
-   //son 3 bits, 1 bit para el forbiden cero, dos para ref idc y 5 bits para el tipo
-   // es decir  xxx xx xxxxx -> 0 11 00001 nal tipo 1 (coded slice of a non idr picture)
-   //-> 0 11 00111 nal tipo 7 (sequence parameter set)
-   //-> 0 11 00101 nal tipo 5 (coded slice of idr picture)
-   fwrite(&frame,sizeof(uint8_t),5,stdout);
-   nal_byte_counter=line_size_bytes;
-
-   }
-   else nal_byte_counter+=line_size_bytes;
-
-
-
-
-
-
-   // fputc(23,stdout);
-    //fwrite(&cero,sizeof(uint8_t),1,stdout);
-    //fwrite(&cero,sizeof(uint8_t),1,stdout);
-    //fwrite(&line_size_bytes,sizeof(uint16_t),1,stdout);
     fwrite(&line_high,sizeof(uint8_t),1,stdout);
     fwrite(&line_low,sizeof(uint8_t),1,stdout);
-
     fwrite(bits[line], sizeof(uint8_t), line_size_bytes, stdout);
-    //bits[line][0]=0;
-    //fputc(255,stdout);
-    //fwrite(bits[line], sizeof(char), line_size_bytes, stdout);
-
-/*
-    char *texto;
-    texto = "Hola que ase asdljhkajsfhdjkah uiowyerouhkasjnf ljdflk ajsdlfn,m alsdfj lkajdfasdf aasdfasdfde\n";
-    fwrite (texto, sizeof(char), line_size_bytes, stdout);
-*/
-
-
-
     //fflush(stdout);
     //fclose(stdout);
 
