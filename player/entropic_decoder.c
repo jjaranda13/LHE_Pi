@@ -1,6 +1,6 @@
 /**
 * @file entropic_decoder.c
-* @author Francisco José Juan Quintanilla
+* @author Francisco Josï¿½ Juan Quintanilla
 * @date Sep 2017
 * @brief Entropic decoder for LHE_rpi codec.
 * @see https://github.com/jjaranda13/LHE_Pi
@@ -100,7 +100,7 @@ int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, i
 	int rlc_length = RLC_LENGHT_INI;
 	int i = 0;
 	bool nal_found = false;
-	while (hops_counter < hops_lenght && i / 8 < bytes_lenght && !nal_found) {
+	while (hops_counter < hops_lenght && i < bytes_lenght << 3 && !nal_found) {
 
 		data = get_data(bytes, i);
 		switch (mode) {
@@ -171,6 +171,7 @@ int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, i
 		}
 		i++;
 	}
+	i--;
 	*readed_bytes = i % 8 ? (i / 8) + 1 : i / 8;
 	return hops_counter;
 }

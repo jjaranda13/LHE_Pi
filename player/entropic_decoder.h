@@ -17,7 +17,6 @@
 *   HOP_N3 = 0000001
 *   HOP_P4 = 00000001
 *   HOP_N4 = 000000001
-*   BREAK  = 000000000
 *
 * For more:
 * @see https://github.com/jjaranda13/LHE_Pi
