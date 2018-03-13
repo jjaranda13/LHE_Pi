@@ -14,19 +14,19 @@ void init_entropic_enc(){
 	bits_Y = malloc(height_down_Y*sizeof(uint8_t *));
 
 	for (int i=0;i<height_down_Y;i++) {
-		bits_Y[i]=malloc(width_down_Y*sizeof (uint8_t));
+		bits_Y[i]=malloc(width_down_Y*2);// 2 porque el simbolo 0 ocupa 9 bits (=1.1 byte)
 	}
 
 	bits_U = malloc(height_down_UV*sizeof(uint8_t *));
 
 	for (int i=0;i<height_down_UV;i++) {
-		bits_U[i]=malloc(width_down_UV*sizeof (uint8_t));
+		bits_U[i]=malloc(width_down_UV*2);
 	}
 
 	bits_V = malloc(height_down_UV*sizeof(uint8_t *));
 
 	for (int i=0;i<height_down_UV;i++) {
-		bits_V[i]=malloc(width_down_UV*sizeof (uint8_t));
+		bits_V[i]=malloc(width_down_UV*2);
 	}
 
 	//tam_bytes_Y=malloc(height_down_Y*sizeof(unsigned char *));//Para inicializar esta variable que se usa en el streamer
@@ -71,9 +71,9 @@ static inline void init_put_bits(PutBitContext *s, uint8_t *buffer,
         buffer      = NULL;
     }
 
-    s->size_in_bits = 8 * buffer_size;
+    s->size_in_bits = 9 * buffer_size; // con 9 deberia valer pues nuestro simbolo mas largo mide 9 bits
     s->buf          = buffer;
-    s->buf_end      = s->buf + buffer_size;
+    s->buf_end      = s->buf + buffer_size*2;
     s->buf_ptr      = s->buf;
     s->bit_left     = 32;
     s->bit_buf      = 0;
@@ -84,7 +84,7 @@ static inline void init_put_bits(PutBitContext *s, uint8_t *buffer,
  */
 static inline int put_bits_count(PutBitContext *s)
 {
-    return (s->buf_ptr - s->buf) * 8 - s->bit_left;
+    return (s->buf_ptr - s->buf) * 8 +32 - s->bit_left;
 }
 
 
@@ -125,8 +125,10 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 
     s->bit_buf  = bit_buf;
     s->bit_left = bit_left;
+
 }
 
+/*
 static inline void put_bits_flush(PutBitContext *s)
 {
     unsigned int bit_buf;
@@ -134,6 +136,8 @@ static inline void put_bits_flush(PutBitContext *s)
 
     bit_buf  = s->bit_buf;
     bit_left = s->bit_left;
+
+    if (bit_left==32 )return;
 
     bit_buf   <<= bit_left;
     if (3 < s->buf_end - s->buf_ptr)
@@ -147,8 +151,29 @@ static inline void put_bits_flush(PutBitContext *s)
         abort();
     }
 }
+*/
+static inline void flush_put_bits(PutBitContext *s)
+{
 
-
+//printf("Ha llegado a flush\n");
+#ifndef BITSTREAM_WRITER_LE
+    if (s->bit_left < 32)
+       s->bit_buf <<= s->bit_left;
+#endif
+   while (s->bit_left < 32) {
+        /* XXX: should test end of buffer */
+#ifdef BITSTREAM_WRITER_LE
+        *s->buf_ptr++ = s->bit_buf;
+        s->bit_buf  >>= 8;
+#else
+        *s->buf_ptr++ = s->bit_buf >> 24;
+        s->bit_buf  <<= 8;
+#endif
+        s->bit_left  += 8;
+    }
+    s->bit_left = 32;
+    s->bit_buf  = 0;
+}
 
 int entropic_enc(unsigned char **hops, uint8_t **bits, unsigned int line, unsigned int line_width) {
 
@@ -170,6 +195,7 @@ int entropic_enc(unsigned char **hops, uint8_t **bits, unsigned int line, unsign
 
 
     init_put_bits(&s, bits[line], line_width);
+
 
     for (int x = 0; x < line_width; x++) {
 
@@ -215,7 +241,8 @@ int entropic_enc(unsigned char **hops, uint8_t **bits, unsigned int line, unsign
     }
 
     if (h0_counter != 0 && mode != HUFFMAN) put_bits(&s, rlc_length+1, h0_counter);
-    put_bits_flush(&s);
+    //put_bits_flush(&s);
+    flush_put_bits(&s);
     return put_bits_count(&s);
 
 }

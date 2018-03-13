@@ -395,21 +395,30 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line)
 {
     uint8_t line_low, line_high, line_size_bytes;
 
-    line_low = (uint8_t) line;
-    line_high = (uint8_t) (line >> 8);
-    line_high &= ~(0xC0); // Set line_type to zeros
+    int line_aux=line;
+
+    line_low = (uint8_t) line_aux;
+    line_high = (uint8_t) (line_aux >> 8);
+    //line_high &= ~(0xC0); // Set line_type to zeros
+
     if (line_type == 0) // Y component
     {
-        line_high |= 0xC0;
+        line_high |= 0x60;//0xC0;
     }
     else if (line_type == 1) // U component
     {
-        line_high |= 0x80;
+        line_high |= 0x40;//0x80;
     }
     else // When line_type == 2  V component
     {
-        line_high |= 0x40;
+        line_high |= 0x20;//0x40;
     }
+
+     //if (line_high==0) line_high=1;
+     //if (line_low==0) line_low=1;
+
+    //line_high=1;
+    //line_low=1;
 
     line_size_bytes = (bits_lenght%8 == 0)? bits_lenght/8 : (bits_lenght/8)+1;
 

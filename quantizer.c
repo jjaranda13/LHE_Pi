@@ -427,6 +427,8 @@ for (int x=0;x<width;x++)
   //*result_signal=quantum; result_signal++;
 
   //prev_color=quantum;
+ //hop_number=5;
+
 
   hops[y][x]=hop_number;
   //*result_hops=hop_number; result_hops++;
