@@ -36,18 +36,14 @@ void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_val
 	return;
 }
 
-void interpolate_scanline_vertical(uint8_t * upsampled_values, int scaline, int prev_scaline, int next_scanline, int img_width, int mode) {
+void interpolate_scanline_vertical(uint8_t * upsampled_values, int scaline, int prev_scaline, int next_scanline, int img_width) {
 
 	int total_distance = next_scanline - prev_scaline;
 	int prev_distance = scaline - prev_scaline;
 	int next_distance = next_scanline - scaline;
 
-	if (mode == BILINEAR) {
-		for (int i = scaline*img_width; i < (scaline + 1)*img_width; i++) {
-			upsampled_values[i] = (upsampled_values[i + (prev_distance*img_width)] * prev_distance + upsampled_values[i - (next_distance*img_width)] * next_distance) / total_distance;
-		}
-	}
-	else {
+	for (int i = scaline*img_width; i < (scaline + 1)*img_width; i++) {
+		upsampled_values[i] = (upsampled_values[i + (next_distance*img_width)] * prev_distance + upsampled_values[i - (prev_distance*img_width)] * next_distance) / total_distance;
 	}
 	return;
 }

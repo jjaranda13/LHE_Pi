@@ -1,3 +1,4 @@
+#pragma warning(disable:4996)
 #include <fcntl.h>  
 #include <io.h>  
 #include <stdbool.h>
@@ -21,7 +22,9 @@
 
 int decode_stream(int width, int height, FILE * file) {
 
-	int status, line_debug_counter=0;
+	int status, nal_debug_counter = 0,
+		recieved[1000] = {0}, recieved_cnt = 0;
+	unsigned int line_debug_counter = 0;
 	bool is_subframe[24] = { false }, is_Y[1080] = { false },
 		is_U[1080] = { false }, is_V[1080] = { false }, first = true;
 	uint8_t *bits = NULL, *hops = NULL;
@@ -35,6 +38,8 @@ int decode_stream(int width, int height, FILE * file) {
 		printf("Cannot allocate memory\n");
 		return(-1);
 	}
+	//setbuf(stdin, NULL);
+	fflush(stdin);
 	// Thrash the stream until a nal is recieved.
 	status = thrash_til_nal(file);
 	if (status != 0) {
@@ -47,6 +52,7 @@ int decode_stream(int width, int height, FILE * file) {
 		int bits_lenght, index = 0;
 
 		bits_lenght = buffer_til_nal(file, bits, BITS_BUFFER_LENGHT);
+		nal_debug_counter++;
 		while (index < bits_lenght) {
 			int readed_hops, readed_bytes, line_num,
 				past_component_state, subframe, component_state,
@@ -66,14 +72,20 @@ int decode_stream(int width, int height, FILE * file) {
 			status = get_header(headers, &component_state, &line_num, &subframe);
 			if (status != 0 || line_num > height) {
 				printf("Wrong header or line_num too high line_debug_counter=%d\n", line_debug_counter);
-				line_num = 240;
-				//return -1;
+				line_num = 0;
 			}
+				/*if (component_state == Y_STATE) {
+					recieved[recieved_cnt] = line_num;
+					recieved_cnt++;
+				}*/
 
 			if (is_frame_completed(component_state, past_component_state, subframe, past_subframe, is_subframe)) {
 				reconstruct_frame(img, is_Y, is_U, is_V, height, width);
 				play_frame(img->Y_data, img->U_data, img->V_data, width, width / 2);
 				reset_control_arrays(is_subframe, is_Y, is_U, is_V);
+				memset((void *)img->Y_data, 0, sizeof(uint8_t) *width*height);
+				memset((void *)img->U_data, 0, sizeof(uint8_t) * width*height / 4);
+				memset((void *)img->V_data, 0, sizeof(uint8_t) * width*height / 4);
 			}
 			switch (component_state) {
 			case Y_STATE:
@@ -81,7 +93,6 @@ int decode_stream(int width, int height, FILE * file) {
 				index += readed_bytes;
 				if (readed_hops != width) {
 					printf("Symbols obtained are not the ones expected\n");
-					//return -1;
 				}
 				decode_line_quantizer(hops, img->Y_data + width*line_num, width);
 				is_Y[line_num] = true;
@@ -92,7 +103,6 @@ int decode_stream(int width, int height, FILE * file) {
 				index += readed_bytes;
 				if (readed_hops != (width / 2)) {
 					printf("Symbols obtained are not the ones expected\n");
-					//return -1;
 				}
 				decode_line_quantizer(hops, img->U_data + (width / 2)*line_num, width / 2);
 				is_U[line_num] = true;
@@ -103,7 +113,6 @@ int decode_stream(int width, int height, FILE * file) {
 				index += readed_bytes;
 				if (readed_hops != (width / 2)) {
 					printf("Symbols obtained are not the ones expected\n");
-					//return -1;
 				}
 				decode_line_quantizer(hops, img->V_data + (width / 2)*line_num, width / 2);
 				is_V[line_num] = true;
@@ -148,40 +157,41 @@ int thrash_til_nal(FILE * stream) {
 
 	while (!is_found) {
 		readed = fread(&byte, (size_t)1, (size_t)sizeof(uint8_t), stream);
-		if (readed == 0) {
+		if (readed == 0)
 			Sleep(10);
-			break;
-		}
-
-		switch (nal_counter) {
-		case 0:
-			if (byte == 0x00)
-				nal_counter = 1;
-			break;
-		case 1:
-			if (byte == 0x00)
-				nal_counter = 2;
-			else
-				nal_counter = 0;
-			break;
-		case 2:
-			if (byte == 0x00)
-				nal_counter = 3;
-			else
-				nal_counter = 0;
-			break;
-		case 3:
-			if (byte == 0x01)
-				nal_counter = 4;
-			else
-				nal_counter = 0;
-			break;
-		case 4:
-			if (byte == 0x65)
-				is_found = true;
-			else
-				nal_counter = 0;
-			break;
+		else {
+			switch (nal_counter) {
+			case 0:
+				if (byte == 0x00)
+					nal_counter = 1;
+				break;
+			case 1:
+				if (byte == 0x00)
+					nal_counter = 2;
+				else
+					nal_counter = 0;
+				break;
+			case 2:
+				if (byte == 0x00)
+					nal_counter = 3;
+				else
+					nal_counter = 0;
+				break;
+			case 3:
+				if (byte == 0x01)
+					nal_counter = 4;
+				else if (byte == 0x00)
+					nal_counter = 3;
+				else
+					nal_counter = 0;
+				break;
+			case 4:
+				if (byte == 0x65)
+					is_found = true;
+				else
+					nal_counter = 0;
+				break;
+			}
 		}
 	}
 	return 0;
@@ -190,75 +200,82 @@ int thrash_til_nal(FILE * stream) {
 int buffer_til_nal(FILE * stream, uint8_t * buffer, int buffer_max_lenght) {
 
 	bool is_finished = false;
-	int nal_counter = 0;
+	char nal_counter = 0;
 	size_t readed;
 	uint8_t byte;
-	uint32_t i = 0;
+	int i = 0;
 
 	while (!is_finished && i < buffer_max_lenght) {
 
 		readed = fread(&byte, 1, sizeof(uint8_t), stream);
 		if (readed == 0) {
 			Sleep(10);
-
-			break;
 		}
-
-		switch (nal_counter) {
-		case 0:
-			if (byte == 0x00)
-				nal_counter = 1;
-			else {
-				buffer[i] = byte;
-				i++;
+		else {
+			switch (nal_counter) {
+			case 0:
+				if (byte == 0x00)
+					nal_counter = 1;
+				else {
+					buffer[i] = byte;
+					i++;
+				}
+				break;
+			case 1:
+				if (byte == 0x00)
+					nal_counter = 2;
+				else {
+					nal_counter = 0;
+					buffer[i] = 0x00;
+					buffer[i + 1] = byte;
+					i += 2;
+				}
+				break;
+			case 2:
+				if (byte == 0x00)
+					nal_counter = 3;
+				else {
+					nal_counter = 0;
+					buffer[i] = 0x00;
+					buffer[i + 1] = 0x00;
+					buffer[i + 2] = byte;
+					i += 3;
+				}
+				break;
+			case 3:
+				if (byte == 0x01)
+					nal_counter = 4;
+				else if (byte == 0x00) {
+					nal_counter = 3;
+					buffer[i] = 0x00;
+					i ++;
+				}
+				else {
+					nal_counter = 0;
+					buffer[i] = 0x00;
+					buffer[i + 1] = 0x00;
+					buffer[i + 3] = 0x00;
+					buffer[i] = byte;
+					i += 4;
+				}
+				break;
+			case 4:
+				if (byte == 0x65)
+					is_finished = true;
+				else {
+					nal_counter = 0;
+					buffer[i] = 0x00;
+					buffer[i + 1] = 0x00;
+					buffer[i + 3] = 0x00;
+					buffer[i + 4] = 0x01;
+					buffer[i + 5] = byte;
+					i += 5;
+				}
+				break;
+			default:
+				printf("Error obtaining the NAL");
+				break;
 			}
-			break;
-		case 1:
-			if (byte == 0x00)
-				nal_counter = 2;
-			else {
-				nal_counter = 0;
-				buffer[i] = 0x00;
-				buffer[i + 1] = byte;
-				i += 2;
-			}
-			break;
-		case 2:
-			if (byte == 0x00)
-				nal_counter = 3;
-			else {
-				nal_counter = 0;
-				buffer[i] = 0x00;
-				buffer[i + 1] = 0x00;
-				buffer[i + 2] = byte;
-				i += 3;
-			}
-			break;
-		case 3:
-			if (byte == 0x01)
-				nal_counter = 4;
-			else {
-				nal_counter = 0;
-				buffer[i] = 0x00;
-				buffer[i + 1] = 0x00;
-				buffer[i + 2] = 0x00;
-				buffer[i + 3] = byte;
-				i += 4;
-			}
-			break;
-		case 4:
-			if (byte == 0x65)
-				is_finished = true;
-			else {
-				nal_counter = 0;
-				buffer[i] = 0x00;
-				buffer[i + 1] = 0x00;
-				buffer[i + 2] = 0x00;
-				buffer[i + 3] = 0x01;
-				buffer[i + 4] = byte;
-				i += 5;
-			}
-			break;
 		}
 	}
 	return i;
@@ -267,8 +284,8 @@ int buffer_til_nal(FILE * stream, uint8_t * buffer, int buffer_max_lenght) {
 int get_header(uint16_t header, int *state, int *line_num, int *subframe) {
 	int frame_type;
 	
-	frame_type = header >> 14;
-	*line_num = header & ~(0xC000);
+	frame_type = header >> 13;
+	*line_num = header & ~(0xE000);
 	*subframe = *line_num % 24;
 	if (frame_type == 3) {
 		*state = Y_STATE;
@@ -287,11 +304,14 @@ int get_header(uint16_t header, int *state, int *line_num, int *subframe) {
 }
 
 bool is_frame_completed(int component_state, int past_component_state, int subframe, int past_subframe, bool is_subframe[24]) {
-	bool cond1, cond2, cond3;
-	cond1 = component_state == Y_STATE;
-	cond2 = subframe != past_subframe;
-	cond3 = is_subframe[subframe];
-	if (cond1 && cond2 && cond3)
+	
+	bool cond1 = subframe < past_subframe - 4;
+	bool cond2 = true;
+	for (char i = 0; i < 24; i++) {
+		if (!is_subframe[i])
+			cond2 = false;
+	}
+	if (cond1 && cond2)
 		return true;
 	else
 		return false;
@@ -299,6 +319,8 @@ bool is_frame_completed(int component_state, int past_component_state, int subfr
 
 void reconstruct_frame(yuv_image *img, bool is_Y[1080], bool is_U[1080], bool is_V[1080], int height, int width) {
 	int upper_line, lower_line;
+	int UVwidth = width / 2;
+	int UVheight = height / 2;
 	for (int i = 0; i < height; i++) {
 		if (!is_Y[i]) {
 			find_available_lines(i, is_Y, height, &upper_line, &lower_line);
@@ -309,41 +331,41 @@ void reconstruct_frame(yuv_image *img, bool is_Y[1080], bool is_U[1080], bool is
 				memcpy((void*)(img->Y_data + width*i), (void*)(img->Y_data + width*upper_line), width);
 			}
 			else if (lower_line != -1 && upper_line != -1) {
-				interpolate_scanline_vertical(img->Y_data, i, lower_line, upper_line, width, BILINEAR);
+				interpolate_scanline_vertical(img->Y_data, i, lower_line, upper_line, width);
 			}
 			else {
 				// Leave past scanline, wont be too bad as images have temporal coorelation.
 			}
 		}
 	}
-	for (int i = 0; i < (height / 2); i++) {
+	for (int i = 0; i < UVheight; i++) {
 		if (!is_U[i]) {
-			find_available_lines(i, is_U, height / 2, &upper_line, &lower_line);
+			find_available_lines(i, is_U, UVheight, &upper_line, &lower_line);
 			if (lower_line != -1 && upper_line == -1) {
-				memcpy((void*)(img->U_data + width*i), (void*)(img->U_data + width*lower_line), (width / 2));
+				memcpy((void*)(img->U_data + UVwidth *i), (void*)(img->U_data + UVwidth *lower_line), UVwidth);
 			}
 			else if (lower_line == -1 && upper_line != -1) {
-				memcpy((void*)(img->U_data + width*i), (void*)(img->U_data + width*upper_line), (width / 2));
+				memcpy((void*)(img->U_data + UVwidth *i), (void*)(img->U_data + UVwidth *upper_line), UVwidth);
 			}
 			else if (lower_line != -1 && upper_line != -1) {
-				interpolate_scanline_vertical(img->U_data, i, lower_line, upper_line, width / 2, BILINEAR);
+				interpolate_scanline_vertical(img->U_data, i, lower_line, upper_line, UVwidth);
 			}
 			else {
 				// Leave past scanline, wont be too bad as images have temporal coorelation.
 			}
 		}
 	}
-	for (int i = 0; i < (height / 2); i++) {
+	for (int i = 0; i < UVheight; i++) {
 		if (!is_V[i]) {
-			find_available_lines(i, is_V, height / 2, &upper_line, &lower_line);
+			find_available_lines(i, is_V, UVheight, &upper_line, &lower_line);
 			if (lower_line != -1 && upper_line == -1) {
-				memcpy((void*)(img->V_data + width*i), (void*)(img->V_data + width*lower_line), (width / 2));
+				memcpy((void*)(img->V_data + UVwidth *i), (void*)(img->V_data + UVwidth *lower_line), UVwidth);
 			}
 			else if (lower_line == -1 && upper_line != -1) {
-				memcpy((void*)(img->V_data + width*i), (void*)(img->V_data + width*upper_line), (width / 2));
+				memcpy((void*)(img->V_data + UVwidth *i), (void*)(img->V_data + UVwidth *upper_line), UVwidth);
 			}
 			else if (lower_line != -1 && upper_line != -1) {
-				interpolate_scanline_vertical(img->V_data, i, lower_line, upper_line, width / 2, BILINEAR);
+				interpolate_scanline_vertical(img->V_data, i, lower_line, upper_line, UVwidth);
 			}
 			else {
 				// Leave past scanline, wont be too bad as images have temporal coorelation.

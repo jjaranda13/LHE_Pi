@@ -13,7 +13,7 @@ void init_player(int width, int height) {
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window SDL: %s", SDL_GetError());
 		return;
 	}
-	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
 	if (renderer == NULL) {
 
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create renderer SDL: %s", SDL_GetError());

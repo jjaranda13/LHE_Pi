@@ -171,7 +171,6 @@ int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, i
 		}
 		i++;
 	}
-	i--;
 	*readed_bytes = i % 8 ? (i / 8) + 1 : i / 8;
 	return hops_counter;
 }
