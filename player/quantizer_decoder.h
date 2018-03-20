@@ -39,16 +39,24 @@
 #define RANGE 0.70f
 
 /**
-* @brief defines if the gradient technique should be used.
+* @brief defines if the gradient technique should be used. Comment to deactivate, 
+*uncomment to activate
 */
-#define IS_GRADIENT 1
+#define IS_GRADIENT
 
 /**
 * @brief Defines the behaviour of the maximum hops. If activated the maximum 
 * hops lead to the maximum range. If not the behaviour is the normal jumping 
+* using the normal ratio. Comment to deactivate, uncomment to activate
+*/
+// #define IS_MAX_HOPS
+
+/**
+* @brief Defines the prediction that will be used for the first pixel. As there is no
+* hops lead to the maximum range. If not the behaviour is the normal jumping
 * using the normal ratio.
 */
-#define IS_MAX_HOPS 0
+#define INIT_PREDICTION 127
 
 /**
 * @brief List of symbols for the hops.
@@ -101,19 +109,29 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_l
 /////////////////////////////////////////////////////////////////////////
 
 /**
+* @brief Indicates if the current hop is a small hop
+*
+* This function determines whether a hop is small. This is used in next 
+* computations as input
+*
+* @param actual_hop The hop to be determined if it is small.
+* @return True if it is small false otherwise
+*/
+bool is_small_hop(uint8_t hop);
+
+/**
 * @brief Adapts h1 for the next pixel.
 *
 * This function performs the h1 adaptationn using the current hop and the
 * last_small_hop. The hop1 returned will be used as hop1 for the next pixel
 * of the scaline.
 *
-* @param h1 Hop1 value for the current pixel
-* @param actual_hop The hop of the current pixel.
-* @param last_small_hop Indicates if the last pixel hop were >HOP_P1 or <HOP_N1
-* @param original_component Value of the first pixel of the component.
-* @return Hop1 to be used in the next pixel
+* @param h1 Hop1 value for the current pixel.
+* @param small_hop Indicates if the acutal pixel is small.
+* @param last_small_hop Indicates if the last pixel were small.
+* @return Adapted Hop1 to be used in the next pixel
 */
-int adapt_h1(int h1, uint8_t actual_hop, bool * last_small_hop);
+unsigned char adapt_h1(unsigned char  h1, bool small_hop, bool last_small_hop);
 
 /**
 * @brief Calculates the gradient value for the next iteration.
@@ -121,10 +139,12 @@ int adapt_h1(int h1, uint8_t actual_hop, bool * last_small_hop);
 * This function performs the gradient calculation suing the actual hop. The 
 * value returned can be used as the gradient for the enxt iteration.
 *
-* @param actual_hop The hop of the current pixel.
+* @param current_hop The hop of the current pixel.
+* @param small_hop Tell the function if the current hop is small
+* @param prev_gradient the gradient used in the current pixel.
 * @return gradient to be used in the next pixel
 */
-int adapt_gradient(uint8_t actual_hop, int prev_gradient);
+char adapt_gradient(uint8_t current_hop, bool small_hop, char prev_gradient);
 
 /**
 * @brief Calcules the ratios the ranges for LHE longer hops.
