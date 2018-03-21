@@ -16,7 +16,11 @@
 #define BILINEAR 0
 #define EPX 1
 
+#define THRESHOLD 38
 
-void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_value, int component_value_width, int upsample_value_width, int mode);
+
+void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_value, int component_value_width, int upsample_value_width);
 void interpolate_scanline_vertical(uint8_t * upsampled_values, int scaline, int prev_scaline, int next_scanline, int img_width);
+void resize_component(uint8_t * orig_values, uint8_t * dest_values, int orig_width, int orig_height, int dest_width, int dest_height);
+void scale_epx(uint8_t *channel, int c_height, int c_width, uint8_t *epx, int umbral);
 //void upsample_line_vertical(uint8_t ** component_value, uint8_t ** upsampled_values, int component_value_height);
