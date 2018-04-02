@@ -24,21 +24,22 @@ int decode_stream(int width, int height, FILE * file) {
 
 	int status, nal_debug_counter = 0,
 		recieved[1000] = {0}, recieved_cnt = 0;
-	unsigned int line_debug_counter = 0;
-	bool is_subframe[24] = { false }, is_Y[1080] = { false },
-		is_U[1080] = { false }, is_V[1080] = { false }, first = true;
+	unsigned int line_debug_counter = 0, frame_debug_counter = 0,  subframe_counter[24] = { 0 };
+	bool is_Y[1080] = { false }, is_U[1080] = { false },
+		is_V[1080] = { false }, first = true;
 	uint8_t *bits = NULL, *hops = NULL;
-	yuv_image *img;
+	yuv_image *img, *img_up;
 
-	init_player(width, height);
+	init_player(width*2, height*2);
 	hops = (uint8_t *)malloc(sizeof(uint8_t)* width);
 	bits = (uint8_t *)malloc(sizeof(uint8_t)* BITS_BUFFER_LENGHT);
 	img = allocate_yuv_image(width, height);
-	if (hops == NULL || bits == NULL || img == NULL) {
+	img_up = allocate_yuv_image(width*2, height*2);
+	if (hops == NULL || bits == NULL || img == NULL || img_up == NULL) {
 		printf("Cannot allocate memory\n");
 		return(-1);
 	}
-	//setbuf(stdin, NULL);
+
 	fflush(stdin);
 	// Thrash the stream until a nal is recieved.
 	status = thrash_til_nal(file);
@@ -74,18 +75,17 @@ int decode_stream(int width, int height, FILE * file) {
 				printf("Wrong header or line_num too high line_debug_counter=%d\n", line_debug_counter);
 				line_num = 0;
 			}
-				/*if (component_state == Y_STATE) {
+				if (component_state == Y_STATE && frame_debug_counter == 4) {
 					recieved[recieved_cnt] = line_num;
 					recieved_cnt++;
-				}*/
+				}
 
-			if (is_frame_completed(component_state, past_component_state, subframe, past_subframe, is_subframe)) {
+			if (is_frame_completed(component_state, past_component_state, subframe, past_subframe, subframe_counter, is_Y, is_U, is_V, height)) {
 				reconstruct_frame(img, is_Y, is_U, is_V, height, width);
-				play_frame(img->Y_data, img->U_data, img->V_data, width, width / 2);
-				reset_control_arrays(is_subframe, is_Y, is_U, is_V);
-				memset((void *)img->Y_data, 0, sizeof(uint8_t) *width*height);
-				memset((void *)img->U_data, 0, sizeof(uint8_t) * width*height / 4);
-				memset((void *)img->V_data, 0, sizeof(uint8_t) * width*height / 4);
+				upsample_frame(img, img_up);
+				play_frame(img_up->Y_data, img_up->U_data, img_up->V_data, width*2, width);
+				reset_control_arrays(subframe_counter, is_Y, is_U, is_V);
+				frame_debug_counter++;
 			}
 			switch (component_state) {
 			case Y_STATE:
@@ -96,7 +96,7 @@ int decode_stream(int width, int height, FILE * file) {
 				}
 				decode_line_quantizer(hops, img->Y_data + width*line_num, width);
 				is_Y[line_num] = true;
-				is_subframe[subframe] = true;
+				subframe_counter[subframe]++;
 				break;
 			case U_STATE:
 				readed_hops = decode_symbols_entropic(bits + index, hops, bits_lenght - index, width / 2, &readed_bytes);
@@ -106,7 +106,7 @@ int decode_stream(int width, int height, FILE * file) {
 				}
 				decode_line_quantizer(hops, img->U_data + (width / 2)*line_num, width / 2);
 				is_U[line_num] = true;
-				is_subframe[subframe] = true;
+				subframe_counter[subframe]++;
 				break;
 			case V_STATE:
 				readed_hops = decode_symbols_entropic(bits + index, hops, bits_lenght - index, width / 2, &readed_bytes);
@@ -116,7 +116,7 @@ int decode_stream(int width, int height, FILE * file) {
 				}
 				decode_line_quantizer(hops, img->V_data + (width / 2)*line_num, width / 2);
 				is_V[line_num] = true;
-				is_subframe[subframe] = true;
+				subframe_counter[subframe]++;
 				break;
 			}
 			line_debug_counter++;
@@ -303,15 +303,17 @@ int get_header(uint16_t header, int *state, int *line_num, int *subframe) {
 	return 0;
 }
 
-bool is_frame_completed(int component_state, int past_component_state, int subframe, int past_subframe, bool is_subframe[24]) {
+bool is_frame_completed(int component_state, int past_component_state, int subframe, int past_subframe, unsigned int subframe_counter[8], bool is_Y[1080], bool is_U[1080], bool is_V[1080], int height) {
 	
 	bool cond1 = subframe < past_subframe - 4;
-	bool cond2 = true;
-	for (char i = 0; i < 24; i++) {
-		if (!is_subframe[i])
-			cond2 = false;
+	bool cond3 = true;
+	for (int i = 0; i < 24; i++) {
+		if (subframe_counter[i] < height * 2 / 24) {
+			cond3 = false;
+			break;
+		}
 	}
-	if (cond1 && cond2)
+	if (cond3)
 		return true;
 	else
 		return false;
@@ -391,9 +393,15 @@ void find_available_lines(int line, bool is_component[1080], int line_lenght, in
 	return;
 }
 
-void reset_control_arrays(bool is_subframe[24], bool is_Y[1080], bool is_U[1080], bool is_V[1080]) {
+void upsample_frame(yuv_image * img, yuv_image *img_up) {
+	scale_epx(img->Y_data, img->height, img->width, img_up->Y_data, THRESHOLD);
+	scale_epx(img->U_data, img->height/2, img->width /2, img_up->U_data, THRESHOLD);
+	scale_epx(img->V_data, img->height/2, img->width /2, img_up->V_data, THRESHOLD);
+}
 
-	memset((void *)is_subframe, false, sizeof(bool) * 24);
+void reset_control_arrays(unsigned int subframe_counter[24], bool is_Y[1080], bool is_U[1080], bool is_V[1080]) {
+
+	memset((void *)subframe_counter, false, sizeof(unsigned int) * 24);
 	memset((void *)is_Y, false, sizeof(bool) * 1080);
 	memset((void *)is_U, false, sizeof(bool) * 1080);
 	memset((void *)is_V, false, sizeof(bool) * 1080);
