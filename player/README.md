@@ -26,6 +26,5 @@ lhe_pi_player.exe --height 360 -width 640 --filename "C:/Users/quinta/Desktop/bi
 ```
 ## FAQ
 
-
-
-
+## Known Bugs :disappointed_relieved:
+⋅⋅* Frame detection fails sometimes to obtain the complete frame.
