@@ -11,7 +11,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+
 #include "entropic_decoder.h"
+#include "get_bits.h"
 
 uint8_t* allocate_entropic_decoder(int width) {
 	return (uint8_t *)malloc(sizeof(uint8_t)* width);
@@ -175,6 +177,77 @@ int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, i
 	return hops_counter;
 }
 
+int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_lenght) {
+	int mode = HUFFMAN, h0_counter = 0, hops_counter = 0, zero_counter = 0,
+		hop = 15, data = 3, rlc_number = 0;
+	int condition_length = CONDITION_LENGHT_INI;
+	int rlc_length = RLC_LENGHT_INI;
+	while (hops_counter < hops_lenght) {
+
+		data = get_bit(ctx);
+		switch (mode) {
+		case HUFFMAN:
+			if (data == 0) {
+				zero_counter++;
+			}
+			if (data == 1) {
+				hop = get_hop(zero_counter);
+				if (hop == HOP_0) {
+					h0_counter++;
+				}
+				else {
+					h0_counter = 0;
+				}
+				if (h0_counter == condition_length) {
+					mode = RLC1;
+				}
+				hops[hops_counter] = hop;
+				hops_counter++;
+				zero_counter = 0;
+			}
+			break;
+		case PRE_HUFFMAN:
+			if (data == 0) {
+				zero_counter++;
+			}
+			else if (data == 1) {
+				hop = get_hop(zero_counter + 1);
+				h0_counter = 0;
+				hops[hops_counter] = hop;
+				hops_counter++;
+				zero_counter = 0;
+				mode = HUFFMAN;
+			}
+			break;
+		case RLC1:
+			if (data == 0) {
+				rlc_number = get_rlc_number_get_bits(ctx, rlc_length);
+				add_hop0(hops, &hops_counter, rlc_number);
+				mode = PRE_HUFFMAN;
+			}
+			else {
+				add_hop0(hops, &hops_counter, 15);
+				rlc_length += 1;
+				mode = RLC2;
+			}
+			break;
+		case RLC2:
+			if (data == 0) {
+				rlc_number = get_rlc_number_get_bits(ctx, rlc_length);
+				add_hop0(hops, &hops_counter, rlc_number);
+				rlc_length = RLC_LENGHT_INI;
+				mode = PRE_HUFFMAN;
+			}
+			else {
+				add_hop0(hops, &hops_counter, 31);
+			}
+			break;
+		}
+	}
+	finish_byte(ctx);
+	return hops_counter;
+}
+
 bool test_bit(uint8_t data, int possition) {
 
 	uint8_t mask = 1;
@@ -245,6 +318,16 @@ int get_rlc_number(uint8_t * bits, int * sub_index, int rlc_lenght) {
 		*sub_index = *sub_index + 1;
 		if (get_data(bits, *sub_index) == 1) {
 			rlc_number = set_bit(rlc_number, j);
+		}
+	}
+	return rlc_number;
+}
+
+int get_rlc_number_get_bits(get_bits_context * ctx, int rlc_lenght) {
+	int rlc_number = 0;
+	for (int i = 0; i < rlc_lenght; i++) {
+		if (get_bit(ctx) == 1) {
+			rlc_number += 1 << (rlc_lenght - i - 1);
 		}
 	}
 	return rlc_number;

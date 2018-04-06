@@ -25,6 +25,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "get_bits.h"
+
 /**
 * @brief Number of bits to represent the RLE.
 *
@@ -99,11 +101,29 @@ int decode_line_entropic( uint8_t * bytes , uint8_t * hops,  int bytes_lenght);
 * @param bits The pointer to the bitstream of data.
 * @param hops The resulting array of hops is stored in this pointer.
 * @param bytes_lenght The lenght in bytes of the bitstream.
+* @param hops_lenght The number of Hops that must be returned.
+* @param readed_bytes The number of bytes that were readed from the get_bits_context.
 * @return Lenght of the array of hops returned. it should be img_width minus one.
 
 * @warning hops pointer must be allocated before calling this function.
 */
 int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, int hops_lenght, int * readed_bytes);
+
+/**
+* @brief Obtains a number of hops from a get_bits_context
+*
+* This function obtains an array of hops from the get_bits_context. It returns 
+* the actual number of hops readed. The number of hops to be readed must be 
+* supplied to the function.
+
+* @param ctx The pointer to the get_bits_structure.
+* @param hops The resulting array of hops is stored in this pointer.
+* @param hops_lenght The number of Hops that must be returned.
+* @return Lenght of the array of hops returned. it should be img_width minus one.
+
+* @warning hops pointer must be allocated before calling this function.
+*/
+int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_lenght);
 /////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS. NOT TO BE CALLED FROM OUTSIDE
 /////////////////////////////////////////////////////////////////////////
@@ -165,6 +185,16 @@ uint8_t get_hop(int zeros_since_a_one);
 */
 int get_rlc_number(uint8_t * bits, int * sub_index, int rlc_lenght);
 
+/**
+* get_rlc_number_get_bits
+* This function returns the number of hops0 that were coded using RLC. It takes
+* from the get_bits_context.
+*
+* @param ctx The get bits context to get the bits from.
+* @param rlc_lenght Number of bits used to represent the number of hops0.
+* @return The number of hops0 codified used RLE.
+*/
+int get_rlc_number_get_bits(get_bits_context * ctx, int rlc_lenght);
 /**
 * add_hop0
 * This function adds to the array of symbols the specified number of hop0
