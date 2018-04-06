@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "get_bits.h"
+
 typedef struct yuv_image {
 	uint8_t* Y_data;
 	uint8_t* U_data;
@@ -13,6 +15,7 @@ typedef struct yuv_image {
 } yuv_image;
 
 int decode_stream(int width, int height, FILE * file);
+int decode_stream_2(int width, int height, get_bits_context * ctx);
 int decode_stream_file(int width, int height, char * filename);
 int decode_stream_stdin(int width, int height);
 int thrash_til_nal(FILE * stream);
