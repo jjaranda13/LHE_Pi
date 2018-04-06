@@ -12,6 +12,7 @@
 #include "upsampler_decoder.h"
 #include "player_decoder.h"
 #include "decoder.h"
+#include "get_bits.h"
 
 
 #define BITS_BUFFER_LENGHT 3000
@@ -125,27 +126,137 @@ int decode_stream(int width, int height, FILE * file) {
 	return 0;
 }
 
+int decode_stream_2(int width, int height, get_bits_context * ctx) {
+
+	int status, nal_debug_counter = 0,
+		recieved[1000] = { 0 }, recieved_cnt = 0;
+	unsigned int line_debug_counter = 0, frame_debug_counter = 0, subframe_counter[24] = { 0 };
+	bool is_Y[1080] = { false }, is_U[1080] = { false },
+		is_V[1080] = { false }, first = true;
+	uint8_t *hops = NULL;
+	yuv_image *img, *img_up;
+
+	init_player(width * 2, height * 2);
+	hops = (uint8_t *)malloc(sizeof(uint8_t)* width);
+	img = allocate_yuv_image(width, height);
+	img_up = allocate_yuv_image(width * 2, height * 2);
+	if (hops == NULL || img == NULL || img_up == NULL) {
+		printf("Cannot allocate memory\n");
+		return(-1);
+	}
+	// Thrash the stream until a nal is recieved.
+	status = forward_to_nal(ctx);
+	if (status != 0) {
+		printf("Cannot read until the start of the stream\n");
+		return(-1);
+	}
+
+	// Player loop, never ends until process is killed.
+	while (true) {
+
+		int readed_hops, line_num, past_component_state,
+			subframe, component_state, past_subframe;
+		uint16_t headers;
+		uint8_t header_high;
+
+		header_high = get_aligned_byte(ctx);
+		headers = get_aligned_byte(ctx) + (header_high << 8);
+		// In the first iteration fill the variables with the same values.
+		if (first) {
+			status = get_header(headers, &component_state, &line_num, &subframe);
+			first = false;
+		}
+		past_component_state = component_state;
+		past_subframe = subframe;
+		status = get_header(headers, &component_state, &line_num, &subframe);
+		if (status == 1) {
+			get_aligned_byte(ctx); // Trash the 0
+			get_aligned_byte(ctx); // Trash the 1
+			get_aligned_byte(ctx); // Trash the 65
+
+			header_high = get_aligned_byte(ctx);
+			headers = get_aligned_byte(ctx) + (header_high << 8);
+			status = get_header(headers, &component_state, &line_num, &subframe);
+
+		}
+		if (status != 0 || line_num > height) {
+			printf("Wrong header or line_num too high line_debug_counter=%d\n", line_debug_counter);
+			line_num = 0;
+		}
+		if (component_state == Y_STATE && frame_debug_counter == 4) {
+			recieved[recieved_cnt] = line_num;
+			recieved_cnt++;
+		}
+
+		if (is_frame_completed(component_state, past_component_state, subframe, past_subframe, subframe_counter, is_Y, is_U, is_V, height)) {
+			reconstruct_frame(img, is_Y, is_U, is_V, height, width);
+			upsample_frame(img, img_up);
+			handle_window();
+			play_frame(img_up->Y_data, img_up->U_data, img_up->V_data, width * 2, width);
+			reset_control_arrays(subframe_counter, is_Y, is_U, is_V);
+			frame_debug_counter++;
+		}
+		switch (component_state) {
+		case Y_STATE:
+			readed_hops = obtain_symbols_entropic(ctx, hops, width);
+			if (readed_hops != width) {
+				printf("Symbols obtained are not the ones expected\n");
+			}
+			decode_line_quantizer(hops, img->Y_data + width * line_num, width);
+			is_Y[line_num] = true;
+			subframe_counter[subframe]++;
+			break;
+		case U_STATE:
+			readed_hops = obtain_symbols_entropic(ctx, hops, width / 2);
+			if (readed_hops != (width / 2)) {
+				printf("Symbols obtained are not the ones expected\n");
+			}
+			decode_line_quantizer(hops, img->U_data + (width / 2)*line_num, width / 2);
+			is_U[line_num] = true;
+			subframe_counter[subframe]++;
+			break;
+		case V_STATE:
+			readed_hops = obtain_symbols_entropic(ctx, hops, width / 2);
+			if (readed_hops != (width / 2)) {
+				printf("Symbols obtained are not the ones expected\n");
+			}
+			decode_line_quantizer(hops, img->V_data + (width / 2)*line_num, width / 2);
+			is_V[line_num] = true;
+			subframe_counter[subframe]++;
+			break;
+		}
+		line_debug_counter++;
+	}
+	return 0;
+}
+
 int decode_stream_stdin(int width, int height) {
 	int status;
+	get_bits_context ctx;
 
 	status = _setmode(_fileno(stdin), _O_BINARY);
 	if (status == -1) {
 		printf("Cannot set mode for stdin\n");
 		return(-1);
 	}
-	return decode_stream(width, height, stdin);
+	init_get_bits(stdin, &ctx);
+
+	return decode_stream_2(width, height, &ctx);
 }
 
 int decode_stream_file(int width, int height, char * filename) {
 	int status;
 	FILE * file;
+	get_bits_context ctx;
 
 	status = (int)fopen_s(&file, filename, "rb");
 	if (status != 0) {
 		printf("Error opening the file\n");
 		return -1;
 	}
-	return decode_stream(width, height, file);
+	init_get_bits(file, &ctx);
+
+	return decode_stream_2(width, height, &ctx);
 }
 
 int thrash_til_nal(FILE * stream) {
@@ -296,6 +407,10 @@ int get_header(uint16_t header, int *state, int *line_num, int *subframe) {
 	else if (frame_type == 1) {
 		*state = V_STATE;
 	}
+	else if (frame_type == 0 && *line_num == 0) {
+		// It everything is 0 it means that we found the first two bytes of a NAL.
+		return 1;
+	}
 	else {
 		printf("Inconsistent line number found.\n");
 		return -1;
@@ -308,7 +423,7 @@ bool is_frame_completed(int component_state, int past_component_state, int subfr
 	bool cond1 = subframe < past_subframe - 4;
 	bool cond3 = true;
 	for (int i = 0; i < 24; i++) {
-		if (subframe_counter[i] < height * 2 / 24) {
+		if (subframe_counter[i] < ((unsigned int)height) * 2 / 24) {
 			cond3 = false;
 			break;
 		}
