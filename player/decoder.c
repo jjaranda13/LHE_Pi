@@ -191,6 +191,7 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 		if (is_frame_completed(component_state, past_component_state, subframe, past_subframe, subframe_counter, is_Y, is_U, is_V, height)) {
 			reconstruct_frame(img, is_Y, is_U, is_V, height, width);
 			upsample_frame(img, img_up);
+			handle_window();
 			play_frame(img_up->Y_data, img_up->U_data, img_up->V_data, width * 2, width);
 			reset_control_arrays(subframe_counter, is_Y, is_U, is_V);
 			frame_debug_counter++;
