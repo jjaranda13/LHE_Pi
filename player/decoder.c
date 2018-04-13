@@ -130,7 +130,7 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 
 	int status, nal_debug_counter = 0,
 		recieved[1000] = { 0 }, recieved_cnt = 0;
-	unsigned int line_debug_counter = 0, frame_debug_counter = 0, subframe_counter[24] = { 0 };
+	unsigned int line_debug_counter = 0, frame_debug_counter = 0, subframe_counter[8] = { 0 };
 	bool is_Y[1080] = { false }, is_U[1080] = { false },
 		is_V[1080] = { false }, first = true;
 	uint8_t *hops = NULL;
@@ -182,10 +182,6 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 		if (status != 0 || line_num > height) {
 			printf("Wrong header or line_num too high line_debug_counter=%d\n", line_debug_counter);
 			line_num = 0;
-		}
-		if (component_state == Y_STATE && frame_debug_counter == 4) {
-			recieved[recieved_cnt] = line_num;
-			recieved_cnt++;
 		}
 
 		if (is_frame_completed(component_state, past_component_state, subframe, past_subframe, subframe_counter, is_Y, is_U, is_V, height)) {
@@ -397,7 +393,7 @@ int get_header(uint16_t header, int *state, int *line_num, int *subframe) {
 	
 	frame_type = header >> 13;
 	*line_num = header & ~(0xE000);
-	*subframe = *line_num % 24;
+	*subframe = *line_num % 8;
 	if (frame_type == 3) {
 		*state = Y_STATE;
 	}
@@ -420,15 +416,15 @@ int get_header(uint16_t header, int *state, int *line_num, int *subframe) {
 
 bool is_frame_completed(int component_state, int past_component_state, int subframe, int past_subframe, unsigned int subframe_counter[8], bool is_Y[1080], bool is_U[1080], bool is_V[1080], int height) {
 	
-	bool cond1 = subframe < past_subframe - 4;
+	bool cond1 = subframe < past_subframe - 5;
 	bool cond3 = true;
-	for (int i = 0; i < 24; i++) {
-		if (subframe_counter[i] < ((unsigned int)height) * 2 / 24) {
+	for (int i = 0; i < 8; i++) {
+		if (subframe_counter[i] < ((unsigned int)height) * 2 / 8) {
 			cond3 = false;
 			break;
 		}
 	}
-	if (cond3)
+	if (cond1)
 		return true;
 	else
 		return false;
@@ -514,9 +510,9 @@ void upsample_frame(yuv_image * img, yuv_image *img_up) {
 	scale_epx(img->V_data, img->height/2, img->width /2, img_up->V_data, THRESHOLD);
 }
 
-void reset_control_arrays(unsigned int subframe_counter[24], bool is_Y[1080], bool is_U[1080], bool is_V[1080]) {
+void reset_control_arrays(unsigned int subframe_counter[8], bool is_Y[1080], bool is_U[1080], bool is_V[1080]) {
 
-	memset((void *)subframe_counter, false, sizeof(unsigned int) * 24);
+	memset((void *)subframe_counter, false, sizeof(unsigned int) * 8);
 	memset((void *)is_Y, false, sizeof(bool) * 1080);
 	memset((void *)is_U, false, sizeof(bool) * 1080);
 	memset((void *)is_V, false, sizeof(bool) * 1080);
