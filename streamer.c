@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
+#include <pthread.h>
 
 #include "include/globals.h"
 #include "include/streamer.h"
@@ -277,91 +278,90 @@ void sendData(){//struct sockaddr_in server, socklen_t long_server, int socket_c
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void init_streamer()
 {
-pthread_mutex_init(&stream_subframe_mutex,NULL);
+    pthread_mutex_init(&stream_subframe_mutex,NULL);
 
-nal_byte_counter=0;
+    for (int i = 0; i< 8; i++)
+    {
+        pthread_cond_init(&stream_subframe_sync_cv[i], NULL);
+        stream_subframe_sync[i] = 0;
+    }
+    stream_subframe_sync[7] = 3;
+    pthread_mutex_init(&stream_subframe_sync_mtx, NULL);
 
-frame_byte_counter=0;
-total_bytes=0;
-total_frames=0;
+    nal_byte_counter=0;
+
+    frame_byte_counter=0;
+    total_bytes=0;
+    total_frames=0;
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void *mytask_stream(void *arg)
 {
-struct thread_streamer_info *tinfo = arg;
-//(int start, int separation, int num_threads)
-int start=tinfo->start;
-int separation=tinfo->separation;
+    struct thread_streamer_info *tinfo = arg; //(int start, int separation, int num_threads)
+    int start=tinfo->start;
+    int separation=tinfo->separation;
 
-//mutex
-//th_done[tinfo->id]=PTHREAD_MUTEX_INITIALIZER;
-//pthread_mutex_init(&stream_subframe_mutex,NULL);
+    int subframe = start %8;
+    int previous_subframe = subframe - 1;
+    previous_subframe = previous_subframe < 0 ? 8 + previous_subframe: previous_subframe;
 
-pthread_mutex_lock(&stream_subframe_mutex);
-
- //const uint8_t frame[] = {0x00, 0x00, 0x00,0x01, 0x65}; //nal tipo 5
- //son 3 bits, 1 bit para el forbiden cero, dos para ref idc y 5 bits para el tipo
- // es decir  xxx xx xxxxx -> 0 11 00001 nal tipo 1 (coded slice of a non idr picture)
- //-> 0 11 00111 nal tipo 7 (sequence parameter set)
- //-> 0 11 00101 nal tipo 5 (coded slice of idr picture)
-
- //fwrite(&frame,sizeof(uint8_t),5,stdout);
-
-
-//inteligent discard
-bool discard=true;
-
-//luminancias
-int line=start;
-
-if (line==0 ) newframe=true;//flag de nuevo frame
-
-
-
-while (line<height_down_Y)
-{
-
-
-//  if (!(discard && line<10 && inteligent_discard_Y[line]==true));
-//if (!discard || inteligent_discard_Y[line]==false || line%2==0)
-if (!discard || line%2==0|| inteligent_discard_Y[line]==false)
+    pthread_mutex_lock(&stream_subframe_sync_mtx);
+    if(stream_subframe_sync[previous_subframe] != num_threads)
     {
-    line_type=0;
-    stream_line(bits_Y, tam_bits_Y[line],line);
+        pthread_cond_wait (&stream_subframe_sync_cv[previous_subframe],&stream_subframe_sync_mtx);
+    }
+    pthread_mutex_unlock(&stream_subframe_sync_mtx);
+
+    pthread_mutex_lock(&stream_subframe_mutex);
+    //inteligent discard
+    bool discard=true;
+
+    //luminancias
+    int line=start;
+
+    if (line==0 ) newframe=true;//flag de nuevo frame
+
+    while (line<height_down_Y)
+    {
+        if (!discard || line%2==0|| inteligent_discard_Y[line]==false)
+        {
+            line_type=0;
+            stream_line(bits_Y, tam_bits_Y[line],line);
+        }
+
+        line+=separation;
+    }
+    //Crominancias
+    line=start;
+    while (line<height_down_UV)
+    {
+        if (!discard || line%2==1 || inteligent_discard_U[line]==false);
+        {
+            line_type=1;
+            stream_line(bits_U, tam_bits_U[line],line);
+        }
+        if (!discard && line%2==1 || inteligent_discard_V[line]==false);
+        {
+            line_type=2;
+            stream_line(bits_V, tam_bits_V[line],line);
+        }
+        line+=separation;
     }
 
-  line+=separation;
-}
+    fflush(stdout);
+    pthread_mutex_unlock(&stream_subframe_mutex);
 
-
-
-//crominancias
-line=start;
-while (line<height_down_UV)
-{
-if (!discard || line%2==1 || inteligent_discard_U[line]==false);
+    pthread_mutex_lock(&stream_subframe_sync_mtx);
+    stream_subframe_sync[subframe]++;
+    if (stream_subframe_sync[subframe] == num_threads)
     {
-    line_type=1;
-    stream_line(bits_U, tam_bits_U[line],line);
+        pthread_cond_broadcast(&stream_subframe_sync_cv[subframe]);
+        stream_subframe_sync[previous_subframe] = 0;
     }
+    pthread_mutex_unlock(&stream_subframe_sync_mtx);
 
-
-if (!discard && line%2==1 || inteligent_discard_V[line]==false);
-    {
-    line_type=2;
-    stream_line(bits_V, tam_bits_V[line],line);
-    }
-  line+=separation;
-}
-
-
-
-fflush(stdout);
-
-
-pthread_mutex_unlock(&stream_subframe_mutex);
-
+    pthread_exit(NULL);
 }
 
 

@@ -179,6 +179,11 @@ pthread_t thread[num_threads];
 pthread_t streamer_thread[num_threads*8];
 pthread_mutex_t stream_subframe_mutex;
 
+// Mutex, flags and conditional variables to sync the streamer.
+pthread_cond_t stream_subframe_sync_cv[8];
+uint8_t stream_subframe_sync[8];
+pthread_mutex_t stream_subframe_sync_mtx;
+
 //contador de bytes de NAL y de frame
 int nal_byte_counter;
 int frame_byte_counter;

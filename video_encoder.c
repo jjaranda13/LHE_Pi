@@ -530,7 +530,6 @@ pthread_join(streamer_thread[j], NULL);
   contador_tiempo+=secs;
 
   //if (secs>100) __fpurge(stdout);
-
   if (i % 20 == 0) {
     fprintf(stderr, " (avg 20frames) FRAME ENCODING & STREAMING: %.16g ms\n", (contador_tiempo/20) * 1000.0);
     contador_tiempo = 0;
