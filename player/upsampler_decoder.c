@@ -27,7 +27,7 @@ void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_val
 		prev_index = (int)int_part;
 		int prev_part = (int)(fract_part * 16);
 
-		upsampled_value[i] = (uint8_t)(component_value[prev_index ] * (16 - prev_part) + component_value[prev_index] * prev_part) / 16;
+		upsampled_value[i] = (component_value[prev_index ] * (16 - prev_part) + component_value[prev_index] * prev_part) / 16;
 	}
 	return;
 }
@@ -39,7 +39,7 @@ void interpolate_scanline_vertical(uint8_t * upsampled_values, int scaline, int 
 	int next_distance = next_scanline - scaline;
 
 	for (int i = scaline*img_width; i < (scaline + 1)*img_width; i++) {
-		upsampled_values[i] = (uint8_t)(upsampled_values[i + (next_distance*img_width)] *prev_distance + upsampled_values[i - (prev_distance*img_width)] * next_distance) / (uint8_t)total_distance;
+		upsampled_values[i] = (upsampled_values[i + (next_distance*img_width)] *prev_distance + upsampled_values[i - (prev_distance*img_width)] * next_distance) / total_distance;
 	}
 	return;
 }
@@ -91,10 +91,10 @@ void scale_epx(uint8_t *channel, int c_height, int c_width, uint8_t *epx, int um
 			exp_x = x * pppx;
 			exp_y = y * pppy;
 
-			epx[exp_y*exp_width + exp_x] = (uint8_t)e1;
-			epx[exp_y*exp_width + exp_x + 1] = (uint8_t)e2;
-			epx[(exp_y + 1)*exp_width + exp_x] = (uint8_t)e3;
-			epx[(exp_y + 1)*exp_width + exp_x + 1] = (uint8_t)e4;
+			epx[exp_y*exp_width + exp_x] = e1;
+			epx[exp_y*exp_width + exp_x + 1] = e2;
+			epx[(exp_y + 1)*exp_width + exp_x] = e3;
+			epx[(exp_y + 1)*exp_width + exp_x + 1] = e4;
 		}
 	}
 }
