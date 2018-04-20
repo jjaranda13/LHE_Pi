@@ -186,7 +186,7 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 
 		if (is_frame_completed(component_state, past_component_state, subframe, past_subframe, subframe_counter, is_Y, is_U, is_V, height)) {
 			reconstruct_frame(img, is_Y, is_U, is_V, height, width);
-			upsample_frame(img, img_up);
+			upsample_frame_adaptative(img, img_up);
 			handle_window();
 			play_frame(img_up->Y_data, img_up->U_data, img_up->V_data, width * 2, width);
 			reset_control_arrays(subframe_counter, is_Y, is_U, is_V);
@@ -508,6 +508,12 @@ void upsample_frame(yuv_image * img, yuv_image *img_up) {
 	scale_epx(img->Y_data, img->height, img->width, img_up->Y_data, THRESHOLD);
 	scale_epx(img->U_data, img->height/2, img->width /2, img_up->U_data, THRESHOLD);
 	scale_epx(img->V_data, img->height/2, img->width /2, img_up->V_data, THRESHOLD);
+}
+
+void upsample_frame_adaptative(yuv_image * img, yuv_image *img_up) {
+	scale_adaptative(img->Y_data, img->height, img->width, img_up->Y_data);
+	scale_adaptative(img->U_data, img->height / 2, img->width / 2, img_up->U_data);
+	scale_adaptative(img->V_data, img->height / 2, img->width / 2, img_up->V_data);
 }
 
 void reset_control_arrays(unsigned int subframe_counter[8], bool is_Y[1080], bool is_U[1080], bool is_V[1080]) {
