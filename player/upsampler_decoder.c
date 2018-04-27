@@ -1,4 +1,3 @@
-#pragma once
 /**
 * @file upsampler_decoder.c
 * @author Francisco Jos� Juan Quintanilla

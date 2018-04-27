@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 SDL_Window * window;
 SDL_Renderer * renderer;
 SDL_Texture * texture;

@@ -1,4 +1,4 @@
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include"player_decoder.h"
 
 void init_player(int width, int height) {
