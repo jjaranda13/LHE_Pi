@@ -1,4 +1,6 @@
-#include <SDL.h>
+#include <SDL2/SDL.h>
+#include <stdlib.h>
+
 #include"player_decoder.h"
 
 void init_player(int width, int height) {
@@ -42,7 +44,17 @@ void play_frame(uint8_t * Y_data, uint8_t * U_data, uint8_t * V_data, int Y_widt
 void handle_window() {
 	SDL_Event e;
 
-	while (SDL_PollEvent(&e) != 0) {}
+	while (SDL_PollEvent(&e) != 0) {
+		switch ( e.type) {
+		case SDL_QUIT:
+		
+			exit(EXIT_SUCCESS);
+			break;
+		default:
+			break;			
+		}
+	}
+	return;
 }
 
 void close_player() {

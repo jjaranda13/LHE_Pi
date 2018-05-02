@@ -1,4 +1,3 @@
-#pragma once
 /**
 * @file upsampler_decoder.c
 * @author Francisco Jos� Juan Quintanilla
@@ -39,40 +38,8 @@ void interpolate_scanline_vertical(uint8_t * upsampled_values, int scaline, int 
 	int next_distance = next_scanline - scaline;
 
 	for (int i = scaline*img_width; i < (scaline + 1)*img_width; i++) {
-		upsampled_values[i] = (upsampled_values[i + (next_distance*img_width)] * prev_distance + upsampled_values[i - (prev_distance*img_width)] * next_distance) / total_distance;
+		upsampled_values[i] = (upsampled_values[i + (next_distance*img_width)] *prev_distance + upsampled_values[i - (prev_distance*img_width)] * next_distance) / total_distance;
 	}
-	return;
-}
-
-void resize_component(uint8_t * orig_values, uint8_t * dest_values, int orig_width, int orig_height, int dest_width, int dest_height) {
-
-	/*float x_orig, y_orig, fract_part;
-	int first_x_orig, second_x_orig, second_x_part, first_x_part, first_y_orig, second_y_orig, second_y_part, first_y_part;
-	float pppx = (float) orig_width / (float)dest_width;
-	float pppy = (float) orig_height / (float)dest_height;
-
-
-	for (int y = 0; y < dest_height; y++) {
-		for (int x = 0; x < dest_width; x++) {
-			 x_orig = x * pppx;
-			 y_orig = y * pppy;
-			 fract_part = modff(x_orig, &x_orig);
-			 first_x_orig = (int)x_orig;
-			 second_x_orig = first_x_orig +1;
-			 second_x_part = (int)(fract_part * 16);
-			 first_x_part = 16 - second_x_part;
-
-			int value  = (orig_values[y*orig_width+x] * (16 - prev_part) + component_value[prev_index] * prev_part) / 16;
-
-			fract_part = modff(y_orig, &y_orig);
-			 first_y_orig = (int)y_orig;
-			 second_y_orig = first_y_orig + 1;
-			 second_y_part = (int)(fract_part * 16);
-			 first_y_part = 16 - second_y_part;
-
-			 
-		}
-	}*/
 	return;
 }
 
@@ -127,6 +94,110 @@ void scale_epx(uint8_t *channel, int c_height, int c_width, uint8_t *epx, int um
 			epx[exp_y*exp_width + exp_x + 1] = e2;
 			epx[(exp_y + 1)*exp_width + exp_x] = e3;
 			epx[(exp_y + 1)*exp_width + exp_x + 1] = e4;
+		}
+	}
+}
+
+void scale_adaptative(uint8_t * origin, int ori_height, int ori_width, uint8_t * destination) {
+
+	int dst_y, dst_x, ori_y, ori_x;
+	int a, b, c, d;
+	int dst_height = ori_height * 2;
+	int dst_width = ori_width * 2;
+
+	dst_y = 0;
+	ori_y = dst_y / 2;
+	for (dst_x = 0; dst_x < dst_width - 1; dst_x++) {
+		ori_x = dst_x / 2;
+		if (dst_x % 2) {
+			destination[dst_y*dst_width + dst_x] = (origin[ori_y*ori_width + ori_x] + origin[ori_y*ori_width + ori_x + 1]) / 2;
+		}
+		else {
+			destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
+		}
+	}
+	ori_x = dst_width - 1;
+	destination[dst_y*dst_width + dst_width - 1] = origin[ori_y*ori_width + ori_x];
+
+	dst_y = dst_height - 1;
+	ori_y = dst_y / 2;
+	for (dst_x = 0; dst_x < dst_width - 1; dst_x++) {
+		ori_x = dst_x / 2;
+		if (dst_x % 2) {
+			destination[dst_y*dst_width + dst_x] = (origin[ori_y*ori_width + ori_x] + origin[ori_y*ori_width + ori_x + 1]) / 2;
+		}
+		else {
+			destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
+		}
+	}
+	ori_x = dst_width - 1;
+	destination[dst_y*dst_width + dst_width - 1] = origin[ori_y*ori_width + ori_x];
+
+	dst_x = 0;
+	ori_x = dst_x / 2;
+	for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
+		ori_y = dst_y / 2;
+		if (dst_y % 2) {
+			destination[dst_y*dst_width + dst_x] = (origin[ori_y*ori_width + ori_x] + origin[(ori_y + 1)*ori_width + ori_x]) / 2;
+		}
+		else {
+			destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
+		}
+	}
+
+	dst_x = dst_width - 1;
+	ori_x= dst_x / 2;
+	for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
+		ori_y = dst_y / 2;
+		if (dst_y % 2) {
+			destination[dst_y*dst_width + dst_x] = (origin[ori_y*ori_width + ori_x] + origin[(ori_y + 1)*ori_width + ori_x]) / 2;
+		}
+		else {
+			destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
+		}
+	}
+
+	for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
+		
+		for (dst_x = 1; dst_x < dst_width - 1; dst_x++) {
+
+			ori_x = dst_x / 2;
+			ori_y = dst_y / 2;
+
+			if((dst_x % 2 == 0 && dst_y % 2 == 0)) {
+				destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
+			}
+			else if (dst_x % 2 && dst_y % 2) {
+				a = origin[ori_y*ori_width + ori_x];
+				b = origin[ori_y*ori_width + ori_x + 1];
+				c = origin[(ori_y + 1)*ori_width + ori_x];
+				d = origin[(ori_y + 1)*ori_width + ori_x + 1];
+
+				if (abs(a - d) >= abs(b - c)) {
+					destination[dst_y*dst_width + dst_x] = (b + c) / 2;
+				}
+				else {
+					destination[dst_y*dst_width + dst_x] = (a + d) / 2;
+				}
+			}
+		}
+	}
+
+	for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
+		for (dst_x = 1; dst_x < dst_width - 1; dst_x++) {
+			if ((dst_x % 2 == 0 && dst_y % 2) || (dst_x % 2  && dst_y % 2 == 0)) {
+				a = destination[(dst_y - 1)*dst_width + dst_x];
+				b = destination[dst_y*dst_width + dst_x + 1];
+				c = destination[(dst_y + 1)*dst_width + dst_x];
+				d = destination[dst_y*dst_width + dst_x - 1];
+
+				if (abs(a - c) >= abs(b - d)) {
+					destination[dst_y*dst_width + dst_x] = (b + d) / 2;
+				}
+				else {
+					destination[dst_y*dst_width + dst_x] = (a + c) / 2;
+				}
+			}
 		}
 	}
 }

@@ -4,10 +4,15 @@
 ## Dependencies
 SDL 2 library is neccesary for the execution. [Get it here](https://www.libsdl.org/download-2.0.php)
 
-## Compiling
+## Compiling Windows
 1. Dump the files into a Visual Studio Solution. 
 2. Configure the project to link against SDL. [Dummy tutorial including SLD](https://www.wikihow.com/Set-Up-SDL-with-Visual-Studio-2017)
 3. Compile it.
+
+## Compiling Ubuntu
+1. Install SDL libraries. In Ubuntu `sudo apt-get install libsdl2-dev`
+2. Get to the player directory and run `make`
+3. The binary is located in the same folder. The name is lhe_rpi_player
 
 ## Usage
  The following options can or must be supplied to the program.
@@ -27,4 +32,3 @@ lhe_pi_player.exe --height 360 -width 640 --filename "C:/Users/quinta/Desktop/bi
 ## FAQ
 
 ## Known Bugs :disappointed_relieved:
-⋅⋅* Frame detection fails sometimes to obtain the complete frame.

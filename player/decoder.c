@@ -1,11 +1,14 @@
-#pragma warning(disable:4996)
 #include <fcntl.h>  
-#include <io.h>  
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <windows.h>
+#ifdef _WIN32 
+	#include <io.h>  
+	#include <windows.h>
+#elif __linux__
+	#include <unistd.h>
+#endif
 
 #include "quantizer_decoder.h"
 #include "entropic_decoder.h"
@@ -14,17 +17,15 @@
 #include "decoder.h"
 #include "get_bits.h"
 
-
 #define BITS_BUFFER_LENGHT 3000
 
-#define Y_STATE 1
-#define U_STATE 2
-#define V_STATE 3
+#define Y_STATE 0
+#define U_STATE 1
+#define V_STATE 2
 
 int decode_stream(int width, int height, FILE * file) {
 
-	int status, nal_debug_counter = 0,
-		recieved[1000] = {0}, recieved_cnt = 0;
+	int status, subframe = 0, component_state = Y_STATE;
 	unsigned int line_debug_counter = 0, frame_debug_counter = 0,  subframe_counter[24] = { 0 };
 	bool is_Y[1080] = { false }, is_U[1080] = { false },
 		is_V[1080] = { false }, first = true;
@@ -54,11 +55,9 @@ int decode_stream(int width, int height, FILE * file) {
 		int bits_lenght, index = 0;
 
 		bits_lenght = buffer_til_nal(file, bits, BITS_BUFFER_LENGHT);
-		nal_debug_counter++;
 		while (index < bits_lenght) {
 			int readed_hops, readed_bytes, line_num,
-				past_component_state, subframe, component_state,
-				past_subframe;
+				past_component_state, past_subframe;
 			uint16_t headers;
 			
 
@@ -76,10 +75,6 @@ int decode_stream(int width, int height, FILE * file) {
 				printf("Wrong header or line_num too high line_debug_counter=%d\n", line_debug_counter);
 				line_num = 0;
 			}
-				if (component_state == Y_STATE && frame_debug_counter == 4) {
-					recieved[recieved_cnt] = line_num;
-					recieved_cnt++;
-				}
 
 			if (is_frame_completed(component_state, past_component_state, subframe, past_subframe, subframe_counter, is_Y, is_U, is_V, height)) {
 				reconstruct_frame(img, is_Y, is_U, is_V, height, width);
@@ -120,7 +115,6 @@ int decode_stream(int width, int height, FILE * file) {
 				subframe_counter[subframe]++;
 				break;
 			}
-			line_debug_counter++;
 		}
 	}
 	return 0;
@@ -128,9 +122,8 @@ int decode_stream(int width, int height, FILE * file) {
 
 int decode_stream_2(int width, int height, get_bits_context * ctx) {
 
-	int status, nal_debug_counter = 0,
-		recieved[1000] = { 0 }, recieved_cnt = 0;
-	unsigned int line_debug_counter = 0, frame_debug_counter = 0, subframe_counter[8] = { 0 };
+	int status, subframe = 0, component_state = Y_STATE;
+	unsigned int subframe_counter[8] = { 0 };
 	bool is_Y[1080] = { false }, is_U[1080] = { false },
 		is_V[1080] = { false }, first = true;
 	uint8_t *hops = NULL;
@@ -155,7 +148,7 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 	while (true) {
 
 		int readed_hops, line_num, past_component_state,
-			subframe, component_state, past_subframe;
+			past_subframe;
 		uint16_t headers;
 		uint8_t header_high;
 
@@ -180,17 +173,16 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 
 		}
 		if (status != 0 || line_num > height) {
-			printf("Wrong header or line_num too high line_debug_counter=%d\n", line_debug_counter);
+			printf("Wrong header or line_num too high ");
 			line_num = 0;
 		}
 
 		if (is_frame_completed(component_state, past_component_state, subframe, past_subframe, subframe_counter, is_Y, is_U, is_V, height)) {
 			reconstruct_frame(img, is_Y, is_U, is_V, height, width);
-			upsample_frame(img, img_up);
+			upsample_frame_adaptative(img, img_up);
 			handle_window();
 			play_frame(img_up->Y_data, img_up->U_data, img_up->V_data, width * 2, width);
 			reset_control_arrays(subframe_counter, is_Y, is_U, is_V);
-			frame_debug_counter++;
 		}
 		switch (component_state) {
 		case Y_STATE:
@@ -221,20 +213,20 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 			subframe_counter[subframe]++;
 			break;
 		}
-		line_debug_counter++;
 	}
 	return 0;
 }
 
 int decode_stream_stdin(int width, int height) {
-	int status;
 	get_bits_context ctx;
+	#ifdef _WIN32 
+		int status = _setmode(_fileno(stdin), _O_BINARY);
+		if (status == -1) {
+			printf("Cannot set mode for stdin\n");
+			return(-1);
+		}
+	#endif
 
-	status = _setmode(_fileno(stdin), _O_BINARY);
-	if (status == -1) {
-		printf("Cannot set mode for stdin\n");
-		return(-1);
-	}
 	init_get_bits(stdin, &ctx);
 
 	return decode_stream_2(width, height, &ctx);
@@ -244,8 +236,18 @@ int decode_stream_file(int width, int height, char * filename) {
 	int status;
 	FILE * file;
 	get_bits_context ctx;
-
-	status = (int)fopen_s(&file, filename, "rb");
+	#ifdef _WIN32 
+		status = (int)fopen_s(&file, filename, "rb");
+	#elif __linux__
+		file = fopen(filename, "rb");
+		if (file == NULL) {
+			status = 1;
+		}
+		else {
+			status = 0;
+		}
+	#endif
+	
 	if (status != 0) {
 		printf("Error opening the file\n");
 		return -1;
@@ -264,8 +266,14 @@ int thrash_til_nal(FILE * stream) {
 
 	while (!is_found) {
 		readed = fread(&byte, (size_t)1, (size_t)sizeof(uint8_t), stream);
-		if (readed == 0)
-			Sleep(10);
+		if (readed == 0){
+			#ifdef _WIN32 
+				Sleep(10);
+			#elif __linux__
+				usleep(10 * 1000);
+			#endif	
+		}
+			
 		else {
 			switch (nal_counter) {
 			case 0:
@@ -316,7 +324,11 @@ int buffer_til_nal(FILE * stream, uint8_t * buffer, int buffer_max_lenght) {
 
 		readed = fread(&byte, 1, sizeof(uint8_t), stream);
 		if (readed == 0) {
-			Sleep(10);
+			#ifdef _WIN32 
+				Sleep(10);
+			#elif __linux__
+				usleep(10 * 1000);
+			#endif
 		}
 		else {
 			switch (nal_counter) {
@@ -417,13 +429,6 @@ int get_header(uint16_t header, int *state, int *line_num, int *subframe) {
 bool is_frame_completed(int component_state, int past_component_state, int subframe, int past_subframe, unsigned int subframe_counter[8], bool is_Y[1080], bool is_U[1080], bool is_V[1080], int height) {
 	
 	bool cond1 = subframe < past_subframe - 5;
-	bool cond3 = true;
-	for (int i = 0; i < 8; i++) {
-		if (subframe_counter[i] < ((unsigned int)height) * 2 / 8) {
-			cond3 = false;
-			break;
-		}
-	}
 	if (cond1)
 		return true;
 	else
@@ -508,6 +513,12 @@ void upsample_frame(yuv_image * img, yuv_image *img_up) {
 	scale_epx(img->Y_data, img->height, img->width, img_up->Y_data, THRESHOLD);
 	scale_epx(img->U_data, img->height/2, img->width /2, img_up->U_data, THRESHOLD);
 	scale_epx(img->V_data, img->height/2, img->width /2, img_up->V_data, THRESHOLD);
+}
+
+void upsample_frame_adaptative(yuv_image * img, yuv_image *img_up) {
+	scale_adaptative(img->Y_data, img->height, img->width, img_up->Y_data);
+	scale_adaptative(img->U_data, img->height / 2, img->width / 2, img_up->U_data);
+	scale_adaptative(img->V_data, img->height / 2, img->width / 2, img_up->V_data);
 }
 
 void reset_control_arrays(unsigned int subframe_counter[8], bool is_Y[1080], bool is_U[1080], bool is_V[1080]) {
