@@ -468,32 +468,25 @@ if (x>2)
         case 1: // Only Hop0 is soft-line
             if (hop_number>4 || hop_number<4)
                 softline=false;
-            else
-                softline=true;
             break;
         case 2: //  Hop0 & Hop1 is soft-line
             if (hop_number>5 || hop_number<3)
                 softline=false;
-            else
-                softline=true;
             break;
         case 3: // Hop0, Hop1 & Hop2 are softline
             if (hop_number>6 || hop_number<2)
                 softline=false;
-            else
-                softline=true;
             break;
         case 4: // Hop0, Hop1, Hop2 & Hop3 are softline
             if (hop_number>7 || hop_number<1)
                 softline=false;
-            else
-                softline=true;
             break;
         case 5: // Allways everything is softline
             softline=true;
             break;
         default:
-            softline=false;
+            if (hop_number>6 || hop_number<2)
+                softline=false;
             break;
 
     }
