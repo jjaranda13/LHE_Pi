@@ -1,7 +1,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <pthread.h>
-
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
 
 #define num_threads 3
 
@@ -12,6 +14,7 @@ bool DEBUG;//for execution in debug mode and show more traces
 bool downsampler_initialized;
 bool quantizer_initialized;
 
+int inteligent_discard_mode;
 
 //#define MODULE 8;//default value is 8. used for scanlines processing order
 
@@ -193,3 +196,16 @@ int frame_byte_counter;
 bool *inteligent_discard_Y;
 bool *inteligent_discard_U;
 bool *inteligent_discard_V;
+
+// HTTP API
+struct http_socket_info {
+	int listener;
+	int client_listener;
+	struct sockaddr_in server;
+	struct sockaddr_in client;
+    int client_size;
+	char buffer[500];
+	int buffer_size;
+};
+struct http_socket_info http_info;
+

@@ -28,6 +28,7 @@
 #include "include/camera_reader.h"
 #include "include/video_encoder_simd.h"
 #include "include/streamer.h"
+#include "include/http_api.h"
 
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
@@ -392,6 +393,8 @@ pppy=2;
 
 init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
 init_videoencoder();
+init_http_api(3000);
+
 
 
 
@@ -496,6 +499,8 @@ gettimeofday(&t_ini, NULL);
     //   quantize_target_normal(frame_encoded_Y,frame_encoded_U,frame_encoded_V);
     // esta funcion cuantiza en orden salteado , robusto a perdidas
     //for (int k=0 ;k<1000;k++){
+
+    process_http_api();
       quantize_target(frame_encoded_Y,frame_encoded_U,frame_encoded_V);
     //}
 

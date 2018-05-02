@@ -182,6 +182,7 @@ inteligent_discard_Y=malloc(height_down_Y*sizeof(bool));
 inteligent_discard_U=malloc(height_down_UV*sizeof(bool));
 inteligent_discard_V=malloc(height_down_UV*sizeof(bool));
 
+inteligent_discard_mode = 3;
 
 quantizer_initialized=true;
 
@@ -457,15 +458,45 @@ for (int x=0;x<width;x++)
    if (hop_number==5) grad=1;
    else if (hop_number==3) grad=-1;
    else if (!small_hop) grad=0;
-
 if (x>2)
 {
-   //softline=false; //nunca
-   //if (hop_number>4 || hop_number<4) softline=false; // soft = h0,h1
-   //if (hop_number>5 || hop_number<3) softline=false; // soft = h0,h1
-   if (hop_number>6 || hop_number<2) softline=false; //soft =h0,h1,h2
-   //if (hop_n umber>7 || hop_number<1) softline=false; //soft =h0,h1,h2,h3
-   //si no pongo nada es true siempre
+    switch (inteligent_discard_mode)
+    {
+        case 0: // Never soft-line
+            softline=false;
+            break;
+        case 1: // Only Hop0 is soft-line
+            if (hop_number>4 || hop_number<4)
+                softline=false;
+            else
+                softline=true;
+            break;
+        case 2: //  Hop0 & Hop1 is soft-line
+            if (hop_number>5 || hop_number<3)
+                softline=false;
+            else
+                softline=true;
+            break;
+        case 3: // Hop0, Hop1 & Hop2 are softline
+            if (hop_number>6 || hop_number<2)
+                softline=false;
+            else
+                softline=true;
+            break;
+        case 4: // Hop0, Hop1, Hop2 & Hop3 are softline
+            if (hop_number>7 || hop_number<1)
+                softline=false;
+            else
+                softline=true;
+            break;
+        case 5: // Allways everything is softline
+            softline=true;
+            break;
+        default:
+            softline=false;
+            break;
+
+    }
 }
   }
 //  printf("\n");
