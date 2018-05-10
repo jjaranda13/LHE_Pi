@@ -6,7 +6,9 @@
 #include <netinet/in.h>
 
 #define num_threads 3
-
+#define HTTP_API_PORT 3000
+#define DEFAULT_INTELIGENT_DISCARD_MODE 3
+#define DEFAULT_FRAME_SKYPPING_MODE 0
 
 int cosa;
 bool DEBUG;//for execution in debug mode and show more traces
@@ -15,6 +17,7 @@ bool downsampler_initialized;
 bool quantizer_initialized;
 
 int inteligent_discard_mode;
+int frame_skipping_mode;
 
 //#define MODULE 8;//default value is 8. used for scanlines processing order
 

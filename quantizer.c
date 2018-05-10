@@ -182,7 +182,7 @@ inteligent_discard_Y=malloc(height_down_Y*sizeof(bool));
 inteligent_discard_U=malloc(height_down_UV*sizeof(bool));
 inteligent_discard_V=malloc(height_down_UV*sizeof(bool));
 
-inteligent_discard_mode = 3;
+inteligent_discard_mode = DEFAULT_INTELIGENT_DISCARD_MODE;
 
 quantizer_initialized=true;
 
