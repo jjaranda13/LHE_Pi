@@ -76,45 +76,74 @@ int process_http_api()
 {
     int size, number;
     char * pos;
+    char first_letter;
+
     http_info.client_listener = accept(http_info.listener,(struct sockaddr *)&(http_info.client), (socklen_t *)&http_info.client_size);
     if(http_info.client_listener== -1 && errno == EWOULDBLOCK)
     {
-		return 0;
+        return 0;
     }
     if(http_info.client_listener== -1)
     {
         fprintf(stderr, "ERROR: Error accepting the request: %s.\n", strerror(errno));
-		return -1;
+        return -1;
     }
 
     size = recv(http_info.client_listener, http_info.buffer, 500, 0);
-    if(size == -1) {
-    fprintf(stderr, "ERROR: Error retrieving the request: %s.\n", strerror(errno));
-		return -1;
+    if(size == -1)
+    {
+        fprintf(stderr, "ERROR: Error retrieving the request: %s.\n", strerror(errno));
+        return -1;
     }
 
     pos=strchr(http_info.buffer,'/');
     if (pos == NULL)
     {
-        send(http_info.client_listener,"HTTP/1.1 400 Bad Request",24,0);
-        shutdown (http_info.client_listener, SHUT_RDWR);
-        close(http_info.client_listener);
+        send_HTTP_400(http_info.client_listener);
         return 0;
     }
     pos++;
-    *(pos+1) = '\0';
+    first_letter = *pos;
+    pos=strchr(pos,'/');
+    if (pos == NULL)
+    {
+        send_HTTP_400(http_info.client_listener);
+        return 0;
+    }
+    pos++;
+    *(pos+2) = '\0';
     number = atoi(pos);
-    if(number >= 0 && number <=5){
-        inteligent_discard_mode = number;
-        fprintf(stderr, "INFO: Discard set to mode %d.\n",number );
-        send(http_info.client_listener,"HTTP/1.1 200 OK",15,0);
+
+    if (first_letter == 'd') // Means that the word is discard
+    {
+        if(number >= 0 && number <=5)
+        {
+            inteligent_discard_mode = number;
+            fprintf(stderr, "INFO: Discard set to mode %d.\n",number );
+            send_HTTP_200(http_info.client_listener);
+        }
+        else
+        {
+            send_HTTP_400(http_info.client_listener);
+        }
+    }
+    else if (first_letter == 's')  // Means that the word is skip
+    {
+        if(number >= 0 && number <=29)
+        {
+            frame_skipping_mode = number;
+            fprintf(stderr, "INFO: Skipping set to mode %d.\n",number );
+            send_HTTP_200(http_info.client_listener);
+        }
+        else
+        {
+            send_HTTP_400(http_info.client_listener);
+        }
     }
     else
     {
-        send(http_info.client_listener,"HTTP/1.1 400 Bad Request",24,0);
+        send_HTTP_400(http_info.client_listener);
     }
-    shutdown (http_info.client_listener, SHUT_RDWR);
-    close(http_info.client_listener);
     return 0;
 }
 
@@ -122,4 +151,18 @@ int close_http_api()
 {
     close(http_info.listener);
     return 0;
+}
+
+void send_HTTP_400(int socket)
+{
+    send(socket,"HTTP/1.1 400 Bad Request",24,0);
+    shutdown (socket, SHUT_RDWR);
+    close(socket);
+}
+
+void send_HTTP_200(int socket)
+{
+    send(socket,"HTTP/1.1 200 OK",15,0);
+    shutdown (socket, SHUT_RDWR);
+    close(socket);
 }

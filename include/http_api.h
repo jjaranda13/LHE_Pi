@@ -38,3 +38,10 @@ int process_http_api();
  * @return Zero if everything is allright wich is allways.
  */
 int close_http_api();
+
+/************
+ * PRIVATE
+ ************/
+
+void send_HTTP_400(int socket);
+void send_HTTP_200(int socket);
