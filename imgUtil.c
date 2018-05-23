@@ -474,7 +474,7 @@ if (DEBUG) printf(" 3 channels done \n");
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-int get_PSNR_Y(unsigned char **result_Y, unsigned char ** orig_Y, int height , int width)
+double get_PSNR_Y(unsigned char **result_Y, unsigned char ** orig_Y, int height , int width)
 {
 double total=0;
 double dif=0;
@@ -491,7 +491,7 @@ double psnr=10.0*log10((255.0*255.0)/mse);
   //printf ("psnr dentro=%f \n",psnr);
  //printf ("mse dentro=%f \n",mse);
  int k = (int) (psnr*100);
-return k;
+return psnr;
 
 
 
@@ -589,6 +589,18 @@ R = 1.164(Y - 16) + 1.596(V - 128)
 if (DEBUG) printf(" 3 channels done \n");
 }
 
+
+void interpolate_scanline(uint8_t ** values, int scanline, int prev_scaline, int next_scanline, int values_width) {
+
+	int total_distance = next_scanline - prev_scaline;
+	int prev_distance = scanline - prev_scaline;
+	int next_distance = next_scanline - scanline;
+
+	for (int i = 0; i < values_width; i++) {
+		values[scanline][i] = 0;//(values[next_scanline][i] * prev_distance + values[prev_scaline][i]* next_distance) / total_distance;
+	}
+	return;
+}
 
 
 
