@@ -16,17 +16,16 @@
 #include "upsampler_decoder.h"
 
 void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_value, int component_value_width, int upsample_value_width) {
-	
-	float ppx = ((float)upsample_value_width) / (float)component_value_width;
-	double int_part, fract_part;
-	int prev_index;
 
 	for (int i = 0; i < upsample_value_width; i++) {
-		fract_part = modf(i / ppx, &int_part);
-		prev_index = (int)int_part;
-		int prev_part = (int)(fract_part * 16);
-
-		upsampled_value[i] = (component_value[prev_index ] * (16 - prev_part) + component_value[prev_index] * prev_part) / 16;
+		float index = i * ((component_value_width -1)/ (float)(upsample_value_width-1));
+		int prev_part = (int) ((index - floor(index))*100);
+		if (prev_part == 0) {
+			upsampled_value[i] = component_value[(int) index];
+		}
+		else {
+			upsampled_value[i] = (component_value[(int) index]* (100 - prev_part)+ component_value[(int) index+1]* prev_part)/100;
+		}
 	}
 	return;
 }
@@ -116,8 +115,9 @@ void scale_adaptative(uint8_t * origin, int ori_height, int ori_width, uint8_t *
 			destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
 		}
 	}
-	ori_x = dst_width - 1;
-	destination[dst_y*dst_width + dst_width - 1] = origin[ori_y*ori_width + ori_x];
+	dst_x = dst_width - 1;
+	ori_x = dst_x / 2;
+	destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
 
 	dst_y = dst_height - 1;
 	ori_y = dst_y / 2;
@@ -130,8 +130,9 @@ void scale_adaptative(uint8_t * origin, int ori_height, int ori_width, uint8_t *
 			destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
 		}
 	}
-	ori_x = dst_width - 1;
-	destination[dst_y*dst_width + dst_width - 1] = origin[ori_y*ori_width + ori_x];
+	dst_x = dst_width - 1;
+	ori_x = dst_x / 2;
+	destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
 
 	dst_x = 0;
 	ori_x = dst_x / 2;
