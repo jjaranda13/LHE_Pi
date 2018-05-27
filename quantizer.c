@@ -313,9 +313,7 @@ for (int x=0;x<width;x++)
 
   //-------------------------PHASE 2: HOPS COMPUTATION-------------------------------
 
-  hop0=hop0+grad;
-  if (hop0>255) hop0=255;
-  else if (hop0<1) hop0=1;
+        hop0 = hop0+grad > 255? 255: hop0+grad < 1? 1:hop0+grad;
 
   hop_number=4;// prediction corresponds with hop_number=4
   quantum=hop0;//this is the initial predicted quantum, the value of prediction
