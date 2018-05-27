@@ -11,5 +11,10 @@ all: $(SOURCES) $(EXECUTABLE)
 $(EXECUTABLE): $(OBJECTS) 
 	$(CC) -o $@ $(LDFLAGS) $(OBJECTS) $(LIB) 
 
+debug: CFLAGS = -std=gnu11 -Wall -Wextra -Og -ggdb -pg -fsanitize=address -fsanitize=leak -fsanitize=undefined
+debug: LIB += -fsanitize=address -fsanitize=leak -fsanitize=undefined
+
+debug: $(SOURCES) $(EXECUTABLE)
+
 clean :
 	rm -f $(EXECUTABLE) *.o	
