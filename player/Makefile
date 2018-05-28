@@ -4,6 +4,7 @@ LDFLAGS=
 LIB = -lSDL2 -lm
 SOURCES=entropic_decoder.c quantizer_decoder.c upsampler_decoder.c player_decoder.c decoder.c get_bits.c main.c
 OBJECTS=$(SOURCES:.c=.o)
+OBJECTS_DEBUG=$(SOURCES:.c=_g.o)
 EXECUTABLE=lhe_rpi_player
 
 all: $(SOURCES) $(EXECUTABLE)
@@ -11,10 +12,10 @@ all: $(SOURCES) $(EXECUTABLE)
 $(EXECUTABLE): $(OBJECTS) 
 	$(CC) -o $@ $(LDFLAGS) $(OBJECTS) $(LIB) 
 
-debug: CFLAGS = -std=gnu11 -Wall -Wextra -Og -ggdb -pg -fsanitize=address -fsanitize=leak -fsanitize=undefined
-debug: LIB += -fsanitize=address -fsanitize=leak -fsanitize=undefined
+debug: CFLAGS = -std=gnu11 -Wall -Wextra -Og -ggdb -fprofile-arcs -ftest-coverage -pg -fsanitize=address -fsanitize=leak -fsanitize=undefined
+debug: LIB += -lgcov -fsanitize=address -fsanitize=leak -fsanitize=undefined
 
-debug: $(SOURCES) $(EXECUTABLE)
+debug: all
 
 clean :
-	rm -f $(EXECUTABLE) *.o	
+	rm -f $(EXECUTABLE) *.o *.gcda *.gcno gmon.out

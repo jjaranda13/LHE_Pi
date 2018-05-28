@@ -65,10 +65,13 @@ uint8_t get_bit(get_bits_context * ctx) {
 		mask = mask << (buffer_left - 16 - 1);
 		mask = mask & byte;
 	}
-	else {
+	else if (buffer_left <= 32){
 		byte = buffer;
 		mask = mask << (buffer_left - 24 - 1);
 		mask = mask & byte;
+	}
+	else {
+		printf("ERROR: buffer_left went out of range");
 	}
 	buffer_left--;
 	ctx->buffer_left = buffer_left;

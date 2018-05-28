@@ -66,6 +66,9 @@ int decode_stream(int width, int height, FILE * file) {
 			// In the first iteration fill the variables with the same values.
 			if (first) {
 				status = get_header(headers, &component_state, &line_num, &subframe);
+				if (status != 0) {
+					printf("Wrong header\n");
+				}
 				first = false;
 			}
 			past_subframe = subframe;
@@ -155,6 +158,9 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 		// In the first iteration fill the variables with the same values.
 		if (first) {
 			status = get_header(headers, &component_state, &line_num, &subframe);
+			if (status != 0) {
+				printf("Wrong header\n");
+			}
 			first = false;
 		}
 		past_subframe = subframe;
