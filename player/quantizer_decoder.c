@@ -36,7 +36,7 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_l
 		}
 		// Checks that there wont be overflow plus if gradient is activated.
 		#ifdef IS_GRADIENT
-		if ((hop0 + gradient >= 1) && (hop0 + gradient <= 255))
+		if (!(hop0 + gradient < 1) || (hop0 + gradient > 255))
 			hop0 += gradient;
 		#endif
 
