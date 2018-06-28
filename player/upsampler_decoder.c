@@ -13,20 +13,20 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
+#include <omp.h>
 #include "upsampler_decoder.h"
 
 void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_value, int component_value_width, int upsample_value_width) {
-	
-	float ppx = ((float)upsample_value_width) / (float)component_value_width;
-	double int_part, fract_part;
-	int prev_index;
-
+	#pragma omp parallel for
 	for (int i = 0; i < upsample_value_width; i++) {
-		fract_part = modf(i / ppx, &int_part);
-		prev_index = (int)int_part;
-		int prev_part = (int)(fract_part * 16);
-
-		upsampled_value[i] = (component_value[prev_index ] * (16 - prev_part) + component_value[prev_index] * prev_part) / 16;
+		float index = i * ((component_value_width -1)/ (float)(upsample_value_width-1));
+		int prev_part = (int) ((index - floor(index))*100);
+		if (prev_part == 0) {
+			upsampled_value[i] = component_value[(int) index];
+		}
+		else {
+			upsampled_value[i] = (component_value[(int) index]* (100 - prev_part)+ component_value[(int) index+1]* prev_part)/100;
+		}
 	}
 	return;
 }
@@ -99,103 +99,130 @@ void scale_epx(uint8_t *channel, int c_height, int c_width, uint8_t *epx, int um
 }
 
 void scale_adaptative(uint8_t * origin, int ori_height, int ori_width, uint8_t * destination) {
-
+	#pragma omp parallel
+	{
 	int dst_y, dst_x, ori_y, ori_x;
 	int a, b, c, d;
 	int dst_height = ori_height * 2;
 	int dst_width = ori_width * 2;
-
-	dst_y = 0;
-	ori_y = dst_y / 2;
-	for (dst_x = 0; dst_x < dst_width - 1; dst_x++) {
-		ori_x = dst_x / 2;
-		if (dst_x % 2) {
-			destination[dst_y*dst_width + dst_x] = (origin[ori_y*ori_width + ori_x] + origin[ori_y*ori_width + ori_x + 1]) / 2;
-		}
-		else {
-			destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
-		}
-	}
-	ori_x = dst_width - 1;
-	destination[dst_y*dst_width + dst_width - 1] = origin[ori_y*ori_width + ori_x];
-
-	dst_y = dst_height - 1;
-	ori_y = dst_y / 2;
-	for (dst_x = 0; dst_x < dst_width - 1; dst_x++) {
-		ori_x = dst_x / 2;
-		if (dst_x % 2) {
-			destination[dst_y*dst_width + dst_x] = (origin[ori_y*ori_width + ori_x] + origin[ori_y*ori_width + ori_x + 1]) / 2;
-		}
-		else {
-			destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
-		}
-	}
-	ori_x = dst_width - 1;
-	destination[dst_y*dst_width + dst_width - 1] = origin[ori_y*ori_width + ori_x];
-
-	dst_x = 0;
-	ori_x = dst_x / 2;
-	for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
-		ori_y = dst_y / 2;
-		if (dst_y % 2) {
-			destination[dst_y*dst_width + dst_x] = (origin[ori_y*ori_width + ori_x] + origin[(ori_y + 1)*ori_width + ori_x]) / 2;
-		}
-		else {
-			destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
-		}
-	}
-
-	dst_x = dst_width - 1;
-	ori_x= dst_x / 2;
-	for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
-		ori_y = dst_y / 2;
-		if (dst_y % 2) {
-			destination[dst_y*dst_width + dst_x] = (origin[ori_y*ori_width + ori_x] + origin[(ori_y + 1)*ori_width + ori_x]) / 2;
-		}
-		else {
-			destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
-		}
-	}
-
-	for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
-		
-		for (dst_x = 1; dst_x < dst_width - 1; dst_x++) {
-
-			ori_x = dst_x / 2;
-			ori_y = dst_y / 2;
-
-			if((dst_x % 2 == 0 && dst_y % 2 == 0)) {
-				destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
-			}
-			else if (dst_x % 2 && dst_y % 2) {
-				a = origin[ori_y*ori_width + ori_x];
-				b = origin[ori_y*ori_width + ori_x + 1];
-				c = origin[(ori_y + 1)*ori_width + ori_x];
-				d = origin[(ori_y + 1)*ori_width + ori_x + 1];
-
-				if (abs(a - d) >= abs(b - c)) {
-					destination[dst_y*dst_width + dst_x] = (b + c) / 2;
+		#pragma omp sections
+		{
+			#pragma omp section
+			{
+				dst_y = 0;
+				ori_y = dst_y / 2;
+				for (dst_x = 0; dst_x < dst_width - 1; dst_x++)
+				{
+					ori_x = dst_x / 2;
+					if (dst_x % 2)
+					{
+						destination[dst_y * dst_width + dst_x] = (origin[ori_y * ori_width + ori_x] + origin[ori_y * ori_width + ori_x + 1]) / 2;
+					}
+					else
+					{
+						destination[dst_y * dst_width + dst_x] = origin[ori_y * ori_width + ori_x];
+					}
 				}
-				else {
-					destination[dst_y*dst_width + dst_x] = (a + d) / 2;
+				dst_x = dst_width - 1;
+				ori_x = dst_x / 2;
+				destination[dst_y * dst_width + dst_x] = origin[ori_y * ori_width + ori_x];
+			}
+			#pragma omp section
+			{
+				dst_y = dst_height - 1;
+				ori_y = dst_y / 2;
+				for (dst_x = 0; dst_x < dst_width - 1; dst_x++)
+				{
+					ori_x = dst_x / 2;
+					if (dst_x % 2)
+					{
+						destination[dst_y * dst_width + dst_x] = (origin[ori_y * ori_width + ori_x] + origin[ori_y * ori_width + ori_x + 1]) / 2;
+					}
+					else
+					{
+						destination[dst_y * dst_width + dst_x] = origin[ori_y * ori_width + ori_x];
+					}
+				}
+				dst_x = dst_width - 1;
+				ori_x = dst_x / 2;
+				destination[dst_y * dst_width + dst_x] = origin[ori_y * ori_width + ori_x];
+			}
+			#pragma omp section
+			{
+				dst_x = 0;
+				ori_x = dst_x / 2;
+				for (dst_y = 1; dst_y < dst_height - 1; dst_y++)
+				{
+					ori_y = dst_y / 2;
+					if (dst_y % 2)
+					{
+						destination[dst_y * dst_width + dst_x] = (origin[ori_y * ori_width + ori_x] + origin[(ori_y + 1) * ori_width + ori_x]) / 2;
+					}
+					else
+					{
+						destination[dst_y * dst_width + dst_x] = origin[ori_y * ori_width + ori_x];
+					}
 				}
 			}
-		}
-	}
-
-	for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
-		for (dst_x = 1; dst_x < dst_width - 1; dst_x++) {
-			if ((dst_x % 2 == 0 && dst_y % 2) || (dst_x % 2  && dst_y % 2 == 0)) {
-				a = destination[(dst_y - 1)*dst_width + dst_x];
-				b = destination[dst_y*dst_width + dst_x + 1];
-				c = destination[(dst_y + 1)*dst_width + dst_x];
-				d = destination[dst_y*dst_width + dst_x - 1];
-
-				if (abs(a - c) >= abs(b - d)) {
-					destination[dst_y*dst_width + dst_x] = (b + d) / 2;
+			#pragma omp section
+			{
+				dst_x = dst_width - 1;
+				ori_x = dst_x / 2;
+				for (dst_y = 1; dst_y < dst_height - 1; dst_y++)
+				{
+					ori_y = dst_y / 2;
+					if (dst_y % 2)
+					{
+						destination[dst_y * dst_width + dst_x] = (origin[ori_y * ori_width + ori_x] + origin[(ori_y + 1) * ori_width + ori_x]) / 2;
+					}
+					else
+					{
+						destination[dst_y * dst_width + dst_x] = origin[ori_y * ori_width + ori_x];
+					}
 				}
-				else {
-					destination[dst_y*dst_width + dst_x] = (a + c) / 2;
+			}
+		}
+		#pragma omp for
+		for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
+			
+			for (dst_x = 1; dst_x < dst_width - 1; dst_x++) {
+
+				ori_x = dst_x / 2;
+				ori_y = dst_y / 2;
+
+				if((dst_x % 2 == 0 && dst_y % 2 == 0)) {
+					destination[dst_y*dst_width + dst_x] = origin[ori_y*ori_width + ori_x];
+				}
+				else if (dst_x % 2 && dst_y % 2) {
+					a = origin[ori_y*ori_width + ori_x];
+					b = origin[ori_y*ori_width + ori_x + 1];
+					c = origin[(ori_y + 1)*ori_width + ori_x];
+					d = origin[(ori_y + 1)*ori_width + ori_x + 1];
+
+					if (abs(a - d) >= abs(b - c)) {
+						destination[dst_y*dst_width + dst_x] = (b + c) / 2;
+					}
+					else {
+						destination[dst_y*dst_width + dst_x] = (a + d) / 2;
+					}
+				}
+			}
+		}
+		#pragma omp for
+		for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
+			for (dst_x = 1; dst_x < dst_width - 1; dst_x++) {
+				if ((dst_x % 2 == 0 && dst_y % 2) || (dst_x % 2  && dst_y % 2 == 0)) {
+					a = destination[(dst_y - 1)*dst_width + dst_x];
+					b = destination[dst_y*dst_width + dst_x + 1];
+					c = destination[(dst_y + 1)*dst_width + dst_x];
+					d = destination[dst_y*dst_width + dst_x - 1];
+
+					if (abs(a - c) >= abs(b - d)) {
+						destination[dst_y*dst_width + dst_x] = (b + d) / 2;
+					}
+					else {
+						destination[dst_y*dst_width + dst_x] = (a + c) / 2;
+					}
 				}
 			}
 		}

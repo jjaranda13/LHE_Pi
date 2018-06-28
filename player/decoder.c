@@ -57,7 +57,7 @@ int decode_stream(int width, int height, FILE * file) {
 		bits_lenght = buffer_til_nal(file, bits, BITS_BUFFER_LENGHT);
 		while (index < bits_lenght) {
 			int readed_hops, readed_bytes, line_num,
-				past_component_state, past_subframe;
+				past_subframe;
 			uint16_t headers;
 			
 
@@ -66,9 +66,11 @@ int decode_stream(int width, int height, FILE * file) {
 			// In the first iteration fill the variables with the same values.
 			if (first) {
 				status = get_header(headers, &component_state, &line_num, &subframe);
+				if (status != 0) {
+					printf("Wrong header\n");
+				}
 				first = false;
 			}
-			past_component_state = component_state;
 			past_subframe = subframe;
 			status = get_header(headers, &component_state, &line_num, &subframe);
 			if (status != 0 || line_num > height) {
@@ -76,7 +78,7 @@ int decode_stream(int width, int height, FILE * file) {
 				line_num = 0;
 			}
 
-			if (is_frame_completed(component_state, past_component_state, subframe, past_subframe, subframe_counter, is_Y, is_U, is_V, height)) {
+			if (is_frame_completed(subframe, past_subframe)) {
 				reconstruct_frame(img, is_Y, is_U, is_V, height, width);
 				upsample_frame(img, img_up);
 				play_frame(img_up->Y_data, img_up->U_data, img_up->V_data, width*2, width);
@@ -147,8 +149,7 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 	// Player loop, never ends until process is killed.
 	while (true) {
 
-		int readed_hops, line_num, past_component_state,
-			past_subframe;
+		int readed_hops, line_num, past_subframe;
 		uint16_t headers;
 		uint8_t header_high;
 
@@ -157,9 +158,11 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 		// In the first iteration fill the variables with the same values.
 		if (first) {
 			status = get_header(headers, &component_state, &line_num, &subframe);
+			if (status != 0) {
+				printf("Wrong header\n");
+			}
 			first = false;
 		}
-		past_component_state = component_state;
 		past_subframe = subframe;
 		status = get_header(headers, &component_state, &line_num, &subframe);
 		if (status == 1) {
@@ -177,7 +180,7 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 			line_num = 0;
 		}
 
-		if (is_frame_completed(component_state, past_component_state, subframe, past_subframe, subframe_counter, is_Y, is_U, is_V, height)) {
+		if (is_frame_completed(subframe, past_subframe)) {
 			reconstruct_frame(img, is_Y, is_U, is_V, height, width);
 			upsample_frame_adaptative(img, img_up);
 			handle_window();
@@ -426,7 +429,7 @@ int get_header(uint16_t header, int *state, int *line_num, int *subframe) {
 	return 0;
 }
 
-bool is_frame_completed(int component_state, int past_component_state, int subframe, int past_subframe, unsigned int subframe_counter[8], bool is_Y[1080], bool is_U[1080], bool is_V[1080], int height) {
+bool is_frame_completed(int subframe, int past_subframe) {
 	
 	bool cond1 = subframe < past_subframe - 5;
 	if (cond1)

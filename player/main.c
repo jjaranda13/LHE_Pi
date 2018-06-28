@@ -47,7 +47,7 @@ int parse_cmd(int argc, char *argv[], player_options * options) {
 	return 0;
 }
 
-int main(int argc, char *argv[], char **envp) {
+int main(int argc, char *argv[]) {
 
 	player_options options;
 	int state;
