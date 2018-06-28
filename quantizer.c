@@ -276,7 +276,7 @@ if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
  //char * result_hops=hops[y];
 //this bucle is for only one scanline, excluding first pixel
 //----------------------------------------------------------
-for (int x=0;x<width;x++)
+for (int x=0;x<width;)
   {
 
   // --------------------- PHASE 1: PREDICTION---------------------------------------------------------
@@ -479,7 +479,7 @@ if (x>2)
             if (hop_number>7 || hop_number<1)
                 softline=false;
             break;
-        case 5: // Allways everything is softline
+        case 5: // Always everything is softline
             softline=true;
             break;
         default:
@@ -489,10 +489,12 @@ if (x>2)
 
     }
 }
+    if (hop_number>= 5 || hop_number <= 3)
+        x++;
+    else
+        x = (x + 2) & ~(1);
   }
-//  printf("\n");
-//if (softline) fprintf(stderr, "linea descartada \n ");
 
 
-return softline;
+    return softline;
 }
