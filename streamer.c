@@ -428,7 +428,9 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line)
         total_bytes+=frame_byte_counter;
         int average_frame=total_bytes/total_frames;
 
-        fprintf (stderr," average frame bytes: %d , this frame:%d \n", average_frame, frame_byte_counter);
+        if (DEBUG)
+            fprintf (stderr," average frame bytes: %d , this frame:%d \n", average_frame, frame_byte_counter);
+
         frame_byte_counter=0;
         if (total_frames==20)
         {

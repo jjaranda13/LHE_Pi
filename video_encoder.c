@@ -539,7 +539,9 @@ void VideoSimulation()
         //if (secs>100) __fpurge(stdout);
         if (i % 20 == 0)
         {
-            fprintf(stderr, " (avg 20frames) FRAME ENCODING & STREAMING: %.16g ms\n", (contador_tiempo/20) * 1000.0);
+            if (DEBUG)
+                fprintf(stderr, " (avg 20frames) FRAME ENCODING & STREAMING: %.16g ms\n", (contador_tiempo/20) * 1000.0);
+
             contador_tiempo = 0;
 
 //const uint8_t frame[] = {0x00, 0x00, 0x00, 0x01, 0x65};
