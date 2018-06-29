@@ -88,14 +88,14 @@ init_streamer();
 
 void init_camera_video()
 {
- CAMERA_OPTIONS options;
+    CAMERA_OPTIONS options;
     MMAL_COMPONENT_T *camera;
     int status, y;
-    options.width = 640;//640;//1280;
-    options.height = 480;//480;//720;
+    options.width = 640;
+    options.height = 480;
     options.framerate = 30;
     options.cameraNum = 0;
-    options.sensor_mode = 6;//7;//6
+    options.sensor_mode = 5;
     DEBUG = false;
     yuv_model = 2; // 4:2:0
 
