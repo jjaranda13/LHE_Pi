@@ -20,6 +20,8 @@
 	#include <unistd.h>
 #endif
 
+#include <stdlib.h>
+
 
 
 void init_get_bits(FILE * file, get_bits_context * ctx) {
@@ -35,15 +37,20 @@ uint8_t get_bit(get_bits_context * ctx) {
 	int buffer_left = ctx->buffer_left;
 
 	if (ctx->buffer_left == 0) {
-		readed = fread(&buffer, sizeof(uint32_t), 1, ctx->handler);
-		while (readed != 1) {
+		if (!feof(stdin) && fread(&buffer, sizeof(uint32_t), 1, ctx->handler) != 1)
+		{
+			printf("End bit read");
+			fflush(stdout);
+			exit(1);
+		}
+		/*while (readed != 1) {
 			#ifdef _WIN32 
 				Sleep(10);
 			#elif __linux__
 				usleep(10 * 1000);
 			#endif
 			readed = fread(&buffer, sizeof(uint32_t), 1, ctx->handler);
-		}
+		}*/
 		ctx->buffer = buffer;
 		buffer_left = 32;
 		byte = buffer;
@@ -92,15 +99,20 @@ uint8_t get_aligned_byte(get_bits_context * ctx) {
 	buffer = ctx->buffer;
 
 	if (buffer_left == 0) {
-		readed = fread(&buffer, sizeof(uint32_t), 1, ctx->handler);
-		while (readed != 1) {
+		if (!feof(stdin) && fread(&buffer, sizeof(uint32_t), 1, ctx->handler) != 1)
+		{
+			printf("End bytes read");
+			fflush(stdout);
+			exit(1);
+		}
+		/*while (readed != 1) {
 			#ifdef _WIN32 
 				Sleep(10);
 			#elif __linux__
 				usleep(10 * 1000);
 			#endif
 			readed = fread(&buffer, sizeof(uint32_t), 1, ctx->handler);
-		}
+		}*/
 		ctx->buffer = buffer;
 		buffer_left = 32;
 		byte = buffer;
