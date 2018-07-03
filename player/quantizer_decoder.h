@@ -1,7 +1,7 @@
 #pragma once
 /**
 * @file entropic_decoder.h
-* @author Francisco José Juan Quintanilla
+* @author Francisco Josï¿½ Juan Quintanilla
 * @date Sep 2017
 * @brief Quantizer decoder for LHE_rpi codec.
 *
@@ -73,6 +73,9 @@
 #define HOP_N4 0
 #define HOP_P4 8
 
+
+uint8_t cache_hops[256][7][3]; //5KB cache [Y][h1][hop_number]
+
 /**
 * @brief Allocates memory for the quantizer.
 *
@@ -103,6 +106,8 @@ void free_quantizer_decoder(uint8_t* component_value);
 */
 void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_lenght);
 
+
+void build_hop_cache();
 
 /////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS. NOT TO BE CALLED FROM OUTSIDE

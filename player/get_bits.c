@@ -12,16 +12,9 @@
 * @see https://github.com/jjaranda13/LHE_Pi
 */
 
-#include "get_bits.h"
-#ifdef _WIN32 
-	#include "String.h"
-	#include <windows.h>
-#elif __linux__
-	#include <unistd.h>
-#endif
-
 #include <stdlib.h>
 
+#include "get_bits.h"
 
 
 void init_get_bits(FILE * file, get_bits_context * ctx) {
@@ -31,7 +24,7 @@ void init_get_bits(FILE * file, get_bits_context * ctx) {
 }
 
 uint8_t get_bit(get_bits_context * ctx) {
-	size_t readed;
+
 	uint8_t byte, mask = 1;
 	uint32_t buffer = ctx->buffer;
 	int buffer_left = ctx->buffer_left;
@@ -39,18 +32,10 @@ uint8_t get_bit(get_bits_context * ctx) {
 	if (ctx->buffer_left == 0) {
 		if (!feof(stdin) && fread(&buffer, sizeof(uint32_t), 1, ctx->handler) != 1)
 		{
-			printf("End bit read");
+			printf("INFO: Finished reading  the stream\n");
 			fflush(stdout);
 			exit(1);
 		}
-		/*while (readed != 1) {
-			#ifdef _WIN32 
-				Sleep(10);
-			#elif __linux__
-				usleep(10 * 1000);
-			#endif
-			readed = fread(&buffer, sizeof(uint32_t), 1, ctx->handler);
-		}*/
 		ctx->buffer = buffer;
 		buffer_left = 32;
 		byte = buffer;
@@ -89,8 +74,8 @@ uint8_t get_bit(get_bits_context * ctx) {
 }
 
 uint8_t get_aligned_byte(get_bits_context * ctx) {
+	
 	int buffer_left = 0;
-	size_t readed;
 	uint8_t byte = 0;
 	uint32_t buffer;
 
@@ -101,18 +86,10 @@ uint8_t get_aligned_byte(get_bits_context * ctx) {
 	if (buffer_left == 0) {
 		if (!feof(stdin) && fread(&buffer, sizeof(uint32_t), 1, ctx->handler) != 1)
 		{
-			printf("End bytes read");
+			printf("INFO: Finished reading  the stream\n");
 			fflush(stdout);
 			exit(1);
 		}
-		/*while (readed != 1) {
-			#ifdef _WIN32 
-				Sleep(10);
-			#elif __linux__
-				usleep(10 * 1000);
-			#endif
-			readed = fread(&buffer, sizeof(uint32_t), 1, ctx->handler);
-		}*/
 		ctx->buffer = buffer;
 		buffer_left = 32;
 		byte = buffer;
