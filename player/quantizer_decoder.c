@@ -17,12 +17,46 @@ void free_quantizer_decoder(uint8_t* component_value) {
 	return;
 }
 
+
+void build_hop_cache() {
+	int h;
+	const int hop_min = 1, hop_max = 255-1;
+	const float maxr = MAX_R, minr = MIN_R, range = RANGE;
+	double rpos, rneg;
+
+	for (int hop0=0;hop0<=255;hop0++) {
+ 		for (int hop1=MIN_H1; hop1<=MAX_H1;hop1++) {
+
+			rpos = min(maxr,pow(range*((255-hop0)/hop1),1.0f/3.0f));
+ 			rpos = max(minr,rpos);
+
+			rneg = min(maxr,pow(range*(hop0/hop1),1.0f/3.0f));
+ 			rneg=max(minr,rneg);
+
+			h=(int)(hop0-hop1*rneg*rneg*rneg);
+			h=min(hop_max,h);
+			h=max(h,hop_min);
+			cache_hops[hop0][hop1-4][0] = (uint8_t)h;//(hop0-hop1*rneg*rneg*rneg);
+
+			h=(int)(hop0-hop1*rneg*rneg);
+			h=min(hop_max,h);
+			h=max(h,hop_min);
+			cache_hops[hop0][hop1-4][1] = (uint8_t)h;//(hop0-hop1*rneg*rneg);
+
+			h=(int)(hop0-hop1*rneg);
+			h=min(hop_max,h);
+			h=max(h,hop_min);
+			cache_hops[hop0][hop1-4][2] = (uint8_t)h;//(hop0-hop1*rneg);
+
+ 		}
+	}
+
+}
 void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_lenght) {
 
 	char gradient = 0;
 	unsigned char  h1 = START_H1, hop0;
 	bool last_small_hop = true, small_hop;
-	double positive_ratio, negative_ratio;
 	uint8_t current_hop;
 
 	for (int x = 0; x < hops_lenght; x++) {
@@ -40,8 +74,6 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_l
 			hop0 += gradient;
 		#endif
 
-		calculate_ranges(hop0, h1, &positive_ratio, &negative_ratio);
-
 		switch (current_hop)
 		{
 		case HOP_0:
@@ -51,38 +83,39 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_l
 			component_value[x] = hop0 + h1;
 			break;
 		case HOP_P2:
-			component_value[x] = hop0 + (int)ceil(h1*positive_ratio);
+			component_value[x] = 255-cache_hops[255-hop0][h1-4][2];
 			break;
 		case HOP_P3:
-			component_value[x] = hop0 + (int)ceil(h1*positive_ratio*positive_ratio);
+			component_value[x] = 255-cache_hops[255-hop0][h1-4][1];
 			break;
 		case HOP_P4:
 			#ifdef IS_MAX_HOPS
 			component_value[x] = 255;
 			#else
-			component_value[x] = hop0 + (int)ceil(h1*positive_ratio*positive_ratio*positive_ratio);
+			component_value[x] = 255-cache_hops[255-hop0][h1-4][0];
 			#endif
 			break;
 		case HOP_N1:
 			component_value[x] = hop0 - h1;
 			break;
 		case HOP_N2:
-			component_value[x] = hop0 - (int)ceil(h1*negative_ratio);
+			component_value[x] = cache_hops[hop0][h1-4][2];
 			break;
 		case HOP_N3:
-			component_value[x] = hop0 - (int)ceil(h1*negative_ratio*negative_ratio);
+			component_value[x] = cache_hops[hop0][h1-4][1];
 			break;
 		case HOP_N4:
 			#ifdef IS_MAX_HOPS
 			component_value[x] = 0;
 			#else
-			component_value[x] = hop0 - (int)ceil(h1*negative_ratio*negative_ratio*negative_ratio);
+			component_value[x] = cache_hops[hop0][h1-4][0];
 			#endif
 			break;
 		default:
 			printf("ERROR: Unexpected symbol were found.");
 			break;
 		}
+
 		small_hop = is_small_hop(current_hop);
 		h1 = adapt_h1(h1, small_hop, last_small_hop);
 		#ifdef IS_GRADIENT

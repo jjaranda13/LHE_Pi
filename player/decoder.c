@@ -9,6 +9,7 @@
 #elif __linux__
 	#include <unistd.h>
 #endif
+#include <sys/time.h>
 
 #include "quantizer_decoder.h"
 #include "entropic_decoder.h"
@@ -22,6 +23,8 @@
 #define Y_STATE 0
 #define U_STATE 1
 #define V_STATE 2
+
+double timeval_diff(struct timeval *a, struct timeval *b);
 
 int decode_stream(int width, int height, FILE * file) {
 
@@ -124,13 +127,14 @@ int decode_stream(int width, int height, FILE * file) {
 
 int decode_stream_2(int width, int height, get_bits_context * ctx) {
 
-	int status, subframe = 0, component_state = Y_STATE;
+	int status, subframe = 0, component_state = Y_STATE, frame_counter = 0;
 	unsigned int subframe_counter[8] = { 0 };
 	bool is_Y[1080] = { false }, is_U[1080] = { false },
 		is_V[1080] = { false }, first = true;
 	uint8_t *hops = NULL;
 	yuv_image *img, *img_up;
 
+	build_hop_cache();
 	init_player(width * 2, height * 2);
 	hops = (uint8_t *)malloc(sizeof(uint8_t)* width);
 	img = allocate_yuv_image(width, height);
@@ -150,6 +154,8 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 	while (true) {
 
 		int readed_hops, line_num, past_subframe;
+		double secs;
+		struct timeval t_ini, t_fin;
 		uint16_t headers;
 		uint8_t header_high;
 
@@ -181,6 +187,17 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 		}
 
 		if (is_frame_completed(subframe, past_subframe)) {
+			frame_counter++;
+			if (frame_counter == 1) {
+				gettimeofday(&t_ini, NULL);
+			}
+			if (frame_counter == 60) {
+				gettimeofday(&t_fin, NULL);
+				secs = timeval_diff(&t_fin, &t_ini);
+				printf("INFO: fps are %f\n", 60/secs);
+				frame_counter = 0;
+			}
+
 			reconstruct_frame(img, is_Y, is_U, is_V, height, width);
 			upsample_frame_adaptative(img, img_up);
 			handle_window();
@@ -552,4 +569,8 @@ void free_yuv_image(yuv_image *  img) {
 	free((*img).U_data);
 	free((*img).V_data);
 	free(img);
+}
+
+double timeval_diff(struct timeval *a, struct timeval *b) {
+	return ((double)(a->tv_sec +(double)a->tv_usec/1000000)-(double)(b->tv_sec + (double)b->tv_usec/1000000));
 }
