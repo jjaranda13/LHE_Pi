@@ -396,6 +396,7 @@ void VideoSimulation()
     int total_frames=30;//1000;
     int total_bits=0;
     float contador_tiempo=0;
+    int discarded_frames = 0;
 
 //setbuf(stdout,NULL);//esto le hace daño a testraspi
     int i=0;
@@ -423,6 +424,7 @@ void VideoSimulation()
                 if (((total_frames << 4)/frame_skipping_mode*j)>> 4 == i)
                 {
                     pthread_mutex_unlock (&cam_down_mutex);
+                    discarded_frames++;
                     break;
                 }
             }
@@ -540,22 +542,11 @@ void VideoSimulation()
         contador_tiempo+=secs;
 
         //if (secs>100) __fpurge(stdout);
-        if (i % 20 == 0)
+        if (i == 0)
         {
-            if (DEBUG)
-                fprintf(stderr, " (avg 20frames) FRAME ENCODING & STREAMING: %.16g ms\n", (contador_tiempo/20) * 1000.0);
-
+            fprintf(stderr, " Encoding & Streaming: %4.3g ms Discarded Frames: %d \n", (contador_tiempo/30) * 1000.0, discarded_frames);
             contador_tiempo = 0;
-
-//const uint8_t frame[] = {0x00, 0x00, 0x00, 0x01, 0x65};
-//fwrite(&frame,sizeof(uint8_t),5,stdout);
-            //float k=(contador_tiempo/20) * 1000.0;
-            //if (k>100) {
-            //sleep (3);
-            //contador_tiempo=0;
-            //  __fpurge(stdout);
-            // sendH264header();
-            //}
+            discarded_frames = 0;
 
         }
         //secs = timeval_diff(&t_fin, &t_ini);

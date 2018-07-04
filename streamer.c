@@ -424,19 +424,17 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line)
 
     if (newframe)
     {
-        total_frames+=1;
-        total_bytes+=frame_byte_counter;
-        int average_frame=total_bytes/total_frames;
+        total_frames += 1;
+        total_bytes += frame_byte_counter;
 
-        if (DEBUG)
-            fprintf (stderr," average frame bytes: %d , this frame:%d \n", average_frame, frame_byte_counter);
-
-        frame_byte_counter=0;
-        if (total_frames==20)
+        if (total_frames==30)
         {
-            total_frames--;
-            total_bytes-=average_frame;
+            fprintf (stderr,"INFO: Frame Stats-> Bytes: %5d ", total_bytes/30);
+            total_frames = 0;
+            total_bytes = 0;
         }
+        frame_byte_counter=0;
+
         newframe=false;
     }
     frame_byte_counter+=line_size_bytes;
