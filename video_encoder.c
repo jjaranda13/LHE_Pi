@@ -412,7 +412,10 @@ void VideoSimulation()
         if (camera)
         {
             pthread_mutex_lock (&cam_down_mutex);
-            pthread_cond_wait (&cam_down_cv,&cam_down_mutex);
+            while (cam_down_flag != 1) {
+                pthread_cond_wait (&cam_down_cv,&cam_down_mutex);
+            }
+            cam_down_flag = 0;
 
             // Frame Skipping
             for (int j = 0; j< frame_skipping_mode; j++)

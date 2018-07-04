@@ -80,6 +80,7 @@ MMAL_COMPONENT_T * init_camera(CAMERA_OPTIONS *options)
 
         pthread_mutex_init(&cam_down_mutex, NULL);
         pthread_cond_init (&cam_down_cv, NULL);
+        cam_down_flag = 0;
     }
     else
     {
@@ -298,6 +299,7 @@ void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
             index += width_orig_UV;
         }
 
+        cam_down_flag = 1;
         pthread_cond_signal(&cam_down_cv);
         pthread_mutex_unlock(&cam_down_mutex);
         if (callback_data->previous_buffer) // release the previous buffer back to the pool

@@ -62,6 +62,7 @@ unsigned char **orig_down_V;
 //Semaforo para iniciar el downsampler de la imagen capturada
 pthread_mutex_t cam_down_mutex;
 pthread_cond_t cam_down_cv;
+unsigned char cam_down_flag;
 
 //Variable condicional para iniciar la cuantización de las scanlines(hace broadcast cuando se tenga una slice)
 unsigned char down_quant_sem;
