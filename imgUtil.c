@@ -590,6 +590,115 @@ if (DEBUG) printf(" 3 channels done \n");
 }
 
 
+
+
+void interpolate_adaptative(uint8_t ** origin, int ori_height, int ori_width, uint8_t ** destination) {
+
+	int dst_y, dst_x, ori_y, ori_x;
+	int a, b, c, d;
+	int dst_height = ori_height * 2;
+	int dst_width = ori_width * 2;
+
+	dst_y = 0;
+	ori_y = dst_y / 2;
+	for (dst_x = 0; dst_x < dst_width - 1; dst_x++) {
+		ori_x = dst_x / 2;
+		if (dst_x % 2) {
+			destination[dst_y][dst_x] = (origin[ori_y][ori_x] + origin[ori_y][ori_x + 1]) / 2;
+		}
+		else {
+			destination[dst_y][dst_x] = origin[ori_y][ori_x];
+		}
+	}
+	dst_x = dst_width - 1;
+	ori_x = dst_x / 2;
+	destination[dst_y][dst_x] = origin[ori_y][ori_x];
+
+	dst_y = dst_height - 1;
+	ori_y = dst_y / 2;
+	for (dst_x = 0; dst_x < dst_width - 1; dst_x++) {
+		ori_x = dst_x / 2;
+		if (dst_x % 2) {
+			destination[dst_y][dst_x] = (origin[ori_y][ori_x] + origin[ori_y][ori_x + 1]) / 2;
+		}
+		else {
+			destination[dst_y][dst_x] = origin[ori_y][ori_x];
+		}
+	}
+	dst_x = dst_width - 1;
+	ori_x = dst_x / 2;
+	destination[dst_y][dst_x] = origin[ori_y][ori_x];
+
+	dst_x = 0;
+	ori_x = dst_x / 2;
+	for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
+		ori_y = dst_y / 2;
+
+		if (dst_y % 2) {
+            destination[dst_y][dst_x] = (origin[ori_y][ori_x] + origin[ori_y+1][ori_x]) / 2;
+		}
+		else {
+			destination[dst_y][dst_x] = origin[ori_y][ori_x];
+		}
+	}
+
+	dst_x = dst_width - 1;
+	ori_x= dst_x / 2;
+	for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
+		ori_y = dst_y / 2;
+		if (dst_y % 2) {
+			destination[dst_y][dst_x] = (origin[ori_y][ori_x] + origin[ori_y + 1][ori_x]) / 2;
+		}
+		else {
+			destination[dst_y][dst_x] = origin[ori_y][ori_x];
+		}
+	}
+
+	for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
+
+		for (dst_x = 1; dst_x < dst_width - 1; dst_x++) {
+
+			ori_x = dst_x / 2;
+			ori_y = dst_y / 2;
+
+			if((dst_x % 2 == 0 && dst_y % 2 == 0)) {
+				destination[dst_y][dst_x] = origin[ori_y][ori_x];
+			}
+			else if (dst_x % 2 && dst_y % 2) {
+				a = origin[ori_y][ori_x];
+				b = origin[ori_y][ori_x];
+				c = origin[ori_y + 1][ori_x];
+				d = origin[ori_y + 1][ori_x + 1];
+
+				if (abs(a - d) >= abs(b - c)) {
+					destination[dst_y][dst_x]  = (b + c) / 2;
+				}
+				else {
+					destination[dst_y][dst_x]  = (a + d) / 2;
+				}
+			}
+		}
+	}
+
+	for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
+		for (dst_x = 1; dst_x < dst_width - 1; dst_x++) {
+			if ((dst_x % 2 == 0 && dst_y % 2) || (dst_x % 2  && dst_y % 2 == 0)) {
+				a = destination[dst_y - 1][dst_x];
+				b = destination[dst_y][dst_x + 1];
+				c = destination[dst_y + 1][dst_x];
+				d = destination[dst_y][dst_x - 1];
+
+				if (abs(a - c) >= abs(b - d)) {
+					destination[dst_y][dst_x] = (b + d) / 2;
+				}
+				else {
+					destination[dst_y][dst_x] = (a + c) / 2;
+				}
+			}
+		}
+	}
+}
+
 void interpolate_scanline(uint8_t ** values, int scanline, int prev_scaline, int next_scanline, int values_width) {
 
 	int total_distance = next_scanline - prev_scaline;
@@ -597,9 +706,47 @@ void interpolate_scanline(uint8_t ** values, int scanline, int prev_scaline, int
 	int next_distance = next_scanline - scanline;
 
 	for (int i = 0; i < values_width; i++) {
-		values[scanline][i] = 0;//(values[next_scanline][i] * prev_distance + values[prev_scaline][i]* next_distance) / total_distance;
+		values[scanline][i] = (values[next_scanline][i] * prev_distance + values[prev_scaline][i]* next_distance) / total_distance;
 	}
 	return;
+}
+
+void set_scanline_to_zero(uint8_t ** values, int scanline, int values_width) {
+
+	for (int i = 0; i < values_width; i++) {
+		values[scanline][i] = 0;
+	}
+	return;
+}
+
+void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_value, int component_value_width, int upsample_value_width) {
+
+    for (int i = 0; i < upsample_value_width; i++) {
+        float index = i * ((component_value_width-1) / (float) (upsample_value_width -1));
+
+        int prev_part = (int) ((index - floor(index))*100);
+
+        if (prev_part == 0)
+        {
+            upsampled_value[i] = component_value[(int)index];
+        }
+        else
+        {
+            upsampled_value[i] = (component_value[(int)index ] * (100 - prev_part) + component_value[(int)index+1] * prev_part) / 100;
+        }
+	}
+	return;
+}
+
+void interpolate_bilinear(uint8_t ** origin, int ori_height, int ori_width, uint8_t ** destination) {
+    for(int y = 0 ; y< ori_height *2 ; y+= 2){
+        upsample_line_horizontal(origin[y/2], destination[y], ori_width, ori_width*2);
+    }
+    for(int y = 1 ; y< ori_height *2 -1; y+= 2){
+        interpolate_scanline(destination, y, y-1, y+1, ori_width*2);
+    }
+    upsample_line_horizontal(origin[ori_height-1], destination[(2*ori_height)-1], ori_width, ori_width*2);
+    return;
 }
 
 
