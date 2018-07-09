@@ -100,9 +100,9 @@ int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, i
 		hop = 15, data = 3, rlc_number = 0;
 	int condition_length = CONDITION_LENGHT_INI;
 	int rlc_length = RLC_LENGHT_INI;
-	int i = 0;
+	int i = 0, false_hops = 0;
 	bool nal_found = false;
-	while (hops_counter < hops_lenght && i < bytes_lenght << 3 && !nal_found) {
+	while (hops_counter+ false_hops< hops_lenght && i < bytes_lenght << 3 && !nal_found) {
 
 		data = get_data(bytes, i);
 		switch (mode) {
@@ -126,6 +126,10 @@ int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, i
 					mode = RLC1;
 				}
 				hops[hops_counter] = hop;
+				//printf("Position %d is %d\n",hops_counter+false_hops,hops[hops_counter]);
+				if ((hop < 5 && hop > 3) && (hops_counter + false_hops)%2 == 0) {
+                    false_hops++;
+				}
 				hops_counter++;
 				zero_counter = 0;
 			}
@@ -142,6 +146,9 @@ int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, i
 				hop = get_hop(zero_counter + 1);
 				h0_counter = 0;
 				hops[hops_counter] = hop;
+				if ((hop < 5 && hop > 3) && (hops_counter + false_hops)%2 == 0) {
+                    false_hops++;
+				}
 				hops_counter++;
 				zero_counter = 0;
 				mode = HUFFMAN;
@@ -150,10 +157,12 @@ int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, i
 		case RLC1:
 			if (data == 0) {
 				rlc_number = get_rlc_number(bytes, &i, rlc_length);
+                false_hops += rlc_number;
 				add_hop0(hops, &hops_counter, rlc_number);
 				mode = PRE_HUFFMAN;
 			}
 			else {
+                false_hops += 15;
 				add_hop0(hops, &hops_counter, 15);
 				rlc_length += 1;
 				mode = RLC2;
@@ -162,27 +171,32 @@ int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, i
 		case RLC2:
 			if (data == 0) {
 				rlc_number = get_rlc_number(bytes, &i, rlc_length);
+				//printf("2 Position %d is +%d\n",hops_counter+false_hops, 2*rlc_number);
+                false_hops += rlc_number;
 				add_hop0(hops, &hops_counter, rlc_number);
 				rlc_length = RLC_LENGHT_INI;
 				mode = PRE_HUFFMAN;
 			}
 			else {
+			//printf("2 Position %d is +62\n", hops_counter+false_hops);
+                false_hops += 31;
 				add_hop0(hops, &hops_counter, 31);
 			}
 			break;
 		}
 		i++;
 	}
+	//printf("Return %d\n", hops_counter+false_hops);
 	*readed_bytes = i % 8 ? (i / 8) + 1 : i / 8;
-	return hops_counter;
+	return hops_counter + false_hops;
 }
 
 int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_lenght) {
 	int mode = HUFFMAN, h0_counter = 0, hops_counter = 0, zero_counter = 0,
-		hop = 15, data = 3, rlc_number = 0;
+		hop = 15, data = 3, rlc_number = 0, false_hops = 0;
 	int condition_length = CONDITION_LENGHT_INI;
 	int rlc_length = RLC_LENGHT_INI;
-	while (hops_counter < hops_lenght) {
+	while (hops_counter + false_hops < hops_lenght) {
 
 		data = get_bit(ctx);
 		switch (mode) {
@@ -202,6 +216,9 @@ int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_len
 					mode = RLC1;
 				}
 				hops[hops_counter] = hop;
+                if ((hop < 5 && hop > 3) && (hops_counter + false_hops)%2 == 0) {
+                    false_hops++;
+				}
 				hops_counter++;
 				zero_counter = 0;
 			}
@@ -214,6 +231,9 @@ int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_len
 				hop = get_hop(zero_counter + 1);
 				h0_counter = 0;
 				hops[hops_counter] = hop;
+                if ((hop < 5 && hop > 3) && (hops_counter + false_hops)%2 == 0) {
+                    false_hops++;
+				}
 				hops_counter++;
 				zero_counter = 0;
 				mode = HUFFMAN;
@@ -223,10 +243,12 @@ int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_len
 			if (data == 0) {
 				rlc_number = get_rlc_number_get_bits(ctx, rlc_length);
 				add_hop0(hops, &hops_counter, rlc_number);
+				false_hops += rlc_number;
 				mode = PRE_HUFFMAN;
 			}
 			else {
 				add_hop0(hops, &hops_counter, 15);
+				false_hops += 15;
 				rlc_length += 1;
 				mode = RLC2;
 			}
@@ -235,11 +257,13 @@ int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_len
 			if (data == 0) {
 				rlc_number = get_rlc_number_get_bits(ctx, rlc_length);
 				add_hop0(hops, &hops_counter, rlc_number);
+				false_hops += rlc_number;
 				rlc_length = RLC_LENGHT_INI;
 				mode = PRE_HUFFMAN;
 			}
 			else {
 				add_hop0(hops, &hops_counter, 31);
+				false_hops += 31;
 			}
 			break;
 		}
