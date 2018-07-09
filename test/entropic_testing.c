@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
     init_quantizer();
     init_entropic_enc();
 
-    for(int j =0; j<100; j++)
+    for(int j =0; j<1; j++)
     {
         pthread_mutex_lock (&cam_down_mutex);
         pthread_cond_wait (&cam_down_cv,&cam_down_mutex);
@@ -75,29 +75,42 @@ int main(int argc, char* argv[])
 
             //Check
             if(readed_bytes != tam_bytes){
-                printf("Error readed_bytes=%d is not equal to the tam_bytes=%d generated\n", readed_bytes, tam_bytes);
+                printf("Error line=%d readed_bytes=%d is not equal to the tam_bytes=%d generated\n",line,  readed_bytes, tam_bytes);
                 break;
             }
 
             if(readed_symbols != width_down_Y){
-                printf("Error readed_symbols=%d is not equal to the widtd=%d\n",readed_symbols, width_down_Y);
+                printf("Error line=%d readed_symbols=%d is not equal to the widtd=%d\n", line, readed_symbols, width_down_Y);
                 break;
             }
-            for (int i =0; i< width_down_Y; i++){
-                if(hops_obtained[i] != hops_Y[line][i]){
-                    printf("Error in the symbol=%d line=%d\n", i, line);
-                    break;
+
+            int index = 0, false_hops = 0;
+            while (index + false_hops < readed_symbols) {
+
+                if(hops_obtained[index] != hops_Y[line][index + false_hops]) {
+                    printf("Error in the symbol=%d line=%d\n", index + false_hops, line);
                 }
+
+                if ((hops_obtained[index] < 5 && hops_obtained[index] > 3) && (index + false_hops)%2 == 0) {
+                    false_hops++;
+				}
+                index++;
             }
 
-            decode_line_quantizer(hops_obtained, component_obtained, readed_symbols);
-            for (int i =0; i< width_down_Y; i++){
-                if(component_obtained[i] != result_Y[line][i]){
-                    printf("Error in the x=%d line=%d component_obtained=%d result_Y=%d hop=%d\n", i, line,component_obtained[i],result_Y[line][i], hops_obtained[i]);
+            decode_line_quantizer(hops_obtained, component_obtained, width_down_Y);
+            index = 0;
+            bool breaks = false;
+            while (index < width_down_Y) {
+
+
+                if(component_obtained[index] != result_Y[line][index] && result_Y[line][index] > 0){
+                    printf("Error in the x=%d line=%d component_obtained=%d result_Y=%d hop=%d\n", index, line,component_obtained[index],result_Y[line][index], hops_obtained[index]);
                     break;
                 }
-            }
 
+                index++;
+            }
+             memset(hops_obtained, 0, 1000);
 
         }
         pthread_mutex_unlock (&cam_down_mutex);

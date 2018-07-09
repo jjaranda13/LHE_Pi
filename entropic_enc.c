@@ -197,7 +197,7 @@ int entropic_enc(unsigned char **hops, uint8_t **bits, unsigned int line, unsign
     init_put_bits(&s, bits[line], line_width);
 
 
-    for (int x = 0; x < line_width; x++) {
+    for (int x = 0; x < line_width;) {
 
         hop = hops[line][x];
         if (hop == 4) h0_counter++;
@@ -237,7 +237,10 @@ int entropic_enc(unsigned char **hops, uint8_t **bits, unsigned int line, unsign
                 }
             break;
         }
-
+        if (hop >= 5 || hop <= 3)
+            x++;
+        else
+            x = (x + 2) & ~(1);
     }
 
     if (h0_counter != 0 && mode != HUFFMAN) put_bits(&s, rlc_length+1, h0_counter);
