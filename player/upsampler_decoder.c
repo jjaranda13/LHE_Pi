@@ -38,7 +38,10 @@ void interpolate_scanline_vertical(uint8_t * upsampled_values, int scaline, int 
 	int next_distance = next_scanline - scaline;
 
 	for (int i = scaline*img_width; i < (scaline + 1)*img_width; i++) {
-		upsampled_values[i] = (upsampled_values[i + (next_distance*img_width)] *prev_distance + upsampled_values[i - (prev_distance*img_width)] * next_distance) / total_distance;
+
+        int next_value = (upsampled_values[i + (next_distance*img_width)-1] +upsampled_values[i + (next_distance*img_width)] + upsampled_values[i + (next_distance*img_width)+1])/3;
+		int prev_value = (upsampled_values[i - (prev_distance*img_width)-1] + upsampled_values[i - (prev_distance*img_width)] + upsampled_values[i - (prev_distance*img_width)+1])/3;
+		upsampled_values[i] = (next_value *prev_distance + prev_value * next_distance) / total_distance;
 	}
 	return;
 }
@@ -184,7 +187,7 @@ void scale_adaptative(uint8_t * origin, int ori_height, int ori_width, uint8_t *
 		}
 		#pragma omp for
 		for (dst_y = 1; dst_y < dst_height - 1; dst_y++) {
-			
+
 			for (dst_x = 1; dst_x < dst_width - 1; dst_x++) {
 
 				ori_x = dst_x / 2;
