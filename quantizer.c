@@ -280,7 +280,11 @@ for (int x=0;x<width;)
   {
 
   // --------------------- PHASE 1: PREDICTION---------------------------------------------------------
-  oc=orig_YUV[y][x];//original color
+
+    if (x%2 == 0)
+        oc = (orig_YUV[y][x] + orig_YUV[y][x+1])/2;
+    else
+        oc=orig_YUV[y][x];//original color
 
   if (y>0 && x>0 && x!=width-1){
 
