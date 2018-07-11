@@ -4,6 +4,7 @@
 #include "stb_image/stb_image.h"
 #include "stb_image/stb_image_write.h"
 #include "include/imgUtil.h"
+#include "include/globals.h"
 
 void init_image_loader (int width, int height)
 {
@@ -47,15 +48,15 @@ void init_image_loader_file (char const* filename)
         height_orig_UV = height_orig_Y;
         width_orig_UV = width_orig_Y;
 
-        orig_Y=malloc(height*sizeof (unsigned char *));
-        orig_U=malloc(height*sizeof (unsigned char *));
-        orig_V=malloc(height*sizeof (unsigned char *));
+        orig_Y=malloc(height_orig_Y*sizeof (unsigned char *));
+        orig_U=malloc(height_orig_UV*sizeof (unsigned char *));
+        orig_V=malloc(height_orig_UV*sizeof (unsigned char *));
 
         for (int i=0;i<height_orig_Y;i++)
         {
-            orig_Y[i]=malloc(width* sizeof (unsigned char));
-            orig_U[i]=malloc(width* sizeof (unsigned char));
-            orig_V[i]=malloc(width* sizeof (unsigned char));
+            orig_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
+            orig_U[i]=malloc(width_orig_Y* sizeof (unsigned char));
+            orig_V[i]=malloc(width_orig_UV* sizeof (unsigned char));
         }
         image_loader_initialized = true;
     }

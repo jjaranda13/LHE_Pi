@@ -13,6 +13,7 @@
 int cosa;
 bool DEBUG;//for execution in debug mode and show more traces
 
+bool image_loader_initialized;
 bool downsampler_initialized;
 bool quantizer_initialized;
 
