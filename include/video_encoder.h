@@ -17,3 +17,5 @@ void compute_delta(unsigned char **frame_new,unsigned char **frame_prev, int y,i
  * @return void
  */
 void compute_delta_scanline_simd(int y, int width, unsigned char ** orig_down, unsigned char ** last_frame_player, unsigned char ** delta);
+
+void init_videoencoder();

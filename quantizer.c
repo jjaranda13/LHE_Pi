@@ -63,7 +63,8 @@ for (int hop0=0;hop0<=255;hop0++){
  int hop_min=1;
  int hop_max=255-hop_min;
  h=min(hop_max,h);h=max(h,hop_min);
- cache_hops[hop0][hop1-4][0] = 0;//(unsigned char)h;//(hop0-hop1*rneg*rneg*rneg);
+ //cache_hops[hop0][hop1-4][0] = 0;//(unsigned char)h;//(hop0-hop1*rneg*rneg*rneg);
+cache_hops[hop0][hop1-4][0] = (unsigned char)h;//(hop0-hop1*rneg*rneg*rneg);
 
  h=(int)(hop0-hop1*rneg*rneg);
  h=min(hop_max,h);h=max(h,hop_min);
@@ -177,6 +178,12 @@ printf( "y=%d h1=%d h%d=%d \n",hop0,hop1,hn+3,cache_hops[hop0][hop1-4][hn]);
 
 */
 
+inteligent_discard_Y=malloc(height_down_Y*sizeof(bool));
+inteligent_discard_U=malloc(height_down_UV*sizeof(bool));
+inteligent_discard_V=malloc(height_down_UV*sizeof(bool));
+
+inteligent_discard_mode = DEFAULT_INTELIGENT_DISCARD_MODE;
+
 quantizer_initialized=true;
 
 }// end function
@@ -221,17 +228,24 @@ free (result2_Y);
 free(result2_U);
 free(result2_V);
 
-
+//inteliigent discard
+free (inteligent_discard_Y);
+free (inteligent_discard_U);
+free (inteligent_discard_V);
 
 quantizer_initialized=false;
 
 }//end close quantizer
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void quantize_scanline(unsigned char **orig_YUV, int y,int width, unsigned char **hops,unsigned char **result_YUV) {
+bool quantize_scanline(unsigned char **orig_YUV, int y,int width, unsigned char **hops,unsigned char **result_YUV) {
 /// this function quantize the luminances or chrominances of one scanline
 /// inputs : orig_YUV (which can be orig_down_Y, orig_down_U or orig_down_V), line, width,
 /// outputs: hops, result_YUV (which can be result_Y, result_U or result_V)
+
+
+//inteligent discard
+bool softline=true;
 
 
 if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
@@ -248,7 +262,7 @@ if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
  int emin=255;//error min
  int error=0;//computed error
 
- unsigned char oc=orig_YUV[y][0];//original color
+ unsigned char oc=127;//orig_YUV[y][0];//original color
  unsigned char hop0=0; //prediction
  unsigned char quantum=oc; //final quantum asigned value
  unsigned char hop_value=0;//data from cache
@@ -262,11 +276,15 @@ if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
  //char * result_hops=hops[y];
 //this bucle is for only one scanline, excluding first pixel
 //----------------------------------------------------------
-for (int x=0;x<width;x++)
+for (int x=0;x<width;)
   {
 
   // --------------------- PHASE 1: PREDICTION---------------------------------------------------------
-  oc=orig_YUV[y][x];//original color
+
+    if (x%2 == 0)
+        oc = (orig_YUV[y][x] + orig_YUV[y][x+1])/2;
+    else
+        oc=orig_YUV[y][x];//original color
 
   if (y>0 && x>0 && x!=width-1){
 
@@ -299,9 +317,7 @@ for (int x=0;x<width;x++)
 
   //-------------------------PHASE 2: HOPS COMPUTATION-------------------------------
 
-  hop0=hop0+grad;
-  if (hop0>255) hop0=255;
-  else if (hop0<1) hop0=1;
+        hop0 = hop0+grad > 255? 255: hop0+grad < 1? 1:hop0+grad;
 
   hop_number=4;// prediction corresponds with hop_number=4
   quantum=hop0;//this is the initial predicted quantum, the value of prediction
@@ -414,6 +430,8 @@ for (int x=0;x<width;x++)
   //*result_signal=quantum; result_signal++;
 
   //prev_color=quantum;
+ //hop_number=5;
+
 
   hops[y][x]=hop_number;
   //*result_hops=hop_number; result_hops++;
@@ -423,7 +441,7 @@ for (int x=0;x<width;x++)
   //hops_type[hop_number]++;
 
   //------------- PHASE 4: h1 logic  --------------------------
-  if (hop_number>5 || hop_number<3) small_hop=false; //true by default
+  if (hop_number>5 || hop_number<3) {small_hop=false; }//true by default
 
   //if (small_hop==true && last_small_hop==true){
  if (small_hop * last_small_hop){
@@ -442,11 +460,47 @@ for (int x=0;x<width;x++)
    if (hop_number==5) grad=1;
    else if (hop_number==3) grad=-1;
    else if (!small_hop) grad=0;
+if (x>2)
+{
+    switch (inteligent_discard_mode)
+    {
+        case 0: // Never soft-line
+            softline=false;
+            break;
+        case 1: // Only Hop0 is soft-line
+            if (hop_number>4 || hop_number<4)
+                softline=false;
+            break;
+        case 2: //  Hop0 & Hop1 is soft-line
+            if (hop_number>5 || hop_number<3)
+                softline=false;
+            break;
+        case 3: // Hop0, Hop1 & Hop2 are softline
+            if (hop_number>6 || hop_number<2)
+                softline=false;
+            break;
+        case 4: // Hop0, Hop1, Hop2 & Hop3 are softline
+            if (hop_number>7 || hop_number<1)
+                softline=false;
+            break;
+        case 5: // Allways everything is softline
+            softline=true;
+            break;
+        default:
+            if (hop_number>6 || hop_number<2)
+                softline=false;
+            break;
 
-
-
+    }
+}
+        if (hop_number>= 5 || hop_number <= 3)
+            x++;
+        else
+            x = (x + 2) & ~(1);
   }
 //  printf("\n");
+//if (softline) fprintf(stderr, "linea descartada \n ");
 
 
+return softline;
 }

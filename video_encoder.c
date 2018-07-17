@@ -28,6 +28,7 @@
 #include "include/camera_reader.h"
 #include "include/video_encoder_simd.h"
 #include "include/streamer.h"
+#include "include/http_api.h"
 
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
@@ -78,6 +79,7 @@ tam_bits_Y = malloc(height_down_Y*sizeof(int));
 tam_bits_U = malloc(height_down_UV*sizeof(int));
 tam_bits_V = malloc(height_down_UV*sizeof(int));
 
+    frame_skipping_mode = DEFAULT_FRAME_SKYPPING_MODE;
 
 init_streamer();
 
@@ -86,14 +88,14 @@ init_streamer();
 
 void init_camera_video()
 {
- CAMERA_OPTIONS options;
+    CAMERA_OPTIONS options;
     MMAL_COMPONENT_T *camera;
     int status, y;
-    options.width = 640;//640;//1280;
-    options.height = 480;//480;//720;
+    options.width = 640;
+    options.height = 480;
     options.framerate = 30;
     options.cameraNum = 0;
-    options.sensor_mode = 6;//7;//6
+    options.sensor_mode = 5;
     DEBUG = false;
     yuv_model = 2; // 4:2:0
 
@@ -311,301 +313,367 @@ for (int y=dy;y<height_orig_UV;y++){
 
 
 }
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void sendH264header()
+{
+//sequence parameter set. afecta a N picture
+const uint8_t sps[] = {0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x00, 0x0a, 0xf8, 0x41, 0xa2};
+//picture parameter set . afecta a 1 pictures
+const uint8_t pps[] = {0x00, 0x00, 0x00, 0x01, 0x68, 0xce, 0x38, 0x80};
+const uint8_t frame[] = {0x00, 0x00, 0x00, 0x01, 0x65};
+fwrite("He mandado cabecera H264\n", sizeof(uint8_t), 25, stderr);
+
+fwrite(&sps,sizeof(uint8_t),11,stdout);
+fflush(stdout);
+fwrite(&pps,sizeof(uint8_t),8,stdout);
+fflush(stdout);
+fwrite(&frame,sizeof(uint8_t),5,stdout);
+//printf("\n");
+fflush(stdout);
+
+
+
+}
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 int main(int argc, char* argv[]) {
 
+if (argc==2)
+{
+ if (!strcmp(argv[1], "-rtp"))
+ {
+ sendH264header();
+ }
+ }
 VideoSimulation();
 
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void VideoSimulation()
- {
- //esta funcion simula todo el proceso de captura, down, imagen diferencial, quantization y entropic
- //ojo, esta version es monothread
- //implica los bufferes adicionales: last_frame_player, result1, result2,
- //podremos medir el bitrate con varios tamaños de GOP, incluyendo GOP=1 (solo imagenes I)
+{
+//esta funcion simula todo el proceso de captura, down, imagen diferencial, quantization y entropic
+//ojo, esta version es monothread
+//implica los bufferes adicionales: last_frame_player, result1, result2,
+//podremos medir el bitrate con varios tamaños de GOP, incluyendo GOP=1 (solo imagenes I)
 
-  DEBUG=false;
-  struct timeval t_ini, t_fin;
-  double secs;
-
+    DEBUG=false;
+    struct timeval t_ini, t_fin;
+    double secs;
 
     downsampler_initialized=false;
     quantizer_initialized=false;
 
-
-bool camera=true;
-
-
-if (camera)
-{
-
-init_camera_video();
-}
-else{
- //carga la imagen lena
-
-load_frame("../LHE_Pi/img/lena.bmp");
-rgb2yuv(rgb,rgb_channels);
-}
+    bool camera=true;
 
 
+    if (camera)
+        init_camera_video();
+    else
+    {
+        load_frame("../LHE_Pi/img/lena.bmp");
+        rgb2yuv(rgb,rgb_channels);
+    }
 
+    if (DEBUG) printf("frame loaded  \n");
 
-if (DEBUG) printf("frame loaded  \n");
+    //int encoder
+    pppx=2;
+    pppy=2;
 
-//int encoder
-pppx=2;
-pppy=2;
+    init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
+    init_videoencoder();
+    init_http_api(HTTP_API_PORT);
 
-init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
-init_videoencoder();
+    if (DEBUG) printf("encoder initialized  \n");
 
-
-
-if (DEBUG) printf("encoder initialized  \n");
-
-char buffer[100];
+    char buffer[100];
 
 // bucle infinito de movimiento
 // -----------------------------
-int total_frames=100000;//1000;
-int total_bits=0;
-float contador_tiempo=0;
+    int total_frames=30;//1000;
+    int total_bits=0;
+    float contador_tiempo=0;
+    int discarded_frames = 0;
 
-
-
-for (int i=0 ; i<total_frames;i++){
-
-
-  //desplazamos la imagen original
-  // ------------------------------
-
-  if (camera)
-  {
-  pthread_mutex_lock (&cam_down_mutex);
-  pthread_cond_wait (&cam_down_cv,&cam_down_mutex);
-  }
-  else
-  {
-  shift_frame(4,4);
-  }
-
-  if (DEBUG) printf(" frame preparado %02d \n",i);
-
-  //salvamos el fotograma original
-  // -------------------------------
-  //if (DEBUG)
-  if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena%02d.bmp",i);
-  //if (DEBUG)
-  if (DEBUG) save_frame(buffer, width_orig_Y, height_orig_Y, 3, orig_Y,orig_U,orig_V,420);
-
-
-gettimeofday(&t_ini, NULL);
-
-  //downsampling del frame original
-  // ------------------------------
-  if (DEBUG) gettimeofday(&t_ini, NULL);
-  // esta funcion hace downsampling sin SIMD
-  //downsample_frame(pppx,pppy);
-  downsample_frame_simd(pppx,pppy);
-
-
-  if (camera) pthread_mutex_unlock (&cam_down_mutex);
-
-
-  if (DEBUG) gettimeofday(&t_fin, NULL);
-  if (DEBUG) secs = timeval_diff(&t_fin, &t_ini);
-  if (DEBUG) printf(" downsampling: %.16g ms\n", secs * 1000.0);
-  if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena_down%02d.bmp",i);
-  if (DEBUG) save_frame(buffer, width_down_Y, height_down_Y, 3, orig_down_Y,orig_down_U,orig_down_V,420);
-
-  //if (camera) pthread_mutex_unlock (&cam_down_mutex);
-
-  //identificamos el target a codificar
-  // -----------------------------------
-  if (DEBUG) printf(" selecting target \n",i);
-  gop_size=0;//1000;
-
-  if (gop_size==0 || i%gop_size==0) {
-    // frame I
-    if (DEBUG) printf ("frame I \n");
-    target_Y=orig_down_Y;
-    target_U=orig_down_U;
-    target_V=orig_down_V;
-
-  }
-  else {
-    //frame P.
-    if (DEBUG) printf ("frame P \n");
-    if (DEBUG) gettimeofday(&t_ini, NULL);
-    compute_delta();
-    if (DEBUG) gettimeofday(&t_fin, NULL);
-    secs = timeval_diff(&t_fin, &t_ini);
-    if (DEBUG) printf(" delta computation: %.16g ms\n", secs * 1000.0);
-
-    target_Y=delta_Y;
-    target_U=delta_U;
-    target_V=delta_V;
-  }
-  if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena_target%02d.bmp",i);
-  if (DEBUG) save_frame(buffer, width_down_Y, height_down_Y, 3, target_Y,target_U,target_V,420);
-
-
-  //ahora codificamos el target
-  // ------------------------------
-  if (DEBUG) printf(" cuantizando... \n",i);
-  if (DEBUG) gettimeofday(&t_ini, NULL);
-    // esta funcion hace las scanlines de arriba a abajo
-    //   quantize_target_normal(frame_encoded_Y,frame_encoded_U,frame_encoded_V);
-    // esta funcion cuantiza en orden salteado , robusto a perdidas
-    //for (int k=0 ;k<1000;k++){
-      quantize_target(frame_encoded_Y,frame_encoded_U,frame_encoded_V);
-    //}
-
-/*
-   for (int i=0;i<num_threads;i++)
-   {
-   //pthread_cond_wait (&cam_down_cv,&cam_down_mutex);
-    pthread_mutex_lock(&th_done[i]);
-    pthread_mutex_unlock(&th_done[i]);
-    }
-*/
-
-    for (int i=0; i< num_threads;i++)
+//setbuf(stdout,NULL);//esto le hace daño a testraspi
+    int i=0;
+    while (true)
     {
-    pthread_join(thread[i], NULL);
-    }
-  if (DEBUG) gettimeofday(&t_fin, NULL);
-  if (DEBUG) gettimeofday(&t_fin, NULL);
+//for (int i=0 ; i<total_frames;i++){
+        i++;
+        if (i==total_frames)
+            i=0;
+
+        //desplazamos la imagen original
+        // ------------------------------
+
+        if (camera)
+        {
+            pthread_mutex_lock (&cam_down_mutex);
+            while (cam_down_flag != 1) {
+                pthread_cond_wait (&cam_down_cv,&cam_down_mutex);
+            }
+            cam_down_flag = 0;
+
+            // Frame Skipping
+            for (int j = 0; j< frame_skipping_mode; j++)
+            {
+                if (((total_frames << 4)/frame_skipping_mode*j)>> 4 == i)
+                {
+                    pthread_mutex_unlock (&cam_down_mutex);
+                    discarded_frames++;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            shift_frame(4,4);
+        }
 
 
-for (int i=0; i< num_threads*8;i++)
-{
-pthread_join(streamer_thread[i], NULL);
-}
+        if (DEBUG) printf(" frame preparado %02d \n",i);
 
-  gettimeofday(&t_fin, NULL);
-  secs = timeval_diff(&t_fin, &t_ini);
-  contador_tiempo+=secs;
-  if (i % 20 == 0) {
-    fprintf(stderr, " FRAME ENCODING & STREAMING: %.16g ms\n", (contador_tiempo/20) * 1000.0);
-    contador_tiempo = 0;
-  }
-  //secs = timeval_diff(&t_fin, &t_ini);
-  if (DEBUG) printf(" LHE quantization: %.16g ms\n", secs * 1000.0);
+        //salvamos el fotograma original
+        // -------------------------------
+        //if (DEBUG)
+        if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena%02d.bmp",i);
+        //if (DEBUG)
+        if (DEBUG) save_frame(buffer, width_orig_Y, height_orig_Y, 3, orig_Y,orig_U,orig_V,420);
 
 
+        gettimeofday(&t_ini, NULL);
+
+        //downsampling del frame original
+        // ------------------------------
+        if (DEBUG) gettimeofday(&t_ini, NULL);
+        // esta funcion hace downsampling sin SIMD
+        //downsample_frame(pppx,pppy);
+        downsample_frame_simd(pppx,pppy);
 
 
-
-//   loss_packets();
-
+        if (camera) pthread_mutex_unlock (&cam_down_mutex);
 
 
-  if (DEBUG) sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant%02d.bmp",i);
+        if (DEBUG) gettimeofday(&t_fin, NULL);
+        if (DEBUG) secs = timeval_diff(&t_fin, &t_ini);
+        if (DEBUG) printf(" downsampling: %.16g ms\n", secs * 1000.0);
+        if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena_down%02d.bmp",i);
+        if (DEBUG) save_frame(buffer, width_down_Y, height_down_Y, 3, orig_down_Y,orig_down_U,orig_down_V,420);
 
-  if (DEBUG) save_frame(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
+        //if (camera) pthread_mutex_unlock (&cam_down_mutex);
 
-  // ahora entra el entropico para codificar los hops
-  // -----------------------------------------------
-  if (DEBUG) gettimeofday(&t_ini, NULL);
+        //identificamos el target a codificar
+        // -----------------------------------
+        if (DEBUG) printf(" selecting target \n",i);
+        gop_size=0;//1000;
 
-  //esto se hace ya en la fase de cuantizacion
-  //total_bits+=entropic_enc_frame_normal();
-  for (int i=0;i<num_threads;i++)
-  {
-  total_bits+=tinfo[i].bits_count;
-  }
-  if (DEBUG) gettimeofday(&t_fin, NULL);
-  if (DEBUG) secs = timeval_diff(&t_fin, &t_ini);
-  if (DEBUG) printf(" entropic encoding: %.16g ms\n", secs * 1000.0);
+        if (gop_size==0 || i%gop_size==0)
+        {
+            // frame I
+            if (DEBUG) printf ("frame I \n");
+            target_Y=orig_down_Y;
+            target_U=orig_down_U;
+            target_V=orig_down_V;
 
+        }
+        else
+        {
+            //frame P.
+            if (DEBUG) printf ("frame P \n");
+            if (DEBUG) gettimeofday(&t_ini, NULL);
+            compute_delta();
+            if (DEBUG) gettimeofday(&t_fin, NULL);
+            secs = timeval_diff(&t_fin, &t_ini);
+            if (DEBUG) printf(" delta computation: %.16g ms\n", secs * 1000.0);
 
-
-  //calculamos la imagen del player
-  // ------------------------------
-  if (gop_size==0 || i%gop_size==0) {
-    // frame I
-    last_frame_player_Y=frame_encoded_Y;
-    last_frame_player_U=frame_encoded_U;
-    last_frame_player_V=frame_encoded_V;
-  }
-  else {
-    //frame P.
-    if (DEBUG) gettimeofday(&t_ini, NULL);
-    suma_delta();
-    if (DEBUG) gettimeofday(&t_fin, NULL);
-    secs = timeval_diff(&t_fin, &t_ini);
-    if (DEBUG) printf(" delta sumation: %.16g ms\n", secs * 1000.0);
-  }
-if (DEBUG) printf(" calculando player image \n",i);
-
-
-  //conmutamos el frame_encoded para el siguiente frame
-  // --------------------------------------------------
-  if (frame_encoded_Y==result_Y){
-    frame_encoded_Y=result2_Y;
-    frame_encoded_U=result2_U;
-    frame_encoded_V=result2_V;
-
-    last_frame_player_Y=result_Y;
-    last_frame_player_U=result_U;
-    last_frame_player_V=result_V;
-
-    }else {
-    frame_encoded_Y=result_Y;
-    frame_encoded_U=result_U;
-    frame_encoded_V=result_V;
-
-    last_frame_player_Y=result2_Y;
-    last_frame_player_U=result2_U;
-    last_frame_player_V=result2_V;
-
-  }
-if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena_player_down%02d.bmp",i);
- if (DEBUG)  save_frame(buffer, width_down_Y, height_down_Y, 3, last_frame_player_Y,last_frame_player_U,last_frame_player_V,420);
+            target_Y=delta_Y;
+            target_U=delta_U;
+            target_V=delta_V;
+        }
+        if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena_target%02d.bmp",i);
+        if (DEBUG) save_frame(buffer, width_down_Y, height_down_Y, 3, target_Y,target_U,target_V,420);
 
 
+        //ahora codificamos el target
+        // ------------------------------
+        if (DEBUG) printf(" cuantizando... \n",i);
+        if (DEBUG) gettimeofday(&t_ini, NULL);
+        // esta funcion hace las scanlines de arriba a abajo
+        //   quantize_target_normal(frame_encoded_Y,frame_encoded_U,frame_encoded_V);
+        // esta funcion cuantiza en orden salteado , robusto a perdidas
+        //for (int k=0 ;k<1000;k++){
 
-if (DEBUG){ printf(" escalando...\n",i);
-  //expansion del last_frame_player. solo experimental. no se hace en encoder
+        process_http_api();
+        quantize_target(frame_encoded_Y,frame_encoded_U,frame_encoded_V);
+        //}
+
+        /*
+           for (int i=0;i<num_threads;i++)
+           {
+           //pthread_cond_wait (&cam_down_cv,&cam_down_mutex);
+            pthread_mutex_lock(&th_done[i]);
+            pthread_mutex_unlock(&th_done[i]);
+            }
+        */
+
+        for (int i=0; i< num_threads; i++)
+        {
+            pthread_join(thread[i], NULL);
+        }
+        if (DEBUG) gettimeofday(&t_fin, NULL);
 
 
-  int umbral=38;
-  if (pppy==1) {
-  scale_epx_H2(last_frame_player_Y,height_down_Y,width_down_Y,scaled_Y,umbral);
-  scale_epx_H2(last_frame_player_U,height_down_UV,width_down_UV,scaled_U,umbral);
-  scale_epx_H2(last_frame_player_V,height_down_UV,width_down_UV,scaled_V,umbral);
-  }
-  else {
-  if (DEBUG) printf(" escalando epx 22...\n",i);
-  scale_epx(last_frame_player_Y,height_down_Y,width_down_Y,scaled_Y,umbral);
-  scale_epx(last_frame_player_U,height_down_UV,width_down_UV,scaled_U,umbral);
-  scale_epx(last_frame_player_V,height_down_UV,width_down_UV,scaled_V,umbral);
+//stream_frame();
+//gettimeofday(&t_fin, NULL);
 
-
-  }
-  printf(" escaled ok \n",i);
-
-  }
-
-
-  //if (DEBUG)
-  //sprintf(buffer,"../LHE_Pi/video/result_video/frame_scaled%02d.bmp",i);
-  //if (DEBUG)
-  //save_frame(buffer, width_orig_Y, height_orig_Y, 3, scaled_Y,scaled_U,scaled_V,420);
-
-    double psnr2;
-  if (DEBUG) psnr2= get_PSNR_Y(scaled_Y,orig_Y, height_orig_Y,width_orig_Y);
-  if (DEBUG) printf("psnr scaled: %2.2f dB\n ",(float)psnr2);
+        for (int j=0; j< num_threads*8; j++)
+        {
+            pthread_join(streamer_thread[j], NULL);
+        }
 
 
 
-  //stream_frame();
+        gettimeofday(&t_fin, NULL);
+        secs = timeval_diff(&t_fin, &t_ini);
+        contador_tiempo+=secs;
+
+        //if (secs>100) __fpurge(stdout);
+        if (i == 0)
+        {
+            fprintf(stderr, " Encoding & Streaming: %4.3g ms Discarded Frames: %d \n", (contador_tiempo/30) * 1000.0, discarded_frames);
+            contador_tiempo = 0;
+            discarded_frames = 0;
+
+        }
+        //secs = timeval_diff(&t_fin, &t_ini);
+        if (DEBUG) printf(" LHE quantization: %.16g ms\n", secs * 1000.0);
+
+
+
+
+        if (DEBUG)
+        {
+            intelligent_loss();
+            sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant_rebuilt%02d.bmp",i);
+            save_frame(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
+        }
+
+
+        if (DEBUG)
+            sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant%02d.bmp",i);
+
+        if (DEBUG)
+            save_frame(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
+
+        // ahora entra el entropico para codificar los hops
+        // -----------------------------------------------
+        if (DEBUG) gettimeofday(&t_ini, NULL);
+
+        //esto se hace ya en la fase de cuantizacion
+        //total_bits+=entropic_enc_frame_normal();
+        for (int i=0; i<num_threads; i++)
+        {
+            total_bits+=tinfo[i].bits_count;
+        }
+        if (DEBUG) gettimeofday(&t_fin, NULL);
+        if (DEBUG) secs = timeval_diff(&t_fin, &t_ini);
+        if (DEBUG) printf(" entropic encoding: %.16g ms\n", secs * 1000.0);
+
+
+
+        //calculamos la imagen del player
+        // ------------------------------
+        if (gop_size==0 || i%gop_size==0)
+        {
+            // frame I
+            last_frame_player_Y=frame_encoded_Y;
+            last_frame_player_U=frame_encoded_U;
+            last_frame_player_V=frame_encoded_V;
+        }
+        else
+        {
+            //frame P.
+            if (DEBUG) gettimeofday(&t_ini, NULL);
+            suma_delta();
+            if (DEBUG) gettimeofday(&t_fin, NULL);
+            secs = timeval_diff(&t_fin, &t_ini);
+            if (DEBUG) printf(" delta sumation: %.16g ms\n", secs * 1000.0);
+        }
+        if (DEBUG) printf(" calculando player image \n",i);
+
+
+        //conmutamos el frame_encoded para el siguiente frame
+        // --------------------------------------------------
+        if (frame_encoded_Y==result_Y)
+        {
+            frame_encoded_Y=result2_Y;
+            frame_encoded_U=result2_U;
+            frame_encoded_V=result2_V;
+
+            last_frame_player_Y=result_Y;
+            last_frame_player_U=result_U;
+            last_frame_player_V=result_V;
+
+        }
+        else
+        {
+            frame_encoded_Y=result_Y;
+            frame_encoded_U=result_U;
+            frame_encoded_V=result_V;
+
+            last_frame_player_Y=result2_Y;
+            last_frame_player_U=result2_U;
+            last_frame_player_V=result2_V;
+
+        }
+        if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena_player_down%02d.bmp",i);
+        if (DEBUG)  save_frame(buffer, width_down_Y, height_down_Y, 3, last_frame_player_Y,last_frame_player_U,last_frame_player_V,420);
+
+
+
+        if (DEBUG)
+        {
+            printf(" escalando...\n",i);
+            //expansion del last_frame_player. solo experimental. no se hace en encoder
+
+
+            int umbral=38;
+            if (pppy==1)
+            {
+                scale_epx_H2(last_frame_player_Y,height_down_Y,width_down_Y,scaled_Y,umbral);
+                scale_epx_H2(last_frame_player_U,height_down_UV,width_down_UV,scaled_U,umbral);
+                scale_epx_H2(last_frame_player_V,height_down_UV,width_down_UV,scaled_V,umbral);
+            }
+            else
+            {
+                if (DEBUG) printf(" escalando epx 22...\n",i);
+                scale_epx(last_frame_player_Y,height_down_Y,width_down_Y,scaled_Y,umbral);
+                scale_epx(last_frame_player_U,height_down_UV,width_down_UV,scaled_U,umbral);
+                scale_epx(last_frame_player_V,height_down_UV,width_down_UV,scaled_V,umbral);
+
+
+            }
+            printf(" escaled ok \n",i);
+
+        }
+
+
+        //if (DEBUG)
+        //sprintf(buffer,"../LHE_Pi/video/result_video/frame_scaled%02d.bmp",i);
+        //if (DEBUG)
+        //save_frame(buffer, width_orig_Y, height_orig_Y, 3, scaled_Y,scaled_U,scaled_V,420);
+
+        double psnr2;
+        if (DEBUG) psnr2= get_PSNR_Y(scaled_Y,orig_Y, height_orig_Y,width_orig_Y);
+        if (DEBUG) printf("psnr scaled: %2.2f dB\n ",(float)psnr2);
+
+
+
+        //stream_frame();
 
 //if (camera) pthread_mutex_unlock (&cam_down_mutex);
 
@@ -613,20 +681,20 @@ if (DEBUG){ printf(" escalando...\n",i);
 
 
 
-}//end for frames
+    }//end for frames
 
 
 //fprintf(stderr, " AVERAGE FRAME ENCODING & STREAMING: %.16g ms\n", (contador_tiempo/total_frames) * 1000.0);
 
 
-float bpp=(float)total_bits/(total_frames*width_orig_Y*height_orig_Y);
-if (DEBUG) printf(" bpp= %f \n",bpp);
-float bitrate=(30.0*(float)total_bits)/total_frames;
-if (DEBUG) printf(" bitrate= %f \n",bitrate);
+    float bpp=(float)total_bits/(total_frames*width_orig_Y*height_orig_Y);
+    if (DEBUG) printf(" bpp= %f \n",bpp);
+    float bitrate=(30.0*(float)total_bits)/total_frames;
+    if (DEBUG) printf(" bitrate= %f \n",bitrate);
 
 
 }
-
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 void loss_packets()
 {
@@ -646,6 +714,9 @@ int victims_UV[height_down_UV];
 for (int i = 0; i < height_down_UV; i++){
     victims_UV[i] = 0;
 }
+
+
+
 
 for (int i=0;i<num_lost_lines;i++)
 {
@@ -735,6 +806,128 @@ for (int i = 0; i < height_down_UV; i++){
     }
 }
 
+int count = 0;
+for (int i = 0; i < height_down_Y; i++){
+    if(victims_Y[i] == 1) count++;
+}
+printf("LLLLLLLLLLLLLLLLLLLLLLcontador de perdidas: %d\n", (count*100)/height_down_Y);
+}
+
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void intelligent_loss()
+{
+
+if (DEBUG) printf ("packet loss...\n");
+
+bool flag= true;//true; flag de reconstruccion
+int line=0;
+int victims_Y[height_down_Y];
+
+
+for (int i = 0; i < height_down_Y; i++){
+    victims_Y[i] = 0;
+}
+
+int victims_UV[height_down_UV];
+for (int i = 0; i < height_down_UV; i++){
+    victims_UV[i] = 0;
+}
+
+
+for (int i=0;i<height_down_Y;i++)
+{
+
+  if (i%2==1 && inteligent_discard_Y[i]==true)  victims_Y[i] = 1;
+  //if (i%2==1)  victims_Y[i] = 1;
+  else continue;
+
+   line=i;
+  //fprintf(stderr," linea lost %d \n",i);
+  for (int x=0;x<width_orig_Y;x++){
+  frame_encoded_Y[line][x]=0;
+  //if (flag) frame_encoded_Y[line][x]=(frame_encoded_Y[line-1][x]+frame_encoded_Y[line+1][x])/2;
+  }
+
+
+/*
+
+  for (int x=0;x<width_orig_UV;x++){
+  frame_encoded_U[line/2][x]=0;
+  frame_encoded_V[line/2][x]=0;
+  victims_UV[line/2] = 1;
+
+  //if (flag) frame_encoded_U[line/2][x]=(frame_encoded_U[line/2-1][x]+frame_encoded_U[line/2+1][x])/2;
+  //if (flag)  frame_encoded_V[line/2][x]=(frame_encoded_V[line/2-1][x]+frame_encoded_V[line/2+1][x])/2;
+  }
+  */
+}
+
+
+
+
+for (int i = 0; i < height_down_Y; i++){
+
+    int superior = i - 1;
+    int inferior = i + 1;
+    if (victims_Y[i] == 0) continue;
+    else {
+        int j = i-1;
+        while(victims_Y[j] == 1 && j > 0) j--;
+        superior = j;
+        j = i+1;
+        while(victims_Y[j]==1 && j < height_down_Y) j++;
+        inferior = j;
+    }
+
+    if (superior > -1 && inferior < height_down_Y) {
+        for (int x=0;x<width_orig_Y;x++){
+            if (flag) frame_encoded_Y[i][x]=(frame_encoded_Y[superior][x]+frame_encoded_Y[inferior][x])/2;
+        }
+    } else if (superior > -1) {
+        for (int x=0;x<width_orig_Y;x++){
+            if (flag) frame_encoded_Y[i][x]=frame_encoded_Y[superior][x];
+        }
+    } else {
+        for (int x=0;x<width_orig_Y;x++){
+            if (flag) frame_encoded_Y[i][x]=frame_encoded_Y[inferior][x];
+        }
+    }
+}
+
+/*
+for (int i = 0; i < height_down_UV; i++){
+
+    int superior = i - 1;
+    int inferior = i + 1;
+    if (victims_UV[i] == 0) continue;
+    else {
+        int j = i-1;
+        while(victims_UV[j] == 1 && j > 0) j--;
+        superior = j;
+        j = i+1;
+        while(victims_UV[j]==1 && j < height_down_UV) j++;
+        inferior = j;
+    }
+
+    if (superior > -1 && inferior < height_down_UV) {
+        for (int x=0;x<width_orig_UV;x++){
+            if (flag) frame_encoded_U[i][x]=(frame_encoded_U[superior][x]+frame_encoded_U[inferior][x])/2;
+            if (flag) frame_encoded_V[i][x]=(frame_encoded_V[superior][x]+frame_encoded_V[inferior][x])/2;
+        }
+    } else if (superior > -1) {
+        for (int x=0;x<width_orig_UV;x++){
+            if (flag) frame_encoded_U[i][x]=frame_encoded_U[superior][x];
+            if (flag) frame_encoded_V[i][x]=frame_encoded_V[superior][x];
+        }
+    } else {
+        for (int x=0;x<width_orig_UV;x++){
+            if (flag) frame_encoded_V[i][x]=frame_encoded_V[inferior][x];
+            if (flag) frame_encoded_U[i][x]=frame_encoded_U[inferior][x];
+        }
+    }
+}
+*/
 int count = 0;
 for (int i = 0; i < height_down_Y; i++){
     if(victims_Y[i] == 1) count++;

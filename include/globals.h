@@ -1,16 +1,24 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
 
-
-#define num_threads 4
+#define num_threads 3
+#define HTTP_API_PORT 3000
+#define DEFAULT_INTELIGENT_DISCARD_MODE 3
+#define DEFAULT_FRAME_SKYPPING_MODE 0
 
 int cosa;
 bool DEBUG;//for execution in debug mode and show more traces
 
+bool image_loader_initialized;
 bool downsampler_initialized;
 bool quantizer_initialized;
 
+int inteligent_discard_mode;
+int frame_skipping_mode;
 
 //#define MODULE 8;//default value is 8. used for scanlines processing order
 
@@ -55,6 +63,7 @@ unsigned char **orig_down_V;
 //Semaforo para iniciar el downsampler de la imagen capturada
 pthread_mutex_t cam_down_mutex;
 pthread_cond_t cam_down_cv;
+unsigned char cam_down_flag;
 
 //Variable condicional para iniciar la cuantización de las scanlines(hace broadcast cuando se tenga una slice)
 unsigned char down_quant_sem;
@@ -169,10 +178,39 @@ int separation;
 
 struct thread_streamer_info *tsinfo;
 
-
+//threads de codificacion (quantizer + entropic)
 pthread_mutex_t th_done[num_threads];
 pthread_t thread[num_threads];
 
-pthread_t streamer_thread[num_threads*8];
 
+//threads de streaming y mutex de esos threads
+pthread_t streamer_thread[num_threads*8];
 pthread_mutex_t stream_subframe_mutex;
+
+// Mutex, flags and conditional variables to sync the streamer.
+pthread_cond_t stream_subframe_sync_cv[8];
+uint8_t stream_subframe_sync[8];
+pthread_mutex_t stream_subframe_sync_mtx;
+
+//contador de bytes de NAL y de frame
+int nal_byte_counter;
+int frame_byte_counter;
+
+
+//descarte inteligente de scanlines
+bool *inteligent_discard_Y;
+bool *inteligent_discard_U;
+bool *inteligent_discard_V;
+
+// HTTP API
+struct http_socket_info {
+	int listener;
+	int client_listener;
+	struct sockaddr_in server;
+	struct sockaddr_in client;
+    int client_size;
+	char buffer[500];
+	int buffer_size;
+};
+struct http_socket_info http_info;
+

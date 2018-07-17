@@ -124,21 +124,20 @@ int line_down=line/pppy ;//linea correspondiente a la original en la imagen down
 int pix=0;
 
 int data=0;
-int i =0;
 
 	switch(pppx){
-		case 2:
-			for (; i < width_orig-31; i+=32) {
-                _downsample_by2_simd(orig[line]+i,dest[line_down]+pix);
-				pix+=16;
-                //printf("k");
-			}
-			for(;i < width_orig; i+=2) {
-                dest[line_down][pix] = (orig[line][i]+orig[line][i+1]) >>1;
-			}
+    case 2:
+        for (int i =0; i < width_orig; i+=32)
+        {
+            if (i> width_orig-32)
+            {
+                i = width_orig-32;
+            }
+            pix = i/2;
+            _downsample_by2_simd(orig[line]+i,dest[line_down]+pix);
+        }
+
             break;
-
-
         case 4:
 
 			for (int i=0; i < width_orig; i+=4) {

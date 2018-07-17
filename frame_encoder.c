@@ -211,7 +211,7 @@ while (line<height_down_Y)
 {
   //componentes luminancia
   if (DEBUG)  printf("line %d \n",line);
-  quantize_scanline( target_Y,  line, width_down_Y, hops_Y,res_Y);
+  inteligent_discard_Y[line]=quantize_scanline( target_Y,  line, width_down_Y, hops_Y,res_Y);
   tam_bits_Y[line] = entropic_enc(hops_Y, bits_Y, line, width_down_Y);
   *bits_count+=tam_bits_Y[line];
 
@@ -232,11 +232,11 @@ line=(start_line+n*8)% height_down_UV;
 while (line<height_down_UV)
 {
   if (DEBUG) printf("line UV %d \n",line);
-  quantize_scanline( target_U,  line, width_down_UV, hops_U,res_U);
+  inteligent_discard_U[line]=quantize_scanline( target_U,  line, width_down_UV, hops_U,res_U);
   tam_bits_U[line] = entropic_enc(hops_U, bits_U, line, width_down_UV);
   *bits_count+=tam_bits_U[line];
 
-  quantize_scanline( target_V,  line, width_down_UV, hops_V,res_V);
+  inteligent_discard_V[line]=quantize_scanline( target_V,  line, width_down_UV, hops_V,res_V);
   tam_bits_V[line] = entropic_enc(hops_V, bits_V, line, width_down_UV);
   *bits_count+=tam_bits_V[line];
 
@@ -412,18 +412,21 @@ void quantize_frame_normal()
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 int entropic_enc_frame_normal()
 {
-
-int bits = 0;
-for (int line=0;line<height_down_Y;line++) {
-    bits += entropic_enc(hops_Y, bits_Y, line, width_down_Y);
-	//tam_bytes_Y[line]=entropic_enc(hops_Y, bits_Y, line, width_down_Y); //Consultar: Esta instruccion es para que el streamer sepa cuantos bits ocupa cada linea
-}
-for (int line=0;line<height_down_UV;line++) {
-    bits+=entropic_enc(hops_U, bits_U, line, width_down_UV);
-    bits+=entropic_enc(hops_V, bits_V, line, width_down_UV);
-}
-if (DEBUG) printf("bits: %d \n", bits);
-return bits;
+    int bits = 0;
+    for (int line=0; line<height_down_Y; line++)
+    {
+        tam_bits_Y[line] = entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+        bits += tam_bits_Y[line];
+    }
+    for (int line=0; line<height_down_UV; line++)
+    {
+        tam_bits_U[line] = entropic_enc(hops_U, bits_U, line, width_down_UV);
+        bits += tam_bits_U[line];
+        tam_bits_V[line] = entropic_enc(hops_V, bits_V, line, width_down_UV);
+        bits += tam_bits_U[line];
+    }
+    if (DEBUG) printf("bits: %d \n", bits);
+    return bits;
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //esta funcion es la que debe ejecutar cualquier thread
@@ -462,6 +465,8 @@ for (int i=start; i< start+invocaciones;i++){
   quantize_target_subframe(i,separation,tinfo->res_Y,tinfo->res_U,tinfo->res_V,&(tinfo->bits_count));
 
    //separation ya es 8* numthreads, pues asi la inicializa quantize_target()
+
+
   lanza_streamer_subframe(i,separation);
   //printf ("lanzado %d \n",i);
 }
