@@ -112,6 +112,10 @@ int * tam_bits_Y;
 int * tam_bits_U;
 int * tam_bits_V;
 
+int * tam_hops_Y;
+int * tam_hops_U;
+int * tam_hops_V;
+
 
 unsigned char *huff_table;
 unsigned char rlc_length, condition_length;

@@ -24,3 +24,5 @@ static inline int put_bits_count(PutBitContext *s);
  */
 static inline void put_bits_flush(PutBitContext *s);
 int entropic_enc(unsigned char **hops, uint8_t **bits, unsigned int line, unsigned int line_width);
+
+int entropic_enc2(unsigned char **hops, uint8_t **bits, unsigned int line, unsigned int line_width);

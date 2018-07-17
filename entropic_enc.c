@@ -251,6 +251,72 @@ int entropic_enc(unsigned char **hops, uint8_t **bits, unsigned int line, unsign
 }
 
 
+int entropic_enc2(unsigned char **hops, uint8_t **bits, unsigned int line, unsigned int line_width) {
+
+    int xini, yini, xfin_downsampled, yfin_downsampled, pix, dif_pix;
+    PutBitContext s;
+
+    int mode = HUFFMAN, h0_counter = 0, hops_counter = 0;
+    int condition_length = 7;
+    int rlc_length = 4;
+
+
+
+    uint8_t hop = 0;
+
+    uint8_t number[9] = { 1,1,1,1,1,1,1,1,1 };
+    uint8_t longi[9] = { 9,7,5,3,1,2,4,6,8 };
+
+    init_put_bits(&s, bits[line], line_width);
+
+
+    for (int x = 0; x < line_width; x++) {
+        hop = hops[line][x];
+        if (hop == 4) h0_counter++;
+
+        switch(mode){
+            case HUFFMAN:
+                put_bits(&s, longi[hop], number[hop]);
+                if(hop != 4) h0_counter = 0;
+                if (h0_counter == condition_length) {
+                    mode = RLC1;
+                    h0_counter = 0;
+                }
+            break;
+            case RLC1:
+                if (hop == 4 && h0_counter == 15) {
+                    put_bits(&s, 1, 1);
+                    mode = RLC2;
+                    rlc_length++;
+                    h0_counter = 0;
+                } else if (hop != 4) {
+                    put_bits(&s, rlc_length+1, h0_counter);
+                    put_bits(&s, longi[hop]-1, number[hop]);
+                    h0_counter = 0;
+                    mode = HUFFMAN;
+                }
+            break;
+            case RLC2:
+                if (hop == 4 && h0_counter == 31) {
+                    put_bits(&s, 1, 1);
+                    h0_counter = 0;
+                } else if (hop != 4) {
+                    put_bits(&s, rlc_length+1, h0_counter);
+                    put_bits(&s, longi[hop]-1, number[hop]);
+                    rlc_length = 4;
+                    h0_counter = 0;
+                    mode = HUFFMAN;
+                }
+            break;
+        }
+    }
+
+    if (h0_counter != 0 && mode != HUFFMAN) put_bits(&s, rlc_length+1, h0_counter);
+    //put_bits_flush(&s);
+    flush_put_bits(&s);
+    return put_bits_count(&s);
+
+}
 
 /*
 int main(int argc, char* argv[]) {
