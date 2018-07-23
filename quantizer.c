@@ -544,7 +544,7 @@ bool quantize_scanline2(unsigned char **orig_YUV, int y,int width, unsigned char
 
     int hop_counter=0;
 
-    int grad=0;
+    int grad=0, hop_skkiped =0;
 
 //this bucle is for only one scanline, excluding first pixel
 //----------------------------------------------------------
@@ -552,10 +552,9 @@ bool quantize_scanline2(unsigned char **orig_YUV, int y,int width, unsigned char
     {
 
         // --------------------- PHASE 1: PREDICTION---------------------------------------------------------
-
-        if (x%2 == 0)
-            oc = (orig_YUV[y][x] + orig_YUV[y][x+1])/2;
-        else
+        //if (x%2 == 0)
+        //    oc = (orig_YUV[y][x] + orig_YUV[y][x+1])/2;
+        //else
             oc=orig_YUV[y][x];//original color
 
         if (x==0)
@@ -686,7 +685,6 @@ bool quantize_scanline2(unsigned char **orig_YUV, int y,int width, unsigned char
 
         //------------- PHASE 3: assignment of final quantized value --------------------------
 phase3:
-
         if (is_jump)
         {
             if ( x%2 == 0 && hop_number != 4)
@@ -697,6 +695,7 @@ phase3:
 
                 hops[y][hop_counter] = prev_hop_number;
                 hop_counter++;
+                hop_skkiped--;
                 is_jump = false;
             }
             else if (x%2 == 0)
@@ -704,6 +703,13 @@ phase3:
                 result_YUV[y][x] = quantum;
                 hops[y][hop_counter] = hop_number;
                 hop_counter++;
+            }
+            else
+            {
+                quantum = hop0;
+                prev_hop_number = hop_number;
+                hop_skkiped++;
+                continue;
             }
         }
         else
@@ -717,8 +723,6 @@ phase3:
                 is_jump = true;
             }
         }
-        prev_hop_number = hop_number;
-
 
         //------------- PHASE 4: h1 logic  --------------------------
         if (hop_number>5 || hop_number<3)
@@ -783,7 +787,7 @@ phase3:
 
 //  printf("\n");
 //if (softline) fprintf(stderr, "linea descartada \n ");
-
+    printf("Hop counter = %d while hop skkiped = %d \n", hop_counter, hop_skkiped);
     *hops_length = hop_counter;
     return softline;
 }

@@ -248,6 +248,208 @@ int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_len
 	return hops_counter;
 }
 
+int obtain_symbols_entropic2(get_bits_context * ctx, uint8_t * hops, int hops_lenght) {
+	int mode = HUFFMAN, h0_counter = 0, hops_counter = 0, zero_counter = 0,
+		hop = 15, data = 3, rlc_number = 0, ghost_hops = 0;
+    bool is_ghost_hops = false;
+	int condition_length = CONDITION_LENGHT_INI;
+	int rlc_length = RLC_LENGHT_INI;
+	while (hops_counter + ghost_hops < hops_lenght) {
+
+		data = get_bit(ctx);
+		switch (mode) {
+		case HUFFMAN:
+			if (data == 0) {
+				zero_counter++;
+			}
+			if (data == 1) {
+				hop = get_hop(zero_counter);
+				if (hop == HOP_0) {
+					h0_counter++;
+				}
+				else {
+					h0_counter = 0;
+				}
+				if (h0_counter == condition_length) {
+					mode = RLC1;
+				}
+				hops[hops_counter] = hop;
+                if (hop == 4 && (hops_counter + ghost_hops)%2 == 0 ) {
+                    ghost_hops++;
+                    is_ghost_hops = true;
+				}
+				else if (hop != 4 && (hops_counter + ghost_hops)%2 == 0 && is_ghost_hops) {
+                    ghost_hops--;
+                    is_ghost_hops = false;
+				}
+				hops_counter++;
+				zero_counter = 0;
+			}
+			break;
+		case PRE_HUFFMAN:
+			if (data == 0) {
+				zero_counter++;
+			}
+			else if (data == 1) {
+				hop = get_hop(zero_counter + 1);
+				h0_counter = 0;
+				hops[hops_counter] = hop;
+				ghost_hops--;
+				hops_counter++;
+				zero_counter = 0;
+				mode = HUFFMAN;
+			}
+			break;
+		case RLC1:
+			if (data == 0) {
+				rlc_number = get_rlc_number_get_bits(ctx, rlc_length);
+				add_hop0(hops, &hops_counter, rlc_number);
+				ghost_hops += rlc_number;
+				mode = PRE_HUFFMAN;
+			}
+			else {
+				add_hop0(hops, &hops_counter, 15);
+				ghost_hops += 15;
+				rlc_length += 1;
+				mode = RLC2;
+			}
+			break;
+		case RLC2:
+			if (data == 0) {
+				rlc_number = get_rlc_number_get_bits(ctx, rlc_length);
+				add_hop0(hops, &hops_counter, rlc_number);
+				ghost_hops += rlc_number;
+				rlc_length = RLC_LENGHT_INI;
+				mode = PRE_HUFFMAN;
+			}
+			else {
+				add_hop0(hops, &hops_counter, 31);
+				ghost_hops += 31;
+			}
+			break;
+		}
+	}
+	finish_byte(ctx);
+	return hops_counter;
+}
+
+int decode_symbols_entropic2(uint8_t * bytes, uint8_t * hops, int bytes_lenght, int hops_lenght, int * readed_bytes) {
+	int mode = HUFFMAN, h0_counter = 0, hops_counter = 0, zero_counter = 0,
+		hop = 15, data = 3, rlc_number = 0, ghost_hops = 0;
+	int condition_length = CONDITION_LENGHT_INI;
+	int rlc_length = RLC_LENGHT_INI;
+	int i = 0, j=0, k=0, state = 0;
+	bool is_ghost_hops = false;
+	int prehuff_counter = 0, rlc_counter = 0;
+	while (hops_counter + ghost_hops < hops_lenght && i < bytes_lenght << 3) {
+
+		data = get_data(bytes, i);
+		switch (mode) {
+		case HUFFMAN:
+			if (data == 0) {
+				zero_counter++;
+			}
+			if (data == 1) {
+				hop = get_hop(zero_counter);
+				if (hop == HOP_0) {
+					h0_counter++;
+				}
+				else {
+					h0_counter = 0;
+				}
+				if (h0_counter == condition_length) {
+					mode = RLC1;
+					is_ghost_hops = false;
+				}
+				hops[hops_counter] = hop;
+				switch (state){
+                    case 0:
+                        if (hop == 4 && (hops_counter + ghost_hops)%2 == 0) {
+                            ghost_hops++;
+                            state = 1;
+                        }
+                    break;
+                    case 1:
+                        if (hop == 4) {
+                            ghost_hops++;
+                            state = 1;
+                        }
+                        else {
+                            state = 2;
+                        }
+                    break;
+                    case 2:
+                        ghost_hops--;
+                        state = 0;
+                    break;
+                }
+                /*if (hop == 4 && (hops_counter + ghost_hops)%2 == 0 && is_checking) {
+                    ghost_hops++;
+                    is_ghost_hops = true;
+				}
+				else if (is_ghost_hops) {
+                    ghost_hops--;
+                    is_ghost_hops = false;
+                    is_checking = false;
+				}
+				else if (!is_checking) {
+                    is_checking = true;
+				}*/
+				hops_counter++;
+				zero_counter = 0;
+			}
+			break;
+		case PRE_HUFFMAN:
+			if (data == 0) {
+				zero_counter++;
+			}
+			else if (data == 1) {
+				hop = get_hop(zero_counter + 1);
+				h0_counter = 0;
+				hops[hops_counter] = hop;
+				ghost_hops--;
+				hops_counter++;
+				zero_counter = 0;
+				prehuff_counter++;
+				mode = HUFFMAN;
+			}
+			break;
+		case RLC1:
+            rlc_counter++;
+			if (data == 0) {
+				rlc_number = get_rlc_number(bytes, &i, rlc_length);
+				add_hop0(hops, &hops_counter, rlc_number);
+				ghost_hops += rlc_number;
+				mode = PRE_HUFFMAN;
+			}
+			else {
+				add_hop0(hops, &hops_counter, 15);
+				ghost_hops += 15;
+				rlc_length += 1;
+				mode = RLC2;
+			}
+			break;
+		case RLC2:
+			if (data == 0) {
+				rlc_number = get_rlc_number(bytes, &i, rlc_length);
+				add_hop0(hops, &hops_counter, rlc_number);
+				ghost_hops += rlc_number;
+				rlc_length = RLC_LENGHT_INI;
+				mode = PRE_HUFFMAN;
+			}
+			else {
+				add_hop0(hops, &hops_counter, 31);
+				ghost_hops += 31;
+			}
+			break;
+		}
+		i++;
+	}
+	printf("Hop counter = %d while ghrost = %d prehuff_counter=%d rlc_counter=%d\n", hops_counter, ghost_hops, prehuff_counter, rlc_counter);
+	*readed_bytes = i;//i % 8 ? (i / 8) + 1 : i / 8;
+	return hops_counter;
+}
+
 bool test_bit(uint8_t data, int possition) {
 
 	uint8_t mask = 1;

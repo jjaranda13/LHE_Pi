@@ -45,6 +45,7 @@ int main(int argc, char* argv[])
     int tam_bits_Y;
     int tam_bits_U;
     int tam_bits_V;
+    int hops_lenght, readed_symbols;
 
 
     camera = init_camera(&options);
@@ -57,47 +58,49 @@ int main(int argc, char* argv[])
     init_quantizer();
     init_entropic_enc();
 
-    for(int j =0; j<1; j++)
+    for(int j =0; j<100; j++)
     {
         pthread_mutex_lock (&cam_down_mutex);
         pthread_cond_wait (&cam_down_cv,&cam_down_mutex);
         for(int line =0 ; line< height_down_Y; line++) {
             //Coding
             down_avg_horiz(orig_Y,width_orig_Y,orig_down_Y,line,pppx,pppy);
-            quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
-            tam_bits_Y =entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+            quantize_scanline2( orig_down_Y,  line, width_down_Y, hops_Y,result_Y, &hops_lenght);
+            tam_bits_Y = entropic_enc2(hops_Y, bits_Y, line, hops_lenght);
             int tam_bytes = tam_bits_Y%8 ? (tam_bits_Y/8)+1: tam_bits_Y/8;
             //Decoding
             int readed_bytes;
-            int readed_symbols;
+            readed_symbols = decode_symbols_entropic2(bits_Y[line], hops_obtained, tam_bytes+50, width_down_Y, &readed_bytes);
 
-            readed_symbols = decode_symbols_entropic(bits_Y[line], hops_obtained, tam_bytes+20, width_down_Y, &readed_bytes);
+            for (int i = 0; i< hops_lenght; i++){
+                //printf("pixel %d hops_obtained=%d && hops_Y=%d\n",i,  hops_obtained[i],hops_Y[line][i]);
 
+            }
             //Check
-            if(readed_bytes != tam_bytes){
-                printf("Error line=%d readed_bytes=%d is not equal to the tam_bytes=%d generated\n",line,  readed_bytes, tam_bytes);
-                break;
+            if(readed_symbols != hops_lenght){
+                printf("Error line=%d readed_symbols=%d is not equal to the hops_lenght=%d generated\n",line,  readed_symbols, hops_lenght);
+                //break;
             }
 
-            if(readed_symbols != width_down_Y){
-                printf("Error line=%d readed_symbols=%d is not equal to the widtd=%d\n", line, readed_symbols, width_down_Y);
-                break;
+            if(readed_bytes != tam_bits_Y){
+                printf("Error line=%d readed_bytes=%d is not equal to the tam_bits_Y=%d generated\n",line,  readed_bytes, tam_bits_Y);
+                //break;
             }
-
-            int index = 0, false_hops = 0;
-            while (index + false_hops < readed_symbols) {
-
-                if(hops_obtained[index] != hops_Y[line][index + false_hops]) {
-                    printf("Error in the symbol=%d line=%d\n", index + false_hops, line);
+            //continue;
+            for (int i=0 ;i< hops_lenght ; i++ ) {
+                if(hops_obtained[i] != hops_Y[line][i]) {
+                    printf("Error in the symbol=%d line=%d\n", i, line);
                 }
-
-                if ((hops_obtained[index] < 5 && hops_obtained[index] > 3) && (index + false_hops)%2 == 0) {
-                    false_hops++;
-				}
-                index++;
             }
+            printf("Ok\n");
+            continue;
 
-            decode_line_quantizer(hops_obtained, component_obtained, width_down_Y);
+            int obtained_width =decode_line_quantizer2(hops_obtained, component_obtained, readed_symbols);
+            if(obtained_width != width_down_Y){
+                printf("Error line=%d obtained_width=%d height_down_Y=%dis not equal generated\n",line,  obtained_width, height_down_Y);
+                break;
+            }
+            /*
             index = 0;
             bool breaks = false;
             while (index < width_down_Y) {
@@ -111,7 +114,7 @@ int main(int argc, char* argv[])
                 index++;
             }
              memset(hops_obtained, 0, 1000);
-
+*/
         }
         pthread_mutex_unlock (&cam_down_mutex);
         printf("%d frame right \n", j);

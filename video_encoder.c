@@ -338,7 +338,7 @@ fflush(stdout);
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-int main(int argc, char* argv[]) {
+/*int main(int argc, char* argv[]) {
 
 if (argc==2)
 {
@@ -349,7 +349,7 @@ if (argc==2)
  }
 VideoSimulation();
 
-}
+}*/
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void VideoSimulation()
