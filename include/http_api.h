@@ -43,5 +43,9 @@ int close_http_api();
  * PRIVATE
  ************/
 
+int get_parameter(char first_letter);
+int set_parameter (char first_letter, int number);
+
 void send_HTTP_400(int socket);
 void send_HTTP_200(int socket);
+void send_HTTP_response(int socket, int number);

@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #include "include/http_api.h"
 #include "include/globals.h"
@@ -74,9 +75,10 @@ int init_http_api(int port)
 
 int process_http_api()
 {
-    int size, number;
-    char * pos;
+    int size, number, status;
+    char * pos, * pos2;
     char first_letter;
+    bool is_getter;
 
     http_info.client_listener = accept(http_info.listener,(struct sockaddr *)&(http_info.client), (socklen_t *)&http_info.client_size);
     if(http_info.client_listener== -1 && errno == EWOULDBLOCK)
@@ -96,6 +98,22 @@ int process_http_api()
         return -1;
     }
 
+    pos = strstr(http_info.buffer,"GET");
+    pos2 = strstr(http_info.buffer,"POST");
+    if (pos != NULL && pos2 == NULL) // GET request
+    {
+        is_getter = true;
+    }
+    else if (pos == NULL && pos2 != NULL) // POST request
+    {
+        is_getter = false;
+    }
+    else
+    {
+        send_HTTP_400(http_info.client_listener);
+        return 0;
+    }
+
     pos=strchr(http_info.buffer,'/');
     if (pos == NULL)
     {
@@ -104,27 +122,57 @@ int process_http_api()
     }
     pos++;
     first_letter = *pos;
-    pos=strchr(pos,'/');
     if (pos == NULL)
     {
         send_HTTP_400(http_info.client_listener);
         return 0;
     }
-    pos++;
-    *(pos+2) = '\0';
-    number = atoi(pos);
 
+    if (is_getter) // Get request
+    {
+        number = get_parameter(first_letter);
+        if (number != -1)
+        {
+            send_HTTP_response(http_info.client_listener, number);
+        }
+        else
+        {
+            send_HTTP_400(http_info.client_listener);
+        }
+    }
+    else // Post request
+    {
+        pos=strchr(pos,'/');
+        pos++;
+        *(pos+2) = '\0';
+        number = atoi(pos);
+        status = set_parameter(first_letter, number);
+        if (status == 0)
+        {
+           send_HTTP_200(http_info.client_listener);
+        }
+        else
+        {
+            send_HTTP_400(http_info.client_listener);
+        }
+    }
+    return 0;
+}
+
+
+int set_parameter (char first_letter, int number)
+{
     if (first_letter == 'd') // Means that the word is discard
     {
         if(number >= 0 && number <=5)
         {
             inteligent_discard_mode = number;
             fprintf(stderr, "INFO: Discard set to mode %d.\n",number );
-            send_HTTP_200(http_info.client_listener);
+            return 0;
         }
         else
         {
-            send_HTTP_400(http_info.client_listener);
+            return -1;
         }
     }
     else if (first_letter == 's')  // Means that the word is skip
@@ -133,18 +181,34 @@ int process_http_api()
         {
             frame_skipping_mode = number;
             fprintf(stderr, "INFO: Skipping set to mode %d.\n",number );
-            send_HTTP_200(http_info.client_listener);
+            return 0;
         }
         else
         {
-            send_HTTP_400(http_info.client_listener);
+            return -1;
         }
     }
     else
     {
-        send_HTTP_400(http_info.client_listener);
+        return -1;
     }
-    return 0;
+}
+
+int get_parameter(char first_letter)
+{
+    if (first_letter == 'd') // Means that the word is discard
+    {
+        return inteligent_discard_mode;
+    }
+    else if (first_letter == 's')  // Means that the word is skip
+    {
+        return frame_skipping_mode;
+    }
+    else
+    {
+        return -1;
+    }
+
 }
 
 int close_http_api()
@@ -163,6 +227,16 @@ void send_HTTP_400(int socket)
 void send_HTTP_200(int socket)
 {
     send(socket,"HTTP/1.1 200 OK",15,0);
+    shutdown (socket, SHUT_RDWR);
+    close(socket);
+}
+
+void send_HTTP_response(int socket, int number)
+{
+    char message[22];
+
+    sprintf(message,"HTTP/1.1 200 OK\r\n\r\n%02d",number);
+    send(socket,message,21,0);
     shutdown (socket, SHUT_RDWR);
     close(socket);
 }
