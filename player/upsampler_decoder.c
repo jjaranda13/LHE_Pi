@@ -33,17 +33,23 @@ void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_val
 
 void interpolate_scanline_vertical(uint8_t * upsampled_values, int scaline, int prev_scaline, int next_scanline, int img_width) {
 
+    int next_value, prev_value;
 	int total_distance = next_scanline - prev_scaline;
 	int prev_distance = scaline - prev_scaline;
 	int next_distance = next_scanline - scaline;
-
 	for (int i = scaline*img_width; i < (scaline + 1)*img_width; i++) {
 
-        int next_value = (upsampled_values[i + (next_distance*img_width)-1] +upsampled_values[i + (next_distance*img_width)] + upsampled_values[i + (next_distance*img_width)+1])/3;
-		int prev_value = (upsampled_values[i - (prev_distance*img_width)-1] + upsampled_values[i - (prev_distance*img_width)] + upsampled_values[i - (prev_distance*img_width)+1])/3;
+        if (i == scaline*img_width || i == ((scaline + 1)*img_width)-1) {
+            next_value = upsampled_values[i + (next_distance*img_width)];
+            prev_value = upsampled_values[i - (prev_distance*img_width)];
+        }
+        else {
+            next_value = (upsampled_values[i + (next_distance*img_width)-1] + upsampled_values[i + (next_distance*img_width)] + upsampled_values[i + (next_distance*img_width)+1])/3;
+            prev_value = (upsampled_values[i - (prev_distance*img_width)-1] + upsampled_values[i - (prev_distance*img_width)] + upsampled_values[i - (prev_distance*img_width)+1])/3;
+
+        }
 		upsampled_values[i] = (next_value *prev_distance + prev_value * next_distance) / total_distance;
 	}
-	return;
 }
 
 void scale_epx(uint8_t *channel, int c_height, int c_width, uint8_t *epx, int umbral) {
