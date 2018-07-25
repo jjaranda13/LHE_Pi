@@ -192,54 +192,49 @@ int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, i
 }
 
 int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_lenght) {
-	int mode = HUFFMAN, h0_counter = 0, hops_counter = 0, zero_counter = 0,
-		hop = 15, data = 3, rlc_number = 0, false_hops = 0;
+	int mode = HUFFMAN, h0_counter = 0, hops_counter = 0, hop = 15,
+        rlc_number = 0, false_hops = 0, bits_used, bit_counter=0;
+
+    uint16_t data;
 	int condition_length = CONDITION_LENGHT_INI;
 	int rlc_length = RLC_LENGHT_INI;
 	while (hops_counter + false_hops < hops_lenght) {
 
-		data = get_bit(ctx);
 		switch (mode) {
 		case HUFFMAN:
-			if (data == 0) {
-				zero_counter++;
-			}
-			if (data == 1) {
-				hop = get_hop(zero_counter);
-				if (hop == HOP_0) {
-					h0_counter++;
-				}
-				else {
-					h0_counter = 0;
-				}
-				if (h0_counter == condition_length) {
-					mode = RLC1;
-				}
-				hops[hops_counter] = hop;
-                if ((hop < 5 && hop > 3) && (hops_counter + false_hops)%2 == 0) {
-                    false_hops++;
-				}
-				hops_counter++;
-				zero_counter = 0;
-			}
+            data = show_short(ctx);
+            hop = get_first_hop(data, &bits_used, false);
+            skip_bits(ctx, bits_used);
+            bit_counter += bits_used;
+            if (hop == HOP_0) {
+                h0_counter++;
+            }
+            else {
+                h0_counter = 0;
+            }
+            if (h0_counter == condition_length) {
+                mode = RLC1;
+            }
+            hops[hops_counter] = hop;
+            if ((hop < 5 && hop > 3) && (hops_counter + false_hops)%2 == 0) {
+                false_hops++;
+            }
+            hops_counter++;
 			break;
 		case PRE_HUFFMAN:
-			if (data == 0) {
-				zero_counter++;
-			}
-			else if (data == 1) {
-				hop = get_hop(zero_counter + 1);
-				h0_counter = 0;
-				hops[hops_counter] = hop;
-                if ((hop < 5 && hop > 3) && (hops_counter + false_hops)%2 == 0) {
-                    false_hops++;
-				}
-				hops_counter++;
-				zero_counter = 0;
-				mode = HUFFMAN;
-			}
+            data = show_short(ctx);
+            hop = get_first_hop(data, &bits_used, true);
+            skip_bits(ctx, bits_used);
+            h0_counter = 0;
+            hops[hops_counter] = hop;
+            if ((hop < 5 && hop > 3) && (hops_counter + false_hops)%2 == 0) {
+                false_hops++;
+            }
+            hops_counter++;
+            mode = HUFFMAN;
 			break;
 		case RLC1:
+            data = get_bit(ctx);
 			if (data == 0) {
 				rlc_number = get_rlc_number_get_bits(ctx, rlc_length);
 				add_hop0(hops, &hops_counter, rlc_number);
@@ -254,6 +249,7 @@ int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_len
 			}
 			break;
 		case RLC2:
+             data = get_bit(ctx);
 			if (data == 0) {
 				rlc_number = get_rlc_number_get_bits(ctx, rlc_length);
 				add_hop0(hops, &hops_counter, rlc_number);
@@ -269,6 +265,7 @@ int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_len
 		}
 	}
 	finish_byte(ctx);
+
 	return hops_counter;
 }
 
@@ -299,6 +296,84 @@ int get_data(uint8_t * bits, int sub_index) {
 		return 1;
 	}
 	return 0;
+}
+
+uint8_t get_first_hop(uint16_t data, int * bits_used, bool is_pre_huffman) {
+
+    uint8_t hop;
+
+    if (data >= 0x8000) {
+        *bits_used = 1;
+        hop = HOP_0;
+    }
+    else if (data >= 0x4000) {
+        *bits_used = 2;
+        hop = HOP_P1;
+    }
+    else if (data >= 0x2000) {
+        *bits_used = 3;
+        hop = HOP_N1;
+    }
+    else if (data >= 0x0400) {
+        if (data >= 0x1000) {
+            *bits_used = 4;
+            hop = HOP_P2;
+        }
+        else if (data >= 0x0800) {
+            *bits_used = 5;
+            hop = HOP_N2;
+        }
+        else {
+            *bits_used = 6;
+            hop = HOP_P3;
+        }
+    }
+    else {
+        if (data >= 0x0200) {
+            *bits_used = 7;
+            hop = HOP_N3;
+        }
+        else if (data >= 0x0100) {
+            *bits_used = 8;
+            hop = HOP_P4;
+        }
+        else {
+            *bits_used = 9;
+            hop = HOP_N4;
+        }
+    }
+    if(is_pre_huffman){
+        switch (hop) {
+            case HOP_0:
+                hop = HOP_P1;
+                break;
+            case HOP_P1:
+                 hop = HOP_N1;
+                break;
+            case HOP_N1:
+                hop = HOP_P2;
+                break;
+            case HOP_P2:
+                hop = HOP_N2;
+                break;
+            case HOP_N2:
+                hop = HOP_P3;
+                break;
+            case HOP_P3:
+                hop = HOP_N3;
+                break;
+            case HOP_N3:
+                hop = HOP_P4;
+                break;
+            case HOP_P4:
+                hop = HOP_N4;
+                break;
+            default:
+                printf("Error this should not be happening");
+                break;
+        }
+    }
+    return hop;
 }
 
 uint8_t get_hop(int zeros_since_a_one) {
@@ -348,12 +423,11 @@ int get_rlc_number(uint8_t * bits, int * sub_index, int rlc_lenght) {
 }
 
 int get_rlc_number_get_bits(get_bits_context * ctx, int rlc_lenght) {
-	int rlc_number = 0;
-	for (int i = 0; i < rlc_lenght; i++) {
-		if (get_bit(ctx) == 1) {
-			rlc_number += 1 << (rlc_lenght - i - 1);
-		}
-	}
+	uint8_t rlc_number = 0;
+	rlc_number = show_byte(ctx);
+	skip_bits(ctx, rlc_lenght);
+	rlc_number >>= (8 - rlc_lenght);
+
 	return rlc_number;
 }
 

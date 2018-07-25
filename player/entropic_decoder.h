@@ -5,7 +5,7 @@
 * @date Sep 2017
 * @brief Entropic decoder for LHE_rpi codec.
 *
-* This module is the entropic decoder the player of LHE_Pi codec. It uses an 
+* This module is the entropic decoder the player of LHE_Pi codec. It uses an
 * static huffman tree and an automatic RLC encoding. It works at scanline level
 * and process a whole scanline. The huffman table is hardcoded an it is:
 *   HOP_O  = 1
@@ -31,7 +31,7 @@
 * @brief Number of bits to represent the RLE.
 *
 * This parameter specifies the number of bits uses to represent the number of
-* hops0. In case it is equal to 4 the maximum number of hop0 that will be coded 
+* hops0. In case it is equal to 4 the maximum number of hop0 that will be coded
 * as RLE is 16. It defaults to 4. It MUST be equal to the one used at the coder
 */
 #define RLC_LENGHT_INI 4
@@ -78,13 +78,13 @@ void free_entropic_decoder(uint8_t* hops);
 /**
 * @brief Decodes a scanline from binary data into symbols.
 *
-* This function fills an array of hops using the bitstream. It implements the 
+* This function fills an array of hops using the bitstream. It implements the
 * static huffman table and the automatic RLE. The pointer to hop must be
 * inizialized before calling the function.
 
 * @param bits The pointer to the bitstream of data.
-* @param hops The resulting array of hops is stored in this pointer. 
-* @param bytes_lenght The lenght in bytes of the bitstream. 
+* @param hops The resulting array of hops is stored in this pointer.
+* @param bytes_lenght The lenght in bytes of the bitstream.
 * @return Lenght of the array of hops returned. it should be img_width minus one.
 
 * @warning hops pointer must be allocated before calling this function.
@@ -112,8 +112,8 @@ int decode_symbols_entropic(uint8_t * bytes, uint8_t * hops, int bytes_lenght, i
 /**
 * @brief Obtains a number of hops from a get_bits_context
 *
-* This function obtains an array of hops from the get_bits_context. It returns 
-* the actual number of hops readed. The number of hops to be readed must be 
+* This function obtains an array of hops from the get_bits_context. It returns
+* the actual number of hops readed. The number of hops to be readed must be
 * supplied to the function.
 
 * @param ctx The pointer to the get_bits_structure.
@@ -207,3 +207,5 @@ int get_rlc_number_get_bits(get_bits_context * ctx, int rlc_lenght);
 * @return Void.
 */
 void add_hop0(uint8_t * hops, int *hops_counter, int count);
+
+uint8_t get_first_hop(uint16_t data, int * bits_used, bool is_pre_huffman);
