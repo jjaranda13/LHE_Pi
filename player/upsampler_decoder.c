@@ -12,6 +12,7 @@
 */
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include <omp.h>
 #include "upsampler_decoder.h"
@@ -33,23 +34,68 @@ void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_val
 
 void interpolate_scanline_vertical(uint8_t * upsampled_values, int scaline, int prev_scaline, int next_scanline, int img_width) {
 
-    int next_value, prev_value;
-	int total_distance = next_scanline - prev_scaline;
-	int prev_distance = scaline - prev_scaline;
-	int next_distance = next_scanline - scaline;
-	for (int i = scaline*img_width; i < (scaline + 1)*img_width; i++) {
+    int next_value, prev_value, i, total_distance, prev_distance, next_distance, 
+	distance_horiz, distance_left_tilt, distance_right_tilt;
 
-        if (i == scaline*img_width || i == ((scaline + 1)*img_width)-1) {
-            next_value = upsampled_values[i + (next_distance*img_width)];
-            prev_value = upsampled_values[i - (prev_distance*img_width)];
-        }
-        else {
-            next_value = (upsampled_values[i + (next_distance*img_width)-1] + upsampled_values[i + (next_distance*img_width)] + upsampled_values[i + (next_distance*img_width)+1])/3;
-            prev_value = (upsampled_values[i - (prev_distance*img_width)-1] + upsampled_values[i - (prev_distance*img_width)] + upsampled_values[i - (prev_distance*img_width)+1])/3;
+	total_distance = next_scanline - prev_scaline;
+	prev_distance = scaline - prev_scaline;
+	next_distance = next_scanline - scaline;
 
-        }
+	i = scaline*img_width;
+	next_value = upsampled_values[i + (next_distance*img_width)];
+    prev_value = upsampled_values[i - (prev_distance*img_width)];
+	upsampled_values[i] = (next_value *prev_distance + prev_value * next_distance) / total_distance;
+    /* FIRST APPROACH, discarded due wrong decisions
+	for (i = (scaline*img_width) +1; i < ((scaline + 1)*img_width)-1; i++) {
+		distance_horiz = abs(upsampled_values[i + (next_distance*img_width)] - upsampled_values[i - (prev_distance*img_width)]);
+		if (distance_horiz < SAME_COLOR_THRESHOLD) {
+			next_value = upsampled_values[i + (next_distance*img_width)];
+    		prev_value = upsampled_values[i - (prev_distance*img_width)];
+		}
+		else {
+			distance_left_tilted = abs(upsampled_values[i + (next_distance*img_width) + 1] - upsampled_values[i - (prev_distance*img_width) - 1]);
+			distance_right_tilted = abs(upsampled_values[i + (next_distance*img_width) - 1] - upsampled_values[i - (prev_distance*img_width) + 1]);
+			biggest = distance_horiz>distance_left_tilted? (distance_horiz > distance_right_tilted? 0:2) : (distance_left_tilted > distance_right_tilted? 1:2);
+			if (biggest == 0) { // distance_horiz
+				upsampled_values[i] = upsampled_values[i - 1];
+				continue;
+			}
+			else if (biggest == 1) { // distance_left_tilted
+				next_value = upsampled_values[i + (next_distance*img_width) - 1];
+				prev_value = upsampled_values[i - (prev_distance*img_width) + 1];
+			}
+			else { // (biggest == 2) distance_right_tilted
+				next_value = upsampled_values[i + (next_distance*img_width) + 1];
+				prev_value = upsampled_values[i - (prev_distance*img_width) - 1];
+			}
+		}
 		upsampled_values[i] = (next_value *prev_distance + prev_value * next_distance) / total_distance;
 	}
+    */
+   for (i = (scaline*img_width) + 1; i < ((scaline + 1)*img_width) - 1; i++) {
+		distance_horiz = abs(upsampled_values[i + (next_distance*img_width)] - upsampled_values[i - (prev_distance*img_width)]);
+		distance_left_tilt = abs(upsampled_values[i + (next_distance*img_width) + 1] - upsampled_values[i - (prev_distance*img_width) - 1]);
+		distance_right_tilt = abs(upsampled_values[i + (next_distance*img_width) - 1] - upsampled_values[i - (prev_distance*img_width) + 1]);
+			
+		if (distance_left_tilt < distance_horiz && distance_right_tilt > distance_horiz) { // left diagonal should eb accounted
+			next_value = (upsampled_values[i + (next_distance*img_width)] + 3*upsampled_values[i + (next_distance*img_width)+1])/4;
+    		prev_value = (upsampled_values[i - (prev_distance*img_width)] + 3*upsampled_values[i - (prev_distance*img_width)]-1)/4;
+		}
+		else if ( distance_right_tilt > distance_horiz && distance_left_tilt < distance_horiz) { // right diagonal should eb accounted
+			next_value = (upsampled_values[i + (next_distance*img_width)] + 3*upsampled_values[i + (next_distance*img_width)-1])/4;
+    		prev_value = (upsampled_values[i - (prev_distance*img_width)] + 3*upsampled_values[i - (prev_distance*img_width)+1])/4;
+		}
+		else {
+			next_value = upsampled_values[i + (next_distance*img_width)];
+    		prev_value = upsampled_values[i - (prev_distance*img_width)];
+		}
+		upsampled_values[i] = (next_value *prev_distance + prev_value * next_distance) / total_distance;
+	}
+
+	i = ((scaline + 1)*img_width)-1;
+	next_value = upsampled_values[i + (next_distance*img_width)];
+    prev_value = upsampled_values[i - (prev_distance*img_width)];
+	upsampled_values[i] = (next_value *prev_distance + prev_value * next_distance) / total_distance;
 }
 
 void scale_epx(uint8_t *channel, int c_height, int c_width, uint8_t *epx, int umbral) {
