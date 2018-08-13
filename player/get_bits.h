@@ -1,6 +1,6 @@
 /**
 * @file get_bits.h
-* @author Francisco José Juan Quintanilla
+* @author Francisco Josï¿½ Juan Quintanilla
 * @date Apr 2018
 * @brief Get_bits header.
 *
@@ -28,11 +28,12 @@
 typedef struct get_bits_context {
 	FILE * handler;
 	uint32_t buffer;
+	uint32_t next_buffer;
 	int buffer_left;
 } get_bits_context;
 
 /**
-* @brief nizialices the get_bits_context
+* @brief Inizialices the get_bits_context
 *
 * This function inicialices the context structure using the file passed.
 *
@@ -84,3 +85,35 @@ void finish_byte(get_bits_context * ctx);
 */
 int forward_to_nal(get_bits_context * ctx);
 
+/**
+* @brief Show the next bits to come, up to the number.
+*
+* @param ctx  The get_bits context structure to get the bit from.
+* @param number  Number of bits to preview
+* @return 0 if everything was allright, anything else if error.
+*/
+uint8_t show_byte(get_bits_context * ctx);
+
+/**
+* @brief Show the next bits to come, up to the number.
+*
+* @param ctx  The get_bits context structure to get the bit from.
+* @param number  Number of bits to preview
+* @return 0 if everything was allright, anything else if error.
+*/
+uint16_t show_short(get_bits_context * ctx);
+
+/**
+* @brief Skip the number bits to come, up to the number.
+*
+* @param ctx  The get_bits context structure to get the bit from.
+* @param number  Number of bits to skip.
+* @return 0 if everything was allright, anything else if error.
+*/
+void skip_bits(get_bits_context * ctx, int number);
+
+/////////////////////////////////////////////////////////////////////////
+// PRIVATE FUNCTIONS. NOT TO BE CALLED FROM OUTSIDE
+/////////////////////////////////////////////////////////////////////////
+
+void load_new_buffer(get_bits_context * ctx);

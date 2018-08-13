@@ -18,105 +18,40 @@
 
 
 void init_get_bits(FILE * file, get_bits_context * ctx) {
+
 	ctx->handler = file;
-	ctx->buffer = 0;
-	ctx->buffer_left = 0;
+	load_new_buffer(ctx);
+	load_new_buffer(ctx);
 }
 
 uint8_t get_bit(get_bits_context * ctx) {
 
 	uint8_t byte, mask = 1;
-	uint32_t buffer = ctx->buffer;
-	int buffer_left = ctx->buffer_left;
 
-	if (ctx->buffer_left == 0) {
-		if (!feof(stdin) && fread(&buffer, sizeof(uint32_t), 1, ctx->handler) != 1)
-		{
-			printf("INFO: Finished reading  the stream\n");
-			fflush(stdout);
-			exit(1);
-		}
-		ctx->buffer = buffer;
-		buffer_left = 32;
-		byte = buffer;
-		mask = mask << (buffer_left - 24 - 1);
-		mask = mask & byte;
-	}
-	else if (buffer_left <= 8) {
-		byte = buffer >> 24;
-		mask = mask << (buffer_left - 1);
-		mask = mask & byte;
-	}
-	else if (buffer_left <= 16) {
-		byte = buffer >> 16;
-		mask = mask << (buffer_left - 8 - 1);
-		mask = mask & byte;
-	}
-	else if (buffer_left <= 24) {
-		byte = buffer >> 8;
-		mask = mask << (buffer_left - 16 - 1);
-		mask = mask & byte;
-	}
-	else if (buffer_left <= 32){
-		byte = buffer;
-		mask = mask << (buffer_left - 24 - 1);
-		mask = mask & byte;
-	}
-	else {
-		printf("ERROR: buffer_left went out of range");
-	}
-	buffer_left--;
-	ctx->buffer_left = buffer_left;
-	if (mask != 0) {
-		return 1;
-	}
-	return 0;
+	byte = show_byte(ctx);
+	byte &= mask << 7;
+	skip_bits(ctx, 1);
+
+	if (byte == 0)
+		return 0;
+    return 1;
 }
 
 uint8_t get_aligned_byte(get_bits_context * ctx) {
-	
-	int buffer_left = 0;
-	uint8_t byte = 0;
-	uint32_t buffer;
+
+	uint8_t byte;
 
 	finish_byte(ctx);
-	buffer_left = ctx->buffer_left;
-	buffer = ctx->buffer;
+	byte = show_byte(ctx);
+	skip_bits(ctx, 8);
 
-	if (buffer_left == 0) {
-		if (!feof(stdin) && fread(&buffer, sizeof(uint32_t), 1, ctx->handler) != 1)
-		{
-			printf("INFO: Finished reading  the stream\n");
-			fflush(stdout);
-			exit(1);
-		}
-		ctx->buffer = buffer;
-		buffer_left = 32;
-		byte = buffer;
-
-	}
-	else if (buffer_left == 8) {
-		byte = buffer >> 24;
-	}
-	else if (buffer_left == 16) {
-		byte = buffer >> 16;
-	}
-	else if (buffer_left == 24) {
-		byte = buffer >> 8;
-	}
-	else if (buffer_left == 32) {
-		byte = buffer;
-	}
-	buffer_left -= 8;
-	ctx->buffer_left = buffer_left;
 	return byte;
 }
 
 void finish_byte(get_bits_context * ctx) {
-	while (ctx->buffer_left % 8) {
-		get_bit(ctx);
-	}
-	return;
+
+	if (ctx->buffer_left % 8 != 0)
+		skip_bits(ctx, ctx->buffer_left % 8);
 }
 
 int forward_to_nal(get_bits_context * ctx) {
@@ -161,4 +96,78 @@ int forward_to_nal(get_bits_context * ctx) {
 		}
 	}
 	return 0;
+}
+
+void skip_bits(get_bits_context * ctx, int number) {
+
+	int prev_buffer_left;
+    if (number == 0)
+        return;
+	else if (number <= ctx->buffer_left)
+		ctx->buffer_left -= number;
+	else {
+        prev_buffer_left = ctx->buffer_left;
+		load_new_buffer(ctx);
+		ctx->buffer_left -= number-prev_buffer_left;
+	}
+
+	return;
+}
+
+uint8_t show_byte(get_bits_context * ctx) {
+
+	uint8_t byte;
+
+	if (ctx->buffer_left == 0) {
+		load_new_buffer(ctx);
+	}
+	if (8 <= ctx->buffer_left) {
+		byte = ctx->buffer >> (ctx->buffer_left - 8);
+	}
+	else {
+		byte = ctx->buffer << (8 - ctx->buffer_left);
+		byte |= ctx->next_buffer >> (32 - (8 -ctx->buffer_left));
+	}
+
+	return byte;
+}
+
+uint16_t show_short(get_bits_context * ctx) {
+
+	uint16_t number;
+
+	if (ctx->buffer_left == 0) {
+		load_new_buffer(ctx);
+	}
+	if (16 <= ctx->buffer_left) {
+		number = ctx->buffer >> (ctx->buffer_left - 16);
+	}
+	else {
+		number = ctx->buffer << (16 - ctx->buffer_left);
+		number |= ctx->next_buffer >> (32 - (16 -ctx->buffer_left));
+	}
+
+	return number;
+}
+
+void load_new_buffer(get_bits_context * ctx) {
+
+    uint8_t bytes[4] = {0};
+    uint32_t buffer = 0;
+	ctx->buffer = ctx->next_buffer;
+	if (!feof(stdin) && fread(bytes, sizeof(uint8_t), 4, ctx->handler) != 4) {
+		printf("INFO: Finished reading the stream\n");
+		fflush(stdout);
+		exit(1);
+	}
+	buffer |= (uint32_t) bytes[0] << 24;
+	buffer |= (uint32_t) bytes[1] << 16;
+	buffer |= (uint32_t) bytes[2] << 8;
+	buffer |= (uint32_t) bytes[3];
+
+    ctx->next_buffer = buffer;
+	ctx->buffer_left = 32;
+
+
+	return;
 }

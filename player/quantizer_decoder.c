@@ -54,61 +54,68 @@ void build_hop_cache() {
 }
 void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_lenght) {
 
-	char gradient = 0;
-	unsigned char  h1 = START_H1, hop0;
+    int ghost_hop = 0;
+    signed char gradient = 0, h1 = START_H1;
+	unsigned char hop0;
 	bool last_small_hop = true, small_hop;
 	uint8_t current_hop;
 
 	for (int x = 0; x < hops_lenght; x++) {
+
 		current_hop = hops[x];
 
 		if (x == 0) {
 			hop0 = INIT_PREDICTION;
 		}
 		else {
-			hop0 = component_value[x - 1];
+			hop0 = component_value[x + ghost_hop - 1];
 		}
+
 		// Checks that there wont be overflow plus if gradient is activated.
 		#ifdef IS_GRADIENT
-		if (!(hop0 + gradient < 1) || (hop0 + gradient > 255))
-			hop0 += gradient;
+		//printf("Hop0 is %u gradient is %d\n", hop0, gradient );
+		hop0 = hop0+gradient > 255? 25: hop0+gradient < 1? 1:hop0+gradient;
 		#endif
 
 		switch (current_hop)
 		{
 		case HOP_0:
-			component_value[x] = hop0;
+			component_value[x + ghost_hop] = hop0;
+			if ((x + ghost_hop)%2 == 0) {
+                ghost_hop++;
+                component_value[x + ghost_hop] = hop0;
+			}
 			break;
 		case HOP_P1:
-			component_value[x] = hop0 + h1;
+			component_value[x + ghost_hop] = hop0 + h1;
 			break;
 		case HOP_P2:
-			component_value[x] = 255-cache_hops[255-hop0][h1-4][2];
+			component_value[x + ghost_hop] = 255-cache_hops[255-hop0][h1-4][2];
 			break;
 		case HOP_P3:
-			component_value[x] = 255-cache_hops[255-hop0][h1-4][1];
+			component_value[x + ghost_hop] = 255-cache_hops[255-hop0][h1-4][1];
 			break;
 		case HOP_P4:
 			#ifdef IS_MAX_HOPS
-			component_value[x] = 255;
+			component_value[x + ghost_hop] = 255;
 			#else
-			component_value[x] = 255-cache_hops[255-hop0][h1-4][0];
+			component_value[x + ghost_hop] = 255-cache_hops[255-hop0][h1-4][0];
 			#endif
 			break;
 		case HOP_N1:
-			component_value[x] = hop0 - h1;
+			component_value[x + ghost_hop] = hop0 - h1;
 			break;
 		case HOP_N2:
-			component_value[x] = cache_hops[hop0][h1-4][2];
+			component_value[x + ghost_hop] = cache_hops[hop0][h1-4][2];
 			break;
 		case HOP_N3:
-			component_value[x] = cache_hops[hop0][h1-4][1];
+			component_value[x + ghost_hop] = cache_hops[hop0][h1-4][1];
 			break;
 		case HOP_N4:
 			#ifdef IS_MAX_HOPS
 			component_value[x] = 0;
 			#else
-			component_value[x] = cache_hops[hop0][h1-4][0];
+			component_value[x + ghost_hop] = cache_hops[hop0][h1-4][0];
 			#endif
 			break;
 		default:
@@ -120,6 +127,7 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_l
 		h1 = adapt_h1(h1, small_hop, last_small_hop);
 		#ifdef IS_GRADIENT
 		gradient = adapt_gradient(current_hop, small_hop, gradient);
+		//printf("gradient is %d\n", gradient );
 		#endif
 		last_small_hop = small_hop;
 	}
@@ -154,7 +162,7 @@ char adapt_gradient(uint8_t current_hop, bool small_hop, char prev_gradient) {
 		return 1;
 	}
 	else if (current_hop == HOP_N1) {
-		return -1;
+		return (char)-1;
 	}
 	else if (!small_hop) {
 		return 0;

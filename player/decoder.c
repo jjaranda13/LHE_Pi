@@ -207,28 +207,19 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 		switch (component_state) {
 		case Y_STATE:
 			readed_hops = obtain_symbols_entropic(ctx, hops, width);
-			if (readed_hops != width) {
-				printf("Symbols obtained are not the ones expected\n");
-			}
-			decode_line_quantizer(hops, img->Y_data + width * line_num, width);
+			decode_line_quantizer(hops, img->Y_data + width * line_num, readed_hops);
 			is_Y[line_num] = true;
 			subframe_counter[subframe]++;
 			break;
 		case U_STATE:
 			readed_hops = obtain_symbols_entropic(ctx, hops, width / 2);
-			if (readed_hops != (width / 2)) {
-				printf("Symbols obtained are not the ones expected\n");
-			}
-			decode_line_quantizer(hops, img->U_data + (width / 2)*line_num, width / 2);
+			decode_line_quantizer(hops, img->U_data + (width / 2)*line_num, readed_hops);
 			is_U[line_num] = true;
 			subframe_counter[subframe]++;
 			break;
 		case V_STATE:
 			readed_hops = obtain_symbols_entropic(ctx, hops, width / 2);
-			if (readed_hops != (width / 2)) {
-				printf("Symbols obtained are not the ones expected\n");
-			}
-			decode_line_quantizer(hops, img->V_data + (width / 2)*line_num, width / 2);
+			decode_line_quantizer(hops, img->V_data + (width / 2)*line_num, readed_hops);
 			is_V[line_num] = true;
 			subframe_counter[subframe]++;
 			break;
