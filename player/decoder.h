@@ -14,10 +14,10 @@ typedef struct yuv_image {
 	int height;
 } yuv_image;
 
-int decode_stream(int width, int height, FILE * file);
-int decode_stream_2(int width, int height, get_bits_context * ctx);
-int decode_stream_file(int width, int height, char * filename);
-int decode_stream_stdin(int width, int height);
+int decode_stream(int width, int height, bool fullscreen, FILE * file);
+int decode_stream_2(int width, int height, bool fullscreen, get_bits_context * ctx);
+int decode_stream_file(int width, int height, bool fullscreen, char * filename);
+int decode_stream_stdin(int width, int height, bool fullscreen);
 int thrash_til_nal(FILE * stream);
 int buffer_til_nal(FILE * stream, uint8_t * buffer, int buffer_max_lenght);
 int get_header(uint16_t header, int *state, int *line_num, int *subframe);

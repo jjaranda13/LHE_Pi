@@ -1,20 +1,32 @@
 #include <SDL2/SDL.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include"player_decoder.h"
 
-void init_player(int width, int height) {
+void init_player(int width, int height, bool is_fullscreen) {
+
+    uint32_t window_flags = 0;
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
 		return;
 	}
-	window = SDL_CreateWindow("LHE Rpi Player", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, 0);
+
+	if (is_fullscreen) {
+
+        window_flags = window_flags | SDL_WINDOW_FULLSCREEN;
+    }
+
+	window = SDL_CreateWindow("LHE Rpi Player", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, window_flags);
 	if (window == NULL) {
 
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window SDL: %s", SDL_GetError());
 		return;
 	}
+
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
 	if (renderer == NULL) {
 
@@ -47,11 +59,11 @@ void handle_window() {
 	while (SDL_PollEvent(&e) != 0) {
 		switch ( e.type) {
 		case SDL_QUIT:
-		
+
 			exit(EXIT_SUCCESS);
 			break;
 		default:
-			break;			
+			break;
 		}
 	}
 	return;

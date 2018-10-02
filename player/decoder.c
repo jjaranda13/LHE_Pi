@@ -1,10 +1,10 @@
-#include <fcntl.h>  
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
-#ifdef _WIN32 
-	#include <io.h>  
+#ifdef _WIN32
+	#include <io.h>
 	#include <windows.h>
 #elif __linux__
 	#include <unistd.h>
@@ -26,7 +26,7 @@
 
 double timeval_diff(struct timeval *a, struct timeval *b);
 
-int decode_stream(int width, int height, FILE * file) {
+int decode_stream(int width, int height, bool fullscreen, FILE * file) {
 
 	int status, subframe = 0, component_state = Y_STATE;
 	unsigned int line_debug_counter = 0, frame_debug_counter = 0,  subframe_counter[24] = { 0 };
@@ -35,7 +35,7 @@ int decode_stream(int width, int height, FILE * file) {
 	uint8_t *bits = NULL, *hops = NULL;
 	yuv_image *img, *img_up;
 
-	init_player(width*2, height*2);
+	init_player(width*2, height*2, fullscreen);
 	hops = (uint8_t *)malloc(sizeof(uint8_t)* width);
 	bits = (uint8_t *)malloc(sizeof(uint8_t)* BITS_BUFFER_LENGHT);
 	img = allocate_yuv_image(width, height);
@@ -62,7 +62,7 @@ int decode_stream(int width, int height, FILE * file) {
 			int readed_hops, readed_bytes, line_num,
 				past_subframe;
 			uint16_t headers;
-			
+
 
 			headers = bits[index + 1] + (bits[index] << 8);
 			index += 2;
@@ -125,7 +125,7 @@ int decode_stream(int width, int height, FILE * file) {
 	return 0;
 }
 
-int decode_stream_2(int width, int height, get_bits_context * ctx) {
+int decode_stream_2(int width, int height, bool fullscreen, get_bits_context * ctx) {
 
 	int status, subframe = 0, component_state = Y_STATE, frame_counter = 0;
 	unsigned int subframe_counter[8] = { 0 };
@@ -135,7 +135,7 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 	yuv_image *img, *img_up;
 
 	build_hop_cache();
-	init_player(width * 2, height * 2);
+	init_player(width * 2, height * 2, fullscreen);
 	hops = (uint8_t *)malloc(sizeof(uint8_t)* width);
 	img = allocate_yuv_image(width, height);
 	img_up = allocate_yuv_image(width * 2, height * 2);
@@ -228,9 +228,9 @@ int decode_stream_2(int width, int height, get_bits_context * ctx) {
 	return 0;
 }
 
-int decode_stream_stdin(int width, int height) {
+int decode_stream_stdin(int width, int height, bool fullscreen) {
 	get_bits_context ctx;
-	#ifdef _WIN32 
+	#ifdef _WIN32
 		int status = _setmode(_fileno(stdin), _O_BINARY);
 		if (status == -1) {
 			printf("Cannot set mode for stdin\n");
@@ -240,14 +240,14 @@ int decode_stream_stdin(int width, int height) {
 
 	init_get_bits(stdin, &ctx);
 
-	return decode_stream_2(width, height, &ctx);
+	return decode_stream_2(width, height, fullscreen, &ctx);
 }
 
-int decode_stream_file(int width, int height, char * filename) {
+int decode_stream_file(int width, int height, bool fullscreen, char * filename) {
 	int status;
 	FILE * file;
 	get_bits_context ctx;
-	#ifdef _WIN32 
+	#ifdef _WIN32
 		status = (int)fopen_s(&file, filename, "rb");
 	#elif __linux__
 		file = fopen(filename, "rb");
@@ -258,14 +258,14 @@ int decode_stream_file(int width, int height, char * filename) {
 			status = 0;
 		}
 	#endif
-	
+
 	if (status != 0) {
 		printf("Error opening the file\n");
 		return -1;
 	}
 	init_get_bits(file, &ctx);
 
-	return decode_stream_2(width, height, &ctx);
+	return decode_stream_2(width, height, fullscreen, &ctx);
 }
 
 int thrash_til_nal(FILE * stream) {
@@ -278,13 +278,13 @@ int thrash_til_nal(FILE * stream) {
 	while (!is_found) {
 		readed = fread(&byte, (size_t)1, (size_t)sizeof(uint8_t), stream);
 		if (readed == 0){
-			#ifdef _WIN32 
+			#ifdef _WIN32
 				Sleep(10);
 			#elif __linux__
 				usleep(10 * 1000);
-			#endif	
+			#endif
 		}
-			
+
 		else {
 			switch (nal_counter) {
 			case 0:
@@ -335,7 +335,7 @@ int buffer_til_nal(FILE * stream, uint8_t * buffer, int buffer_max_lenght) {
 
 		readed = fread(&byte, 1, sizeof(uint8_t), stream);
 		if (readed == 0) {
-			#ifdef _WIN32 
+			#ifdef _WIN32
 				Sleep(10);
 			#elif __linux__
 				usleep(10 * 1000);
@@ -413,7 +413,7 @@ int buffer_til_nal(FILE * stream, uint8_t * buffer, int buffer_max_lenght) {
 
 int get_header(uint16_t header, int *state, int *line_num, int *subframe) {
 	int frame_type;
-	
+
 	frame_type = header >> 13;
 	*line_num = header & ~(0xE000);
 	*subframe = *line_num % 8;
@@ -438,7 +438,7 @@ int get_header(uint16_t header, int *state, int *line_num, int *subframe) {
 }
 
 bool is_frame_completed(int subframe, int past_subframe) {
-	
+
 	bool cond1 = subframe < past_subframe - 5;
 	if (cond1)
 		return true;
