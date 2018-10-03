@@ -17,7 +17,7 @@ void init_player(int width, int height, bool is_fullscreen) {
 
 	if (is_fullscreen) {
 
-        window_flags = window_flags | SDL_WINDOW_FULLSCREEN;
+        window_flags = window_flags | SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
 
 	window = SDL_CreateWindow("LHE Rpi Player", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, window_flags);
