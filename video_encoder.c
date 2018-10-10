@@ -400,12 +400,14 @@ void VideoSimulation()
 
 //setbuf(stdout,NULL);//esto le hace daño a testraspi
     int i=0;
+    float frame_count = 0;
     while (true)
     {
 //for (int i=0 ; i<total_frames;i++){
         i++;
         if (i==total_frames)
             i=0;
+            //frame_count = 0;
 
         //desplazamos la imagen original
         // ------------------------------
@@ -418,16 +420,22 @@ void VideoSimulation()
             }
             cam_down_flag = 0;
 
-            // Frame Skipping
-            for (int j = 0; j< frame_skipping_mode; j++)
+            float discard_interval=(float)total_frames/(float)(frame_skipping_mode);
+            if (frame_skipping_mode>0)
             {
-                if (((total_frames << 4)/frame_skipping_mode*j)>> 4 == i)
-                {
-                    pthread_mutex_unlock (&cam_down_mutex);
-                    discarded_frames++;
-                    break;
-                }
+            frame_count++;
+            if (frame_count >discard_interval)
+            {
+                frame_count-=discard_interval;
+                pthread_mutex_unlock (&cam_down_mutex);
+                discarded_frames++;
+                continue;
             }
+
+            }
+
+
+
         }
         else
         {
