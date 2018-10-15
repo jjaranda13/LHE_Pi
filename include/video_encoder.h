@@ -1,5 +1,5 @@
 
-void compute_delta(unsigned char **frame_new,unsigned char **frame_prev, int y,int width, unsigned char **delta);
+void compute_delta();
 
 /**
  * @brief Computes the delta diference image for a particular line.
@@ -19,3 +19,7 @@ void compute_delta(unsigned char **frame_new,unsigned char **frame_prev, int y,i
 void compute_delta_scanline_simd(int y, int width, unsigned char ** orig_down, unsigned char ** last_frame_player, unsigned char ** delta);
 
 void init_videoencoder();
+
+void VideoSimulation();
+void compute_delta_scanline(int y, int width, unsigned char ** orig_down, unsigned char ** last_frame_player, unsigned char ** delta);
+void intelligent_loss();

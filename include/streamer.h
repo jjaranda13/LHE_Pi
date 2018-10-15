@@ -17,3 +17,5 @@ int write_socket (int fd, struct sockaddr *remote,	socklen_t long_remote, unsign
 void sendData();
 void stream_line(uint8_t ** bits, int bits_lenght, int line);
 void stream_frame();
+void lanza_streamer_subframe(int startline,int separation);
+void init_streamer();

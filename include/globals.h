@@ -214,3 +214,5 @@ struct http_socket_info {
 };
 struct http_socket_info http_info;
 
+bool is_rtp;
+

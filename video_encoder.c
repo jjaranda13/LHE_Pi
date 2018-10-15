@@ -26,10 +26,11 @@
 #include "include/frame_encoder.h"
 #include "include/entropic_enc.h"
 #include "include/camera_reader.h"
+#include "include/video_encoder.h"
 #include "include/video_encoder_simd.h"
 #include "include/streamer.h"
 #include "include/http_api.h"
-
+#include "include/imgUtil.h"
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
@@ -81,6 +82,7 @@ tam_bits_V = malloc(height_down_UV*sizeof(int));
 
     frame_skipping_mode = DEFAULT_FRAME_SKYPPING_MODE;
 
+init_streamer();
 init_streamer();
 
 }
@@ -335,23 +337,9 @@ fflush(stdout);
 
 
 }
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-int main(int argc, char* argv[]) {
-
-if (argc==2)
-{
- if (!strcmp(argv[1], "-rtp"))
- {
- sendH264header();
- }
- }
-VideoSimulation();
-
-}
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 void VideoSimulation()
 {
 //esta funcion simula todo el proceso de captura, down, imagen diferencial, quantization y entropic
@@ -378,10 +366,10 @@ void VideoSimulation()
     }
 
     if (DEBUG) printf("frame loaded  \n");
-
-    //int encoder
-    pppx=2;
-    pppy=2;
+    if (is_rtp)
+    {
+        sendH264header();
+    }
 
     init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
     init_videoencoder();

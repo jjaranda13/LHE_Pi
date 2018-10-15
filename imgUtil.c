@@ -15,6 +15,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include "include/globals.h"
+#include "include/imgUtil.h"
 #define STB_IMAGE_STATIC
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION

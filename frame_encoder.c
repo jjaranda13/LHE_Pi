@@ -10,6 +10,9 @@
 #include "include/quantizer.h"
 #include "include/frame_encoder.h"
 #include "include/entropic_enc.h"
+#include "include/streamer.h"
+
+#include "stb_image/stb_image_write.h"
 
 
 

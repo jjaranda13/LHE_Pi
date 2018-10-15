@@ -9,4 +9,4 @@
  *
  * Internally it is written in neon assembly for ARM.
  */
-inline void _downsample_by2_simd( unsigned char *orig, unsigned char *dest);
+extern void _downsample_by2_simd( unsigned char *orig, unsigned char *dest);

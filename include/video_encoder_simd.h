@@ -12,4 +12,4 @@
  * @param delta Pointer to the location to store the delta result.
  *
  */
-inline void _compute_delta_simd( unsigned char * orig, unsigned char * last_frame_player, unsigned char *delta);
+extern void _compute_delta_simd( unsigned char * orig, unsigned char * last_frame_player, unsigned char *delta);

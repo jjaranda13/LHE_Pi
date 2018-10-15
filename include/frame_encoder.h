@@ -12,3 +12,4 @@ void *quantize_two();
 void *quantize_three();
 void *quantize_four();
 void *mytask_target(void *arg);
+void quantize_target(unsigned char **res_Y,unsigned char **res_U,unsigned char **res_V);
