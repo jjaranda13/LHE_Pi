@@ -360,7 +360,7 @@ void quantize_target_normal(unsigned char **res_Y,unsigned char **res_U,unsigned
     //--------------------
 
 	for (int line=0;line<height_down_Y;line++){
-      quantize_scanline( target_Y,  line, width_down_Y, hops_Y,res_Y);
+      inteligent_discard_Y[line] = quantize_scanline( target_Y,  line, width_down_Y, hops_Y,res_Y);
 	}
 
 
@@ -368,8 +368,8 @@ void quantize_target_normal(unsigned char **res_Y,unsigned char **res_U,unsigned
 	//chrominance components
 	//-----------------------
 	for (int line=0;line<height_down_UV;line++){
-      quantize_scanline( target_U,  line, width_down_UV, hops_U,res_U);
-      quantize_scanline( target_V,  line, width_down_UV, hops_V,res_V);
+      inteligent_discard_U[line] = quantize_scanline( target_U,  line, width_down_UV, hops_U,res_U);
+      inteligent_discard_V[line] = quantize_scanline( target_V,  line, width_down_UV, hops_V,res_V);
 	}
 
 
@@ -384,33 +384,28 @@ void quantize_target_normal(unsigned char **res_Y,unsigned char **res_U,unsigned
 //aunque esta funcion no la vamos a usar, la he querido dejar por si la queremos para pruebas
 //cuantiza una imagen siguiendo un orden secuencial en las lineas
 void quantize_frame_normal()
-
 {
- if (DEBUG) printf ("ENTER in quantizeframe()... \n");
+    if (DEBUG) printf ("Launched quantize_frame_normal()\n");
 
-    //luminance
-    //--------------------
-
-	for (int line=0;line<height_down_Y;line++){
-      quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
+    for (int line=0;line<height_down_Y;line++)
+    {
+        inteligent_discard_Y[line] = quantize_scanline( orig_down_Y,  line, width_down_Y, hops_Y,result_Y);
+        if(line%2==0)
+        {
+            inteligent_discard_Y[line] = false;
+        }
 	}
-
-
-
-	//chrominance components
-	//-----------------------
-	for (int line=0;line<height_down_UV;line++){
-      quantize_scanline( orig_down_U,  line, width_down_UV, hops_U,result_U);
-      quantize_scanline( orig_down_V,  line, width_down_UV, hops_V,result_V);
+	for (int line=0;line<height_down_UV;line++)
+	{
+        inteligent_discard_U[line] = quantize_scanline( orig_down_U,  line, width_down_UV, hops_U,result_U);
+        inteligent_discard_V[line] = quantize_scanline( orig_down_V,  line, width_down_UV, hops_V,result_V);
+        if(line%2==0)
+        {
+            inteligent_discard_U[line] = false;
+            inteligent_discard_V[line] = false;
+        }
 	}
-
-
-/*
-     int total_bits=0;
-    for (int i = 0;i <9; i++){
-        printf("hop %d: %d \n", i, hops_type[i]);
-
-        }*/
+    if (DEBUG) printf ("Finished quantize_frame_normal()\n");
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 int entropic_enc_frame_normal()
@@ -418,17 +413,27 @@ int entropic_enc_frame_normal()
     int bits = 0;
     for (int line=0; line<height_down_Y; line++)
     {
-        tam_bits_Y[line] = entropic_enc(hops_Y, bits_Y, line, width_down_Y);
-        bits += tam_bits_Y[line];
+        if (inteligent_discard_Y[line] == false)
+        {
+            tam_bits_Y[line] = entropic_enc(hops_Y, bits_Y, line, width_down_Y);
+            bits += tam_bits_Y[line];
+        }
+
     }
     for (int line=0; line<height_down_UV; line++)
     {
-        tam_bits_U[line] = entropic_enc(hops_U, bits_U, line, width_down_UV);
-        bits += tam_bits_U[line];
-        tam_bits_V[line] = entropic_enc(hops_V, bits_V, line, width_down_UV);
-        bits += tam_bits_U[line];
+        if (inteligent_discard_U[line] == false)
+        {
+            tam_bits_U[line] = entropic_enc(hops_U, bits_U, line, width_down_UV);
+            bits += tam_bits_U[line];
+        }
+        if (inteligent_discard_V[line] == false)
+        {
+            tam_bits_V[line] = entropic_enc(hops_V, bits_V, line, width_down_UV);
+            bits += tam_bits_U[line];
+        }
     }
-    if (DEBUG) printf("bits: %d \n", bits);
+    if (DEBUG) printf("Bits found in entropic encoding is: %d \n", bits);
     return bits;
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -806,4 +811,30 @@ for (int line=0;line<height_orig_UV;line+=pppyUV){
 
 
 }
+
+void encode_file(char filename[])
+{
+    int bits = 0, status;
+
+    init_image_loader_file(filename);
+    init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
+    init_streamer();
+
+    status = load_image(filename);
+    if (status != 0)
+    {
+       fprintf(stderr,"%s:%s:%d:ERR: Could not open the file %s \n", __FILE__,__func__ ,__LINE__, filename);
+       return;
+    }
+    downsample_frame(pppx,pppy);
+    quantize_frame_normal();
+    bits = entropic_enc_frame_normal();
+    stream_frame();
+
+    fflush(stdout);
+
+    fprintf(stderr,"INFO: Sucessfully coded %s using %d bytes\n", filename, (bits%8 == 0)? bits/8 : (bits/8)+1);
+    return;
+}
+
 

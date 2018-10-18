@@ -29,6 +29,10 @@ void init_entropic_enc(){
 		bits_V[i]=malloc(width_down_UV*2);
 	}
 
+    tam_bits_Y = malloc(height_down_Y*sizeof(int));
+    tam_bits_U = malloc(height_down_UV*sizeof(int));
+    tam_bits_V = malloc(height_down_UV*sizeof(int));
+
 	//tam_bytes_Y=malloc(height_down_Y*sizeof(unsigned char *));//Para inicializar esta variable que se usa en el streamer
 } //Los pongo a cero porque voy a usar máscaras para colocar los bits
 

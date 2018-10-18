@@ -9,6 +9,7 @@
 #define HTTP_API_PORT 3000
 #define DEFAULT_INTELIGENT_DISCARD_MODE 3
 #define DEFAULT_FRAME_SKYPPING_MODE 0
+#define DEBUG_RANDOM_LOSES 0 // Random looses that are artificially provoqued. Fom 0 qhich means no looses to 100 wich means all loooses.
 
 int cosa;
 bool DEBUG;//for execution in debug mode and show more traces
@@ -215,4 +216,6 @@ struct http_socket_info {
 struct http_socket_info http_info;
 
 bool is_rtp;
+int sequence_length;
+int sequence_init;
 

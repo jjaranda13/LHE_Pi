@@ -13,3 +13,7 @@ void *quantize_three();
 void *quantize_four();
 void *mytask_target(void *arg);
 void quantize_target(unsigned char **res_Y,unsigned char **res_U,unsigned char **res_V);
+void encode_file(char filename[]);
+
+int entropic_enc_frame_normal();
+void quantize_frame_normal();

@@ -76,13 +76,8 @@ delta_Y = malloc(height_down_Y*sizeof(unsigned char *));
 		delta_V[i]=malloc(width_down_UV*sizeof (unsigned char));
 	}
 
-tam_bits_Y = malloc(height_down_Y*sizeof(int));
-tam_bits_U = malloc(height_down_UV*sizeof(int));
-tam_bits_V = malloc(height_down_UV*sizeof(int));
-
     frame_skipping_mode = DEFAULT_FRAME_SKYPPING_MODE;
 
-init_streamer();
 init_streamer();
 
 }
@@ -252,24 +247,41 @@ void compute_delta_scanline_simd(int y, int width, unsigned char ** orig_down, u
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-void encode_video_from_file_sequence()
+void encode_video_from_file_sequence(char filename[], int sequence_length)
 {
 
-//pedir al usuario el directorio de frames
+    fprintf(stderr,"Hola 1 \n");
+    char local_filename[120];
+    long bits = 0;
+    int status, bytes;
 
-// obtener lista de frame_files ordenada por nombre
+    DEBUG = true;
+    sprintf(local_filename,filename,sequence_init);
 
+    init_image_loader_file(local_filename);
+    init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
+    init_streamer();
+    fprintf(stderr,"Hola 2 \n");
+    for (int pic = sequence_init; pic <sequence_init + sequence_length; pic++)
+    {
+        sprintf(local_filename,filename,pic);
+        status = load_image(local_filename);
+        if (status != 0)
+        {
+            fprintf(stderr,"%s:%s:%d:ERR: Could not open the file %s \n", __FILE__,__func__ ,__LINE__, local_filename);
+            return;
+        }
+        downsample_frame(pppx,pppy);
+        quantize_frame_normal();
+        bits += entropic_enc_frame_normal();
+        //stream_frame();
+    }
 
-//inicializacion del encoder
-
-//codificar primer frame I
-  //aqui invocamos a encode_frame_fromfile()
-
-
-//bucle de procesamiento
-
-
-
+    fflush(stdout);
+    bytes = (bits%8 == 0)? bits/8 : (bits/8)+1;
+    bytes /= sequence_length;
+    fprintf(stderr,"INFO: Sucessfully coded %d images using as average %d bytes per image\n", sequence_length, bytes);
+    return;
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void shift_frame(int dx, int dy)
