@@ -20,6 +20,7 @@
 
 
 void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_value, int component_value_width, int upsample_value_width);
+void upsample_line_vertical(uint8_t * component_value, uint8_t * upsampled_value, int component_value_height, int upsample_value_height, int width);
 void interpolate_scanline_vertical(uint8_t * upsampled_values, int scaline, int prev_scaline, int next_scanline, int img_width);
 void scale_epx(uint8_t *channel, int c_height, int c_width, uint8_t *epx, int umbral);
 void scale_adaptative(uint8_t * origin, int ori_height, int ori_width, uint8_t * destination);

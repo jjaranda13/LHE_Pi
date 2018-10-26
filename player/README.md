@@ -2,30 +2,32 @@
  This is the player implementation for the LHE Pi codec hosted in the same repository. This player is targeted to Ubuntu platform. :blush:
 
 ## Dependencies
-SDL 2 library is neccesary for the execution. [Get it here](https://www.libsdl.org/download-2.0.php) or download it from Ubuntu repositories.
+SDL 2 library
+Openmp
 
 ## Compiling Ubuntu
-1. Install SDL libraries. In Ubuntu `sudo apt-get install libsdl2-dev`
+1. Install  libraries. In Ubuntu `sudo apt-get install libsdl2-dev libgomp-dev`
 2. Go to the player directory and run `make`
 3. The binary is located in the same folder. The name is lhe_rpi_player
 
 ## Usage
  The following options can or must be supplied to the program.
 
---width or -w. In order to indicate the width of the incoming stream. Must be supplied.
-
---height or -h. To comunicate the height of the incoming stream. Must be supplied.
-
---fullscreen or -f. Optional flag in order to turn on the fullscreen mode.
+--fullscreen or -f. Optional flag in order to turn on the fullscreen mode. Default is non fullscreen mode.
 
 --input or -i. The path to the filename to decodificate. Either --filename or --stdin must be supplied.
 
---stdin or -s. Sets the decoder to read from the stdin the binary stream. Either --filename or --stdin must be supplied.
+--stdin or -s. Sets the decoder to read from the stdin the binary stream. Default if -s or -i are not present.
+
+--output or -o. Decodes each frame into a file. The string supplied must end in .bmp as this is the format used. Can contain a wildcard in the form "%d" in order to store secuantially all the frames.
 
 ```
-lhe_pi_player.exe -h 240 -w 320 -f --stdin
-lhe_pi_player.exe --height 360 -width 640 --input "C:/Users/quinta/Desktop/binary-file.bin"
+lhe_pi_player  (defaults -s)
+
+lhe_pi_player --stdin --output "test-%d05.bmp"
 ```
+
 ## FAQ
+
 
 ## Known Bugs :disappointed_relieved:

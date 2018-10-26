@@ -13,20 +13,53 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include <omp.h>
 #include "upsampler_decoder.h"
 
 void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_value, int component_value_width, int upsample_value_width) {
-	#pragma omp parallel for
+	
+	int prev_part;
+	float index, proportion;
+	
+	proportion = (component_value_width -1)/ (float)(upsample_value_width-1);
+
 	for (int i = 0; i < upsample_value_width; i++) {
-		float index = i * ((component_value_width -1)/ (float)(upsample_value_width-1));
-		int prev_part = (int) ((index - floor(index))*100);
+		index = i * proportion;
+		prev_part = (int) ((index - floor(index))*100);
 		if (prev_part == 0) {
 			upsampled_value[i] = component_value[(int) index];
 		}
 		else {
 			upsampled_value[i] = (component_value[(int) index]* (100 - prev_part)+ component_value[(int) index+1]* prev_part)/100;
+		}
+	}
+	fflush(stdout);
+	return;
+}
+
+void upsample_line_vertical(uint8_t * component_value, uint8_t * upsampled_value, int component_value_height, int upsample_value_height, int width)
+{
+	int prev_part;
+	float proportion, y_source;
+	
+	proportion = (component_value_height-1) / (float) (upsample_value_height-1);
+
+	for (int y = 0; y < upsample_value_height; y++)
+	{
+		y_source = proportion * y;
+		prev_part = (int) ((y_source - floor(y_source))*100);
+		if (prev_part == 0)
+		{
+			memcpy(upsampled_value + y*width, component_value+(int)y_source*width , width);
+		}
+		else
+		{
+			for (int x = 0; x < width; x++)
+			{
+				upsampled_value[y*width+x] = (component_value[(int)y_source*width+x]* (100 - prev_part)+ component_value[((int)y_source+1)*width+x]* prev_part)/100;
+			}		
 		}
 	}
 	return;
@@ -45,33 +78,7 @@ void interpolate_scanline_vertical(uint8_t * upsampled_values, int scaline, int 
 	next_value = upsampled_values[i + (next_distance*img_width)];
     prev_value = upsampled_values[i - (prev_distance*img_width)];
 	upsampled_values[i] = (next_value *prev_distance + prev_value * next_distance) / total_distance;
-    /* FIRST APPROACH, discarded due wrong decisions
-	for (i = (scaline*img_width) +1; i < ((scaline + 1)*img_width)-1; i++) {
-		distance_horiz = abs(upsampled_values[i + (next_distance*img_width)] - upsampled_values[i - (prev_distance*img_width)]);
-		if (distance_horiz < SAME_COLOR_THRESHOLD) {
-			next_value = upsampled_values[i + (next_distance*img_width)];
-    		prev_value = upsampled_values[i - (prev_distance*img_width)];
-		}
-		else {
-			distance_left_tilted = abs(upsampled_values[i + (next_distance*img_width) + 1] - upsampled_values[i - (prev_distance*img_width) - 1]);
-			distance_right_tilted = abs(upsampled_values[i + (next_distance*img_width) - 1] - upsampled_values[i - (prev_distance*img_width) + 1]);
-			biggest = distance_horiz>distance_left_tilted? (distance_horiz > distance_right_tilted? 0:2) : (distance_left_tilted > distance_right_tilted? 1:2);
-			if (biggest == 0) { // distance_horiz
-				upsampled_values[i] = upsampled_values[i - 1];
-				continue;
-			}
-			else if (biggest == 1) { // distance_left_tilted
-				next_value = upsampled_values[i + (next_distance*img_width) - 1];
-				prev_value = upsampled_values[i - (prev_distance*img_width) + 1];
-			}
-			else { // (biggest == 2) distance_right_tilted
-				next_value = upsampled_values[i + (next_distance*img_width) + 1];
-				prev_value = upsampled_values[i - (prev_distance*img_width) - 1];
-			}
-		}
-		upsampled_values[i] = (next_value *prev_distance + prev_value * next_distance) / total_distance;
-	}
-    */
+
    for (i = (scaline*img_width) + 1; i < ((scaline + 1)*img_width) - 1; i++) {
 		distance_horiz = abs(upsampled_values[i + (next_distance*img_width)] - upsampled_values[i - (prev_distance*img_width)]);
 		distance_left_tilt = abs(upsampled_values[i + (next_distance*img_width) + 1] - upsampled_values[i - (prev_distance*img_width) - 1]);
