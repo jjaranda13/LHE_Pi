@@ -30,7 +30,6 @@
 int total_frames=0;
 int total_bytes=0;
 bool newframe=false;
-int line_type=0;
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void init_streamer()
@@ -83,8 +82,7 @@ void *mytask_stream(void *arg)
     {
         if (!discard || line%2==0|| inteligent_discard_Y[line]==false)
         {
-            line_type=0;
-            stream_line(bits_Y, tam_bits_Y[line],line);
+            stream_line(bits_Y, tam_bits_Y[line],line, Y_COMPONENT);
         }
 
         line+=separation;
@@ -95,13 +93,11 @@ void *mytask_stream(void *arg)
     {
         if (!discard || line%2==1 || inteligent_discard_U[line]==false);
         {
-            line_type=1;
-            stream_line(bits_U, tam_bits_U[line],line);
+            stream_line(bits_U, tam_bits_U[line],line, U_COMPONENT);
         }
         if (!discard && line%2==1 || inteligent_discard_V[line]==false);
         {
-            line_type=2;
-            stream_line(bits_V, tam_bits_V[line],line);
+            stream_line(bits_V, tam_bits_V[line],line, V_COMPONENT);
         }
         line+=separation;
     }
@@ -148,7 +144,7 @@ pthread_create(&streamer_thread[startline], &attr, &mytask_stream, &tsinfo[start
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-void stream_line(uint8_t ** bits, int bits_lenght, int line)
+void stream_line(uint8_t ** bits, int bits_lenght, int line, int line_type)
 {
     uint8_t line_low, line_high, line_size_bytes;
 
@@ -160,23 +156,22 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line)
     }
 #endif /* DEBUG_RANDOM_LOSES > 0 */
 
-    int line_aux=line;
+    int line_aux = line;
 
     line_low = (uint8_t) line_aux;
     line_high = (uint8_t) (line_aux >> 8);
-    //line_high &= ~(0xC0); // Set line_type to zeros
 
-    if (line_type == 0) // Y component
+    if (line_type == Y_COMPONENT)
     {
-        line_high |= 0x60;//0xC0;
+        line_high |= 0x60;
     }
-    else if (line_type == 1) // U component
+    else if (line_type == U_COMPONENT)
     {
-        line_high |= 0x40;//0x80;
+        line_high |= 0x40;
     }
-    else // When line_type == 2  V component
+    else // When line_type == V_COMPONENT  V component
     {
-        line_high |= 0x20;//0x40;
+        line_high |= 0x20;
     }
 
      //if (line_high==0) line_high=1;
@@ -206,14 +201,8 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line)
 
     if (nal_byte_counter>1000)
     {
-
-       const uint8_t frame[] = {0x00, 0x00, 0x00,0x01, 0x65}; //nal tipo 5
-       //son 3 bits, 1 bit para el forbiden cero, dos para ref idc y 5 bits para el tipo
-       // es decir  xxx xx xxxxx -> 0 11 00001 nal tipo 1 (coded slice of a non idr picture)
-       //-> 0 11 00111 nal tipo 7 (sequence parameter set)
-       //-> 0 11 00101 nal tipo 5 (coded slice of idr picture)
-       fwrite(&frame,sizeof(uint8_t),5,stdout);
-       nal_byte_counter=line_size_bytes;
+        send_nal();
+        nal_byte_counter=line_size_bytes;
     }
     else nal_byte_counter+=line_size_bytes;
 
@@ -225,11 +214,61 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line)
 
 }
 
+void send_nal()
+{
+    const uint8_t frame[] = {0x00, 0x00, 0x00,0x01, 0x65}; //nal tipo 5
+    //son 3 bits, 1 bit para el forbiden cero, dos para ref idc y 5 bits para el tipo
+    // es decir  xxx xx xxxxx -> 0 11 00001 nal tipo 1 (coded slice of a non idr picture)
+    //-> 0 11 00111 nal tipo 7 (sequence parameter set)
+    //-> 0 11 00101 nal tipo 5 (coded slice of idr picture)
+    fwrite(&frame,sizeof(uint8_t),5,stdout);
+
+    send_frame_header(width_orig_Y, height_orig_Y , pppx, pppy);
+}
+int count = 0;
+void send_frame_header(int width, int height , int pppx, int pppy)
+{
+    uint8_t header;
+
+    if ( width > 2048 || height > 2048)
+    {
+        fprintf (stderr,"Could not send the header because wrong width or height");
+    }
+
+    if (pppx > 16 || pppy > 16)
+    {
+        fprintf (stderr,"pppx or pppy is way to big");
+    }
+
+    header = (uint8_t) (pppx << 4);
+    header |= (uint8_t) pppy;
+
+    fwrite(&header,sizeof(uint8_t),1,stdout);
+    //fprintf (stderr,"Sent %x", header);
+
+    header = (uint8_t) (width >> 4);
+
+    fwrite(&header,sizeof(uint8_t),1,stdout);
+    //fprintf (stderr,"-%x", header);
+
+    header = (uint8_t) (width << 4);
+    header |= (uint8_t) (height >> 8);
+
+    fwrite(&header,sizeof(uint8_t),1,stdout);
+    //fprintf (stderr,"-%x", header);
+
+    header = (uint8_t) height;
+    fwrite(&header,sizeof(uint8_t),1,stdout);
+    //fprintf (stderr,"-%x", header);
+    //fprintf (stderr," -> width=%d height=%d pppx=%d pppy=%d\n", width, height , pppx, pppy);
+}
+
 void stream_frame()
 {
-    int const separacion=8;
+    int const separacion = 8;
     int line;
 
+    newframe = true;
     for(int i = 0; i < separacion; i++)
     {
         line = i;
@@ -237,34 +276,32 @@ void stream_frame()
         {
             if (inteligent_discard_Y[line] == false)
             {
-                stream_line(bits_Y, tam_bits_Y[line], line);
+                stream_line(bits_Y, tam_bits_Y[line], line, Y_COMPONENT);
             }
             line = line + separacion;
         }
-    }
-
-    for(int i =0 ; i <separacion; i++)
-    {
-        line =i;
+        line = i;
         while (line<height_down_UV)
         {
             if (inteligent_discard_U[line] == false)
             {
-                stream_line(bits_U, tam_bits_U[line],line);
+                stream_line(bits_U, tam_bits_U[line],line,U_COMPONENT);
             }
-            line=line+separacion;
-        }
-    }
-    for(int i =0 ; i <separacion; i++)
-    {
-        line =i;
-        while (line<height_down_UV)
-        {
             if (inteligent_discard_V[line] == false)
             {
-                stream_line(bits_V, tam_bits_V[line],line);
+                stream_line(bits_V, tam_bits_V[line],line, V_COMPONENT);
             }
             line=line+separacion;
         }
     }
+}
+
+void send_fake_newline(){
+
+    int line_low = 0, line_high = 0;
+
+    line_high |= 0x60;
+
+    fwrite(&line_high,sizeof(uint8_t),1,stdout);
+    fwrite(&line_low,sizeof(uint8_t),1,stdout);
 }

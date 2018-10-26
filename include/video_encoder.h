@@ -24,3 +24,4 @@ void VideoSimulation();
 void compute_delta_scanline(int y, int width, unsigned char ** orig_down, unsigned char ** last_frame_player, unsigned char ** delta);
 void intelligent_loss();
 void encode_video_from_file_sequence(char filename[], int sequence_length);
+void sendH264header();

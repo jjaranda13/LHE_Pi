@@ -5,11 +5,25 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 
+
 #define num_threads 3
+
 #define HTTP_API_PORT 3000
+
 #define DEFAULT_INTELIGENT_DISCARD_MODE 3
 #define DEFAULT_FRAME_SKYPPING_MODE 0
+
 #define DEBUG_RANDOM_LOSES 0 // Random looses that are artificially provoqued. Fom 0 qhich means no looses to 100 wich means all loooses.
+
+#define YUV444 0
+#define YUV422 1
+#define YUV420 2
+
+#define Y_COMPONENT 0
+#define U_COMPONENT 1
+#define V_COMPONENT 2
+
+
 
 int cosa;
 bool DEBUG;//for execution in debug mode and show more traces

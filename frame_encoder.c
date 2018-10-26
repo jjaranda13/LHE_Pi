@@ -6,11 +6,13 @@
 #include <pthread.h>
 #include "include/globals.h"
 #include "include/imgUtil.h"
+#include "include/file_reader.h"
 #include "include/downsampler.h"
 #include "include/quantizer.h"
 #include "include/frame_encoder.h"
 #include "include/entropic_enc.h"
 #include "include/streamer.h"
+#include "include/video_encoder.h"
 
 #include "stb_image/stb_image_write.h"
 
@@ -493,7 +495,7 @@ struct timeval t_ini, t_fin;
 double secs;
 
 
-load_frame("../LHE_Pi/img/lena.bmp");
+load_image("../LHE_Pi/img/lena.bmp");
 //load_frame("../LHE_Pi/img/mario.bmp");
 //load_frame("../LHE_Pi/img/baboon.bmp");
 //load_frame("../LHE_Pi/img/mountain.bmp");
@@ -653,8 +655,8 @@ scale_epx(scaled_U2,height_down_UV*2,width_down_UV*2,scaled_U,umbral);
 scale_epx(scaled_V2,height_down_UV*2,width_down_UV*2,scaled_V,umbral);
 */
 
-save_frame("../LHE_Pi/img/LHE_scaled_BN.bmp", width_orig_Y, height_orig_Y, 1, scaled_Y,scaled_U,scaled_V,420);
-save_frame("../LHE_Pi/img/LHE_scaled_color.bmp", width_orig_Y, height_orig_Y, 3, scaled_Y,scaled_U,scaled_V,420);
+save_image("../LHE_Pi/img/LHE_scaled_BN.bmp", width_orig_Y, height_orig_Y, 1, scaled_Y,scaled_U,scaled_V,420);
+save_image("../LHE_Pi/img/LHE_scaled_color.bmp", width_orig_Y, height_orig_Y, 3, scaled_Y,scaled_U,scaled_V,420);
 }
 
 int bits = 0;
@@ -702,18 +704,18 @@ printf("streamer in %.16g ms\n", secs * 1000.0);*/
 //char *data;
 //yuv2rgb(orig_down_Y,orig_down_U,orig_down_V,1,width_down_Y,height_down_Y, data);
 
-save_frame("../LHE_Pi/img/orig_Y.bmp", width_orig_Y, height_orig_Y, 1, orig_Y,orig_down_U,orig_down_V,420);
-save_frame("../LHE_Pi/img/orig_U.bmp", width_orig_Y, height_orig_Y, 1, orig_U,orig_down_U,orig_down_V,420);
-save_frame("../LHE_Pi/img/orig_V.bmp", width_orig_Y, height_orig_Y, 1, orig_V,orig_down_U,orig_down_V,420);
+save_image("../LHE_Pi/img/orig_Y.bmp", width_orig_Y, height_orig_Y, 1, orig_Y,orig_down_U,orig_down_V,420);
+save_image("../LHE_Pi/img/orig_U.bmp", width_orig_Y, height_orig_Y, 1, orig_U,orig_down_U,orig_down_V,420);
+save_image("../LHE_Pi/img/orig_V.bmp", width_orig_Y, height_orig_Y, 1, orig_V,orig_down_U,orig_down_V,420);
 
-save_frame("../LHE_Pi/img/orig_down_Y.bmp", width_down_Y, height_down_Y, 1, orig_down_Y,orig_down_U,orig_down_V,420);
-save_frame("../LHE_Pi/img/orig_down_U.bmp", width_down_UV, height_down_UV, 1, orig_down_U,orig_down_U,orig_down_V,420);
-save_frame("../LHE_Pi/img/orig_down_V.bmp", width_down_UV, height_down_UV, 1, orig_down_V,orig_down_U,orig_down_V,420);
+save_image("../LHE_Pi/img/orig_down_Y.bmp", width_down_Y, height_down_Y, 1, orig_down_Y,orig_down_U,orig_down_V,420);
+save_image("../LHE_Pi/img/orig_down_U.bmp", width_down_UV, height_down_UV, 1, orig_down_U,orig_down_U,orig_down_V,420);
+save_image("../LHE_Pi/img/orig_down_V.bmp", width_down_UV, height_down_UV, 1, orig_down_V,orig_down_U,orig_down_V,420);
 
 
-save_frame("../LHE_Pi/img/LHE_Y.bmp", width_down_Y, height_down_Y, 1, result_Y,result_U,result_V,420);
-save_frame("../LHE_Pi/img/LHE_YUV.bmp", width_down_Y, height_down_Y, 3, result_Y,result_U,result_V,420);
-save_frame("../LHE_Pi/img/orig_down_YUV.bmp", width_down_Y, height_down_Y, 3, orig_down_Y,orig_down_U,orig_down_V,420);
+save_image("../LHE_Pi/img/LHE_Y.bmp", width_down_Y, height_down_Y, 1, result_Y,result_U,result_V,420);
+save_image("../LHE_Pi/img/LHE_YUV.bmp", width_down_Y, height_down_Y, 3, result_Y,result_U,result_V,420);
+save_image("../LHE_Pi/img/orig_down_YUV.bmp", width_down_Y, height_down_Y, 3, orig_down_Y,orig_down_U,orig_down_V,420);
 
 printf("save done \n");
 
@@ -819,6 +821,7 @@ void encode_file(char filename[])
     init_image_loader_file(filename);
     init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
     init_streamer();
+    send_nal();
 
     status = load_image(filename);
     if (status != 0)
@@ -830,7 +833,12 @@ void encode_file(char filename[])
     quantize_frame_normal();
     bits = entropic_enc_frame_normal();
     stream_frame();
-
+    
+    send_fake_newline();
+    send_fake_newline();
+    send_fake_newline();
+    send_fake_newline();
+    send_fake_newline();   
     fflush(stdout);
 
     fprintf(stderr,"INFO: Sucessfully coded %s using %d bytes\n", filename, (bits%8 == 0)? bits/8 : (bits/8)+1);

@@ -16,11 +16,7 @@
 #include <stdbool.h>
 #include "include/globals.h"
 #include "include/imgUtil.h"
-#define STB_IMAGE_STATIC
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image/stb_image.h"
-#include "stb_image/stb_image_write.h"
+
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
@@ -30,119 +26,12 @@ http://aras-p.info/blog/2007/05/28/now-thats-what-i-call-a-good-api-stb_image/
 https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
 */
 
-void init_imageUtil()
-{
-
-
-}
-
-
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void load_frame(char const* filename)
-{
-if (DEBUG) printf("ENTER in load frame...\n");
-//orig_Y=stbi_load("../LHE_Pi/img/lena.bmp", &width_orig, &height_orig, &channels, 0);
-rgb=stbi_load(filename, &width_orig_Y, &height_orig_Y, &rgb_channels, 0);
-
-/* esto es nuevo*/
-//width_orig_UV=width_orig_Y;
-//height_orig_UV=height_orig_Y;
-
-
-//width_orig_Y=640;
-//height_orig_Y=480;
-//rgb_channels=3;
-
-if (DEBUG) printf(" image loaded. width=%d, height=%d",width_orig_Y,height_orig_Y);
-
-//int i = stbi_write_bmp("../LHE_Pi/img/kk.bmp", width_orig, height_orig, channels, orig_Y);
-
-//printf("%d  , %d\n",i, channels);
-//stbi_image_free( orig_Y );
-if (DEBUG) printf("exit from load_frame...\n");
-}
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void save_frame(char const* filename, int width, int height, int channels, unsigned char **Y,unsigned char **U, unsigned char **V, int yuvmodel)
-{
-if (DEBUG) printf("ENTER in save frame...\n");
-//int i = stbi_write_bmp("../LHE_Pi/img/kk.bmp", width_orig, height_orig, channels, orig_Y);
-
-if (DEBUG) printf (" saving frame width=%d, height=%d channels=%d \n",width, height, channels);
-//cargamos el array
-
-
-//OJO ESTO PUEDE DAR LUGAR A UN ERROR: NO HACER MALLOCS FUERA de un init
-unsigned char *data=malloc (channels*width*height);
-
-
-
-if (channels==1)
-{
-int pix=0;
-
-for (int line=0;line < height;line++)
-{
- for (int x=0;x<width;x++)
- {
- data[line*width+x]=Y[line][x];
- }
-}
-}
-else if (channels==3){
-
-//yuv2rgb(orig_down_Y,orig_down_U,orig_down_V,3,width_down_Y,height_down_Y, data);
-//yuv2rgb(Y,U,V,3,width_down_Y,height_down_Y, data,yuvmodel);
-yuv2rgb(Y,U,V,3,width,height, data,yuvmodel);
-
-}
-int i = stbi_write_bmp(filename, width, height, channels, data);
-
-free(data);
-if (DEBUG) printf ("resultado save file = %d \n",i);
-
-}
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void rgb2yuv(unsigned char *rgb,  int rgb_channels)
 {
 /// this function transform an input image stored in *rgb into YUV image stored in 3 arrays
 if (DEBUG) printf ("ENTER in rgb2yuv()..--.\n");
 
-//las componentes UV van a medir lo mismo
-//---------------------------------------
-width_orig_UV=width_orig_Y;
-height_orig_UV=height_orig_Y;
-
-//memory allocation ESTO ES UN POTENCIAL BUG, NO DEBEMOS HACER MALLOCS FUERA DE INIT
-//------------------
-
-
-//memory allocation for yuv storage (de momento solo la Y)
-//---------------------------------------------------------
-orig_Y=malloc(height_orig_Y*sizeof (unsigned char *));
-orig_U=malloc(height_orig_UV*sizeof (unsigned char *));
-orig_V=malloc(height_orig_UV*sizeof (unsigned char *));
-
-
-//esto esta en frame_encoder init
-//scaled_Y=malloc(height_orig_Y*sizeof (unsigned char *));
-//scaled_U=malloc(height_orig_UV*sizeof (unsigned char *));
-//scaled_V=malloc(height_orig_UV*sizeof (unsigned char *));
-
-
-for (int i=0;i<height_orig_Y;i++)
-{
-orig_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
-orig_U[i]=malloc(width_orig_UV* sizeof (unsigned char));
-orig_V[i]=malloc(width_orig_UV* sizeof (unsigned char));
-
-
-//esto esta en frame_encoder init
-//scaled_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
-//scaled_U[i]=malloc(width_orig_UV* sizeof (unsigned char));
-//scaled_V[i]=malloc(width_orig_UV* sizeof (unsigned char));
-
-
-}
 
 //data conversion
 //------------------
@@ -226,7 +115,7 @@ V'= (R-Y)*0.713
  }
  //printf("   \n");
 }
-
+    yuv_model = YUV444;
 }
 void scale_epx_H2(unsigned char **channel, int height, int down_width, unsigned char **epx,int umbral)
 {
@@ -750,122 +639,23 @@ void interpolate_bilinear(uint8_t ** origin, int ori_height, int ori_width, uint
     return;
 }
 
-void init_image_loader (int width, int height)
+void yuv444toyuv420(unsigned char** Y, unsigned char** U, unsigned char** V, int width, int height)
 {
-    if (DEBUG) printf ("%s:%s:%d:DEBUG: Called with parameter (%d,%d)\n", __FILE__,__func__ ,__LINE__, width, height);
-    if (image_loader_initialized != true)
+    if (yuv_model != YUV444)
     {
+        fprintf(stderr,"%s:%s:%d:ERR: The color model is not the correct for the transformation\n", __FILE__,__func__ ,__LINE__);
+        return;
+    }
 
-        width_orig_Y = width;
-        height_orig_Y = height;
-
-        yuv_model = 0;
-        height_orig_UV = height;
-        width_orig_UV = width;
-
-        orig_Y=malloc(height*sizeof (unsigned char *));
-        orig_U=malloc(height*sizeof (unsigned char *));
-        orig_V=malloc(height*sizeof (unsigned char *));
-
-        for (int i=0;i<height_orig_Y;i++)
+    for(int y = 0; y< height/2; y++)
+    {
+        for(int x = 0; x< width/2; x++)
         {
-            orig_Y[i]=malloc(width* sizeof (unsigned char));
-            orig_U[i]=malloc(width* sizeof (unsigned char));
-            orig_V[i]=malloc(width* sizeof (unsigned char));
-        }
-        image_loader_initialized = true;
-        if (DEBUG) printf ("%s:%s:%d:DEBUG: Finished -> width_orig_Y=%d height_orig_Y=%d width_orig_UV=%d height_orig_UV=%d  \n", __FILE__,__func__ ,__LINE__, width_orig_Y, height_orig_Y, height_orig_UV, width_orig_UV);
-    }
-    else
-    {
-        fprintf(stderr,"%s:%s:%d:WARN: init_image_loader called but it was already initialized. Skkiping init\n", __FILE__,__func__ ,__LINE__, yuv_model);
-    }
-    return;
-}
-
-void init_image_loader_file (char filename[])
-{
-    if (DEBUG) printf ("%s:%s:%d:DEBUG: Called with parameter (%s)\n", __FILE__,__func__ ,__LINE__, filename);
-    if (image_loader_initialized != true)
-    {
-        rgb=stbi_load(filename, &width_orig_Y, &height_orig_Y, &rgb_channels, 0);
-        free(rgb);
-
-        yuv_model = 0;
-        height_orig_UV = height_orig_Y;
-        width_orig_UV = width_orig_Y;
-
-        orig_Y=malloc(height_orig_Y*sizeof (unsigned char *));
-        orig_U=malloc(height_orig_UV*sizeof (unsigned char *));
-        orig_V=malloc(height_orig_UV*sizeof (unsigned char *));
-
-        for (int i=0;i<height_orig_Y;i++)
-        {
-            orig_Y[i]=malloc(width_orig_Y* sizeof (unsigned char));
-            orig_U[i]=malloc(width_orig_Y* sizeof (unsigned char));
-            orig_V[i]=malloc(width_orig_UV* sizeof (unsigned char));
-        }
-        image_loader_initialized = true;
-        if (DEBUG) printf ("%s:%s:%d:DEBUG: Finished -> width_orig_Y=%d height_orig_Y=%d width_orig_UV=%d height_orig_UV=%d  \n", __FILE__,__func__ ,__LINE__, width_orig_Y, height_orig_Y, height_orig_UV, width_orig_UV);
-    }
-    else
-    {
-        fprintf(stderr,"%s:%s:%d:WARN: init_image_loader called but it was already initialized. Skkiping init\n", __FILE__,__func__ ,__LINE__, yuv_model);
-    }
-    return;
-}
-
-int load_image(char filename[])
-{
-    if (DEBUG) fprintf(stderr,"%s:%s:%d:INFO: Loading frame %s \n", __FILE__,__func__ ,__LINE__, filename);
-
-    if (image_loader_initialized == false)
-    {
-        init_image_loader(width_orig_Y, height_orig_Y);
-    }
-
-    rgb=stbi_load(filename, &width_orig_Y, &height_orig_Y, &rgb_channels, 0);
-
-    if (rgb == NULL)
-    {
-        return 1;
-    }
-
-    rgb2yuv(rgb, rgb_channels);
-    free(rgb);
-    return 0;
-}
-
-void save_image(char filename[], int width, int height, int channels, unsigned char **Y,unsigned char **U, unsigned char **V, int yuvmodel)
-{
-    int status;
-    unsigned char * data;
-
-    if (DEBUG) fprintf(stderr,"%s:%s:%d:INFO: Saving frame %s \n", __FILE__,__func__ ,__LINE__, filename);
-    data = malloc (channels*width*height);
-    if (channels==1)
-    {
-        int pix=0;
-
-        for (int line=0; line < height; line++)
-        {
-            for (int x=0; x<width; x++)
-            {
-                data[line*width+x]=Y[line][x];
-            }
+            U[y][x] = (U[y*2][x*2] + U[y*2+1][x*2] + U[y*2][x*2+1] + U[y*2+1][x*2+1]) / 4;
+            V[y][x] = (V[y*2][x*2] + V[y*2+1][x*2] + V[y*2][x*2+1] + V[y*2+1][x*2+1]) / 4;
         }
     }
-    else if (channels==3)
-    {
-        yuv2rgb(Y,U,V,3,width,height, data,yuvmodel);
-    }
-
-    status = stbi_write_bmp(filename, width, height, channels, data);
-    if (status == 0)
-    {
-        fprintf(stderr,"%s:%s:%d:WARN: Could not write the file for some reason.\n", __FILE__,__func__ ,__LINE__, yuv_model);
-    }
-
-    free(data);
-    if (DEBUG) fprintf(stderr,"%s:%s:%d:INFO: Save frame Ok\n", __FILE__,__func__ ,__LINE__);
+    yuv_model = YUV420;
+    width_orig_UV = width_orig_Y/2;
+    height_orig_UV = height_orig_Y/2;
 }

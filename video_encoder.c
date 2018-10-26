@@ -23,6 +23,7 @@
 #include "include/imgUtil.h"
 #include "include/downsampler.h"
 #include "include/quantizer.h"
+#include "include/file_reader.h"
 #include "include/frame_encoder.h"
 #include "include/entropic_enc.h"
 #include "include/camera_reader.h"
@@ -250,18 +251,16 @@ void compute_delta_scanline_simd(int y, int width, unsigned char ** orig_down, u
 void encode_video_from_file_sequence(char filename[], int sequence_length)
 {
 
-    fprintf(stderr,"Hola 1 \n");
     char local_filename[120];
     long bits = 0;
     int status, bytes;
 
-    DEBUG = true;
     sprintf(local_filename,filename,sequence_init);
-
     init_image_loader_file(local_filename);
     init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
     init_streamer();
-    fprintf(stderr,"Hola 2 \n");
+    send_nal();
+
     for (int pic = sequence_init; pic <sequence_init + sequence_length; pic++)
     {
         sprintf(local_filename,filename,pic);
@@ -274,10 +273,15 @@ void encode_video_from_file_sequence(char filename[], int sequence_length)
         downsample_frame(pppx,pppy);
         quantize_frame_normal();
         bits += entropic_enc_frame_normal();
-        //stream_frame();
+        stream_frame();
     }
-
+    send_fake_newline();
+    send_fake_newline();
+    send_fake_newline();
+    send_fake_newline();
+    send_fake_newline(); 
     fflush(stdout);
+
     bytes = (bits%8 == 0)? bits/8 : (bits/8)+1;
     bytes /= sequence_length;
     fprintf(stderr,"INFO: Sucessfully coded %d images using as average %d bytes per image\n", sequence_length, bytes);
@@ -331,23 +335,18 @@ for (int y=dy;y<height_orig_UV;y++){
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void sendH264header()
 {
-//sequence parameter set. afecta a N picture
-const uint8_t sps[] = {0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x00, 0x0a, 0xf8, 0x41, 0xa2};
-//picture parameter set . afecta a 1 pictures
-const uint8_t pps[] = {0x00, 0x00, 0x00, 0x01, 0x68, 0xce, 0x38, 0x80};
-const uint8_t frame[] = {0x00, 0x00, 0x00, 0x01, 0x65};
-fwrite("He mandado cabecera H264\n", sizeof(uint8_t), 25, stderr);
+    //sequence parameter set. afecta a N picture
+    const uint8_t sps[] = {0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x00, 0x0a, 0xf8, 0x41, 0xa2};
+    //picture parameter set . afecta a 1 pictures
+    const uint8_t pps[] = {0x00, 0x00, 0x00, 0x01, 0x68, 0xce, 0x38, 0x80};
+    const uint8_t frame[] = {0x00, 0x00, 0x00, 0x01, 0x65};
+    fwrite("He mandado cabecera H264\n", sizeof(uint8_t), 25, stderr);
 
-fwrite(&sps,sizeof(uint8_t),11,stdout);
-fflush(stdout);
-fwrite(&pps,sizeof(uint8_t),8,stdout);
-fflush(stdout);
-fwrite(&frame,sizeof(uint8_t),5,stdout);
-//printf("\n");
-fflush(stdout);
-
-
-
+    fwrite(&sps,sizeof(uint8_t),11,stdout);
+    fwrite(&pps,sizeof(uint8_t),8,stdout);
+    fwrite(&frame,sizeof(uint8_t),5,stdout);
+    send_frame_header(width_orig_Y, height_orig_Y , pppx, pppy);
+    fflush(stdout);
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -373,19 +372,25 @@ void VideoSimulation()
         init_camera_video();
     else
     {
-        load_frame("../LHE_Pi/img/lena.bmp");
-        rgb2yuv(rgb,rgb_channels);
+        int status = load_image("/home/pi/test_media/vid/frames/bunny-00130.bmp");
+        if (status != 0)
+        {
+            fprintf(stderr,"%s:%s:%d:ERR: Could not open the file  \n", __FILE__,__func__ ,__LINE__);
+               return;
+        }
     }
 
     if (DEBUG) printf("frame loaded  \n");
-    if (is_rtp)
-    {
-        sendH264header();
-    }
+
 
     init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
     init_videoencoder();
     init_http_api(HTTP_API_PORT);
+
+    if (is_rtp)
+    {
+        sendH264header();
+    }
 
     if (DEBUG) printf("encoder initialized  \n");
 
@@ -397,7 +402,6 @@ void VideoSimulation()
     int total_bits=0;
     float contador_tiempo=0;
     int discarded_frames = 0;
-
 //setbuf(stdout,NULL);//esto le hace daño a testraspi
     int i=0;
     float frame_count = 0;
@@ -435,7 +439,6 @@ void VideoSimulation()
             }
 
 
-
         }
         else
         {
@@ -450,7 +453,7 @@ void VideoSimulation()
         //if (DEBUG)
         if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena%02d.bmp",i);
         //if (DEBUG)
-        if (DEBUG) save_frame(buffer, width_orig_Y, height_orig_Y, 3, orig_Y,orig_U,orig_V,420);
+        if (DEBUG) save_image(buffer, width_orig_Y, height_orig_Y, 3, orig_Y,orig_U,orig_V,420);
 
 
         gettimeofday(&t_ini, NULL);
@@ -470,7 +473,7 @@ void VideoSimulation()
         if (DEBUG) secs = timeval_diff(&t_fin, &t_ini);
         if (DEBUG) printf(" downsampling: %.16g ms\n", secs * 1000.0);
         if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena_down%02d.bmp",i);
-        if (DEBUG) save_frame(buffer, width_down_Y, height_down_Y, 3, orig_down_Y,orig_down_U,orig_down_V,420);
+        if (DEBUG) save_image(buffer, width_down_Y, height_down_Y, 3, orig_down_Y,orig_down_U,orig_down_V,420);
 
         //if (camera) pthread_mutex_unlock (&cam_down_mutex);
 
@@ -503,7 +506,7 @@ void VideoSimulation()
             target_V=delta_V;
         }
         if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena_target%02d.bmp",i);
-        if (DEBUG) save_frame(buffer, width_down_Y, height_down_Y, 3, target_Y,target_U,target_V,420);
+        if (DEBUG) save_image(buffer, width_down_Y, height_down_Y, 3, target_Y,target_U,target_V,420);
 
 
         //ahora codificamos el target
@@ -567,7 +570,7 @@ void VideoSimulation()
         {
             intelligent_loss();
             sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant_rebuilt%02d.bmp",i);
-            save_frame(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
+            save_image(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
         }
 
 
@@ -575,7 +578,7 @@ void VideoSimulation()
             sprintf(buffer,"../LHE_Pi/video/result_video/frame_quant%02d.bmp",i);
 
         if (DEBUG)
-            save_frame(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
+            save_image(buffer, width_down_Y, height_down_Y, 3, frame_encoded_Y,frame_encoded_U,frame_encoded_V,420);
 
         // ahora entra el entropico para codificar los hops
         // -----------------------------------------------
@@ -639,7 +642,7 @@ void VideoSimulation()
 
         }
         if (DEBUG) sprintf(buffer,"../LHE_Pi/video/lena_player_down%02d.bmp",i);
-        if (DEBUG)  save_frame(buffer, width_down_Y, height_down_Y, 3, last_frame_player_Y,last_frame_player_U,last_frame_player_V,420);
+        if (DEBUG)  save_image(buffer, width_down_Y, height_down_Y, 3, last_frame_player_Y,last_frame_player_U,last_frame_player_V,420);
 
 
 

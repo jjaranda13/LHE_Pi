@@ -46,47 +46,21 @@ MMAL_COMPONENT_T * init_camera(CAMERA_OPTIONS *options)
 
     if (DEBUG) printf ("%s:%s:%d:DEBUG: Called init_camera\n", __FILE__,__func__ ,__LINE__);
 
-    //Parse options into global variables to be used between processes.
-
     height_orig_Y = options->height;
     width_orig_Y = options->width;
 
-    if (yuv_model)
-    {
-        if (yuv_model == 0)
-        {
-            height_orig_UV = options->height;
-            width_orig_UV = options->width;
-        }
-        else if (yuv_model == 1)
-        {
-            height_orig_UV = options->height;
-            width_orig_UV = options->width>>1;
-        }
-        else if (yuv_model == 2)
-        {
-            height_orig_UV = options->height>>1;
-            width_orig_UV = options->width>>1;
-        }
-        else
-        {
-            fprintf(stderr,"%s:%s:%d:ERROR: Unknown yuv_model -> yuv_model = %d when if should be in range 0-2.\n", __FILE__,__func__ ,__LINE__, yuv_model);
-            goto error;
-        }
-        //Setting Globals allocation
-        orig_Y = (unsigned char**) malloc(sizeof(unsigned char *) *height_orig_Y);
-        orig_U = (unsigned char**) malloc(sizeof(unsigned char *) *height_orig_UV);
-        orig_V = (unsigned char**) malloc(sizeof(unsigned char *) *height_orig_UV);
+    yuv_model = 2;
+    height_orig_UV = options->height/2;
+    width_orig_UV = options->width/2;
 
-        pthread_mutex_init(&cam_down_mutex, NULL);
-        pthread_cond_init (&cam_down_cv, NULL);
-        cam_down_flag = 0;
-    }
-    else
-    {
-        fprintf(stderr,"%s:%s:%d:ERROR: Unset yuv_model -> yuv_model must be setted before calling init_camera.\n", __FILE__,__func__ ,__LINE__);
-        goto error;
-    }
+    //Setting Globals allocation
+    orig_Y = (unsigned char**) malloc(sizeof(unsigned char *) *height_orig_Y);
+    orig_U = (unsigned char**) malloc(sizeof(unsigned char *) *height_orig_UV);
+    orig_V = (unsigned char**) malloc(sizeof(unsigned char *) *height_orig_UV);
+
+    pthread_mutex_init(&cam_down_mutex, NULL);
+    pthread_cond_init (&cam_down_cv, NULL);
+    cam_down_flag = 0;
 
     if (DEBUG) printf ("%s:%s:%d:DEBUG: Setted height and weight globals\n", __FILE__,__func__ ,__LINE__);
 

@@ -9,13 +9,24 @@
  * @see https://github.com/jjaranda13/LHE_Pi
  */
 
-#include <sys/socket.h>
 
-//void put_bits(int data);
-int read_socket(int fd, struct sockaddr *remote, socklen_t *long_remote, unsigned long int * data, int long_data);
-int write_socket (int fd, struct sockaddr *remote,	socklen_t long_remote, unsigned long int *data, int long_data);
-void sendData();
-void stream_line(uint8_t ** bits, int bits_lenght, int line);
+void stream_line(uint8_t ** bits, int bits_lenght, int line, int line_type);
 void stream_frame();
 void lanza_streamer_subframe(int startline,int separation);
 void init_streamer();
+void send_nal();
+
+/*
+The header is 4 bytes:
+----|----| -------- ----|----  --------
+pppx|pppy|  width       | height
+
+pppx -> 4 bits (from 0 to 16)
+pppy -> 4 bits (from 0 to 16)
+width -> 12 bits (from  0 to 4096).
+height -> 12 bits (from  0 to 4096).
+
+*/
+void send_frame_header(int width, int height , int pppx, int pppy);
+
+void send_fake_newline();
