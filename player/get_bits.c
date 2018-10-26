@@ -11,10 +11,11 @@
 * For more:
 * @see https://github.com/jjaranda13/LHE_Pi
 */
-
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "get_bits.h"
+#include "player_decoder.h"
 
 
 void init_get_bits(FILE * file, get_bits_context * ctx) {
@@ -156,8 +157,13 @@ void load_new_buffer(get_bits_context * ctx) {
     uint32_t buffer = 0;
 	ctx->buffer = ctx->next_buffer;
 	if (!feof(stdin) && fread(bytes, sizeof(uint8_t), 4, ctx->handler) != 4) {
-		printf("INFO: Finished reading the stream\n");
-		fflush(stdout);
+		//printf("INFO: Finished reading the streamWOWO\n");
+        printf("Press Enter to Continue");
+		while (getchar() != '\n')
+		{
+			handle_window();
+		}
+		close_player();
 		exit(1);
 	}
 	buffer |= (uint32_t) bytes[0] << 24;
