@@ -816,7 +816,7 @@ for (int line=0;line<height_orig_UV;line+=pppyUV){
 
 void encode_file(char filename[])
 {
-    int bits = 0, status;
+    int bits = 0, status, discarded_lines = 0;
 
     init_image_loader_file(filename);
     init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
@@ -840,8 +840,16 @@ void encode_file(char filename[])
     send_fake_newline();
     send_fake_newline();   
     fflush(stdout);
+    
+    for (int line = 0; line < height_down_Y; line++)
+    {
+		if (inteligent_discard_Y[line] == true)
+		{
+			discarded_lines++;
+		}
+	}
 
-    fprintf(stderr,"INFO: Sucessfully coded %s using %d bytes\n", filename, (bits%8 == 0)? bits/8 : (bits/8)+1);
+    fprintf(stderr,"INFO: Sucessfully coded %s using %d bytes there were %d discarded lines\n", filename, (bits%8 == 0)? bits/8 : (bits/8)+1, discarded_lines);
     return;
 }
 

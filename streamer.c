@@ -150,7 +150,7 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line, int line_type)
 
 #if DEBUG_RANDOM_LOSES > 0
     int random = rand() % 100;
-    if (number < random)
+    if (random < DEBUG_RANDOM_LOSES)
     {
         return;
     }
