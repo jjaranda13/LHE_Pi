@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS= -std=gnu11 -Wall -Wextra -O3 -fopenmp
 LDFLAGS= 
 LIB = -lSDL2 -lm -fopenmp
-SOURCES=entropic_decoder.c quantizer_decoder.c upsampler_decoder.c player_decoder.c decoder.c get_bits.c main.c
+SOURCES=entropic_decoder.c quantizer_decoder.c upsampler_decoder.c player_decoder.c decoder.c get_bits.c image_yuv.c main.c
 OBJECTS=$(SOURCES:.c=.o)
 OBJECTS_DEBUG=$(SOURCES:.c=_g.o)
 EXECUTABLE=lhe_rpi_player
