@@ -16,7 +16,9 @@ yuv_image * allocate_yuv_image(int width, int height) {
 	yuv_image *img;
 	img = (yuv_image *)malloc(sizeof(yuv_image));
 	img->width = width;
+    img->color_width = width/2;
 	img->height = height;
+    img->color_height = height/2;
 	img->Y_data = (uint8_t *)malloc(sizeof(uint8_t)*width*height);
 	img->U_data = (uint8_t *)malloc(sizeof(uint8_t)*width*height / 4);
 	img->V_data = (uint8_t *)malloc(sizeof(uint8_t)*width*height / 4);
@@ -35,8 +37,8 @@ void free_yuv_image(yuv_image *img) {
 
 void upsample_frame_exp(yuv_image *img, yuv_image *img_up) {
 	scale_epx(img->Y_data, img->height, img->width, img_up->Y_data, THRESHOLD);
-	scale_epx(img->U_data, img->height/2, img->width /2, img_up->U_data, THRESHOLD);
-	scale_epx(img->V_data, img->height/2, img->width /2, img_up->V_data, THRESHOLD);
+	scale_epx(img->U_data, img->color_height, img->color_width, img_up->U_data, THRESHOLD);
+	scale_epx(img->V_data, img->color_height, img->color_width, img_up->V_data, THRESHOLD);
 }
 
 void upsample_frame_bilinear(yuv_image *img, yuv_image *img_inter, yuv_image *img_up)
@@ -47,25 +49,42 @@ void upsample_frame_bilinear(yuv_image *img, yuv_image *img_inter, yuv_image *im
     }
     for (int y = 0; y< img->height/2; y++)
     {
-        upsample_line_horizontal(img->U_data+y*img->width/2, img_inter->U_data+y*img_inter->width/2, img->width/2, img_inter->width/2);
-        upsample_line_horizontal(img->V_data+y*img->width/2, img_inter->V_data+y*img_inter->width/2, img->width/2, img_inter->width/2);
+        upsample_line_horizontal(img->U_data+y*img->color_width, img_inter->U_data+y*img_inter->color_width, img->color_width,img_inter->color_width);
+        upsample_line_horizontal(img->V_data+y*img->color_width, img_inter->V_data+y*img_inter->color_width, img->color_width,img_inter->color_width);
     }
     upsample_line_vertical(img_inter->Y_data, img_up->Y_data, img_inter->height, img_up->height, img_inter->width);
-    upsample_line_vertical(img_inter->U_data, img_up->U_data, img_inter->height/2, img_up->height/2, img_inter->width/2);
-    upsample_line_vertical(img_inter->V_data, img_up->V_data, img_inter->height/2, img_up->height/2, img_inter->width/2);
+    upsample_line_vertical(img_inter->U_data, img_up->U_data, img_inter->color_height, img_up->color_height, img_inter->color_width);
+    upsample_line_vertical(img_inter->V_data, img_up->V_data, img_inter->color_height, img_up->color_height, img_inter->color_width);
 }
 
 void upsample_frame_edge(yuv_image *img, yuv_image *img_inter, yuv_image *img_up)
 {
     if (img->width*2 == img_up->width && img->height*2 == img_up->height)
     {
-    	scale_edge_2(img->Y_data, img->height, img->width, img_up->Y_data);
-        scale_edge_2(img->U_data, img->height / 2, img->width / 2, img_up->U_data);
-        scale_edge_2(img->V_data, img->height / 2, img->width / 2, img_up->V_data);
+    	scale_edge_2(img_up->Y_data, img->Y_data, img_up->height, img_up->width);
+	}
+    else
+    {
+        for (int y = 0; y< img->height; y++)
+        {
+            upsample_line_horizontal(img->Y_data+y*img->width, img_inter->Y_data+y*img_inter->width, img->width, img_inter->width);
+        }
+        upsample_line_vertical(img_inter->Y_data, img_up->Y_data, img_inter->height, img_up->height, img_inter->width);
+    }
+    if (img->color_width*2 == img_up->color_width && img->color_height*2 == img_up->color_height)
+    {
+        scale_edge_2(img_up->U_data, img->U_data, img_up->color_height, img_up->color_width);
+        scale_edge_2(img_up->V_data, img->V_data, img_up->color_height, img_up->color_width);
     }
     else
     {
-        upsample_frame_bilinear(img, img_inter, img_up);
+        for (int y = 0; y< img->height/2; y++)
+        {
+            upsample_line_horizontal(img->U_data+y*img->color_width, img_inter->U_data+y*img_inter->color_width, img->color_width,img_inter->color_width);
+            upsample_line_horizontal(img->V_data+y*img->color_width, img_inter->V_data+y*img_inter->color_width, img->color_width,img_inter->color_width);
+        }
+        upsample_line_vertical(img_inter->U_data, img_up->U_data, img_inter->color_height, img_up->color_height, img_inter->color_width);
+        upsample_line_vertical(img_inter->V_data, img_up->V_data, img_inter->color_height, img_up->color_height, img_inter->color_width);
     }
     return;
 }

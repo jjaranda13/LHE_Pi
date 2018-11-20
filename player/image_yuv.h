@@ -7,7 +7,9 @@ typedef struct yuv_image {
 	uint8_t *U_data;
 	uint8_t *V_data;
 	int width;
+	int color_width;
 	int height;
+	int color_height;
 } yuv_image;
 
 yuv_image * allocate_yuv_image(int width, int height);

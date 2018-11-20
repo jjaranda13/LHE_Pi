@@ -35,7 +35,6 @@ void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_val
 			upsampled_value[i] = (component_value[(int) index]* (100 - prev_part)+ component_value[(int) index+1]* prev_part)/100;
 		}
 	}
-	fflush(stdout);
 	return;
 }
 
@@ -160,13 +159,12 @@ void scale_epx(uint8_t *channel, int c_height, int c_width, uint8_t *epx, int um
 	}
 }
 
-void scale_edge_1(uint8_t * origin, int ori_height, int ori_width, uint8_t * destination) {
+void scale_edge_1(uint8_t * destination, uint8_t * origin, int dst_height, int dst_width) {
 	#pragma omp parallel
 	{
 	int dst_y, dst_x, ori_y, ori_x;
 	int a, b, c, d;
-	int dst_height = ori_height * 2;
-	int dst_width = ori_width * 2;
+	int ori_width = dst_width / 2;
 		#pragma omp sections
 		{
 			#pragma omp section
@@ -291,13 +289,12 @@ void scale_edge_1(uint8_t * origin, int ori_height, int ori_width, uint8_t * des
 	}
 }
 
-void scale_edge_2(uint8_t * origin, int ori_height, int ori_width, uint8_t * destination) {
+void scale_edge_2(uint8_t * destination, uint8_t * origin, int dst_height, int dst_width) {
 	#pragma omp parallel
 	{
-	int dst_y, dst_x, ori_y, ori_x;
+	int ori_y, ori_x, dst_y, dst_x;
 	int a, b, c, d;
-	int dst_height = ori_height * 2;
-	int dst_width = ori_width * 2;
+	int ori_width = dst_width / 2;
 		#pragma omp sections	
 		{
 			#pragma omp section // STEP 1: Top border, top right and top left pixels.
