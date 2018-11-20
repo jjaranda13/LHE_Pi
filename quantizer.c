@@ -493,10 +493,17 @@ if (x>2)
 
     }
 }
+
+#ifdef JUMP_TO_EVENS
+
         if (hop_number>= 5 || hop_number <= 3)
             x++;
         else
             x = (x + 2) & ~(1);
+#else /* !JUMP_TO_EVENS */
+	x++;
+#endif /* JUMP_TO_EVENS */
+
   }
 //  printf("\n");
 //if (softline) fprintf(stderr, "linea descartada \n ");

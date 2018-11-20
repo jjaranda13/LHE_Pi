@@ -15,6 +15,8 @@
 
 #define DEBUG_RANDOM_LOSES 0 // Random looses that are artificially provoqued. Fom 0 qhich means no looses to 100 wich means all loooses.
 
+#define JUMP_TO_EVENS
+
 #define YUV444 0
 #define YUV422 1
 #define YUV420 2

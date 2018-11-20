@@ -72,19 +72,21 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_l
 		}
 
 		// Checks that there wont be overflow plus if gradient is activated.
-		#ifdef IS_GRADIENT
+#ifdef IS_GRADIENT
 		//printf("Hop0 is %u gradient is %d\n", hop0, gradient );
 		hop0 = hop0+gradient > 255? 25: hop0+gradient < 1? 1:hop0+gradient;
-		#endif
+#endif
 
 		switch (current_hop)
 		{
 		case HOP_0:
 			component_value[x + ghost_hop] = hop0;
+#ifdef JUMP_TO_EVENS
 			if ((x + ghost_hop)%2 == 0) {
                 ghost_hop++;
                 component_value[x + ghost_hop] = hop0;
 			}
+#endif
 			break;
 		case HOP_P1:
 			component_value[x + ghost_hop] = hop0 + h1;
@@ -125,10 +127,10 @@ void decode_line_quantizer(uint8_t * hops, uint8_t * component_value, int hops_l
 
 		small_hop = is_small_hop(current_hop);
 		h1 = adapt_h1(h1, small_hop, last_small_hop);
-		#ifdef IS_GRADIENT
+#ifdef IS_GRADIENT
 		gradient = adapt_gradient(current_hop, small_hop, gradient);
 		//printf("gradient is %d\n", gradient );
-		#endif
+#endif
 		last_small_hop = small_hop;
 	}
 }

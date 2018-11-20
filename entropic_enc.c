@@ -241,10 +241,15 @@ int entropic_enc(unsigned char **hops, uint8_t **bits, unsigned int line, unsign
                 }
             break;
         }
+#ifdef JUMP_TO_EVENS
+
         if (hop >= 5 || hop <= 3)
             x++;
         else
             x = (x + 2) & ~(1);
+#else /* !JUMP_TO_EVENS */
+		x++;
+#endif /* JUMP_TO_EVENS */
     }
 
     if (h0_counter != 0 && mode != HUFFMAN) put_bits(&s, rlc_length+1, h0_counter);

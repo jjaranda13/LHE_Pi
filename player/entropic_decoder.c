@@ -216,9 +216,11 @@ int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_len
                 mode = RLC1;
             }
             hops[hops_counter] = hop;
+#ifdef JUMP_TO_EVENS
             if ((hop < 5 && hop > 3) && (hops_counter + false_hops)%2 == 0) {
                 false_hops++;
             }
+#endif
             hops_counter++;
 			break;
 		case PRE_HUFFMAN:
@@ -227,9 +229,11 @@ int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_len
             skip_bits(ctx, bits_used);
             h0_counter = 0;
             hops[hops_counter] = hop;
+#ifdef JUMP_TO_EVENS
             if ((hop < 5 && hop > 3) && (hops_counter + false_hops)%2 == 0) {
                 false_hops++;
             }
+#endif
             hops_counter++;
             mode = HUFFMAN;
 			break;
@@ -238,12 +242,16 @@ int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_len
 			if (data == 0) {
 				rlc_number = get_rlc_number_get_bits(ctx, rlc_length);
 				add_hop0(hops, &hops_counter, rlc_number);
+#ifdef JUMP_TO_EVENS
 				false_hops += rlc_number;
+#endif
 				mode = PRE_HUFFMAN;
 			}
 			else {
 				add_hop0(hops, &hops_counter, 15);
+#ifdef JUMP_TO_EVENS
 				false_hops += 15;
+#endif
 				rlc_length += 1;
 				mode = RLC2;
 			}
@@ -253,13 +261,17 @@ int obtain_symbols_entropic(get_bits_context * ctx, uint8_t * hops, int hops_len
 			if (data == 0) {
 				rlc_number = get_rlc_number_get_bits(ctx, rlc_length);
 				add_hop0(hops, &hops_counter, rlc_number);
+#ifdef JUMP_TO_EVENS
 				false_hops += rlc_number;
+#endif
 				rlc_length = RLC_LENGHT_INI;
 				mode = PRE_HUFFMAN;
 			}
 			else {
 				add_hop0(hops, &hops_counter, 31);
+#ifdef JUMP_TO_EVENS
 				false_hops += 31;
+#endif
 			}
 			break;
 		}

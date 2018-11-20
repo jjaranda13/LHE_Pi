@@ -60,6 +60,12 @@
 #define HOP_P4 8
 
 /**
+* @brief Defines whether jump to evens is activated.
+* 
+*/
+#define JUMP_TO_EVENS
+
+/**
 * @brief Allocates memory for the entropic decoded
 *
 * @param width Width of the image. It is used to allocate memory.

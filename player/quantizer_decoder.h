@@ -52,6 +52,13 @@
 // #define IS_MAX_HOPS
 
 /**
+* @brief Defines id the jump to evens is activated in the encoder. If defined
+* the decoding wont jump to evens generating the full stream.
+* 
+*/
+#define JUMP_TO_EVENS
+
+/**
 * @brief Defines the prediction that will be used for the first pixel. As there is no
 * hops lead to the maximum range. If not the behaviour is the normal jumping
 * using the normal ratio.
