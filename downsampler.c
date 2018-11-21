@@ -122,20 +122,22 @@ if (DEBUG) printf("ENTER in down_avg_horiz_simd...%d \n",line);
 int line_down=line/pppy ;//linea correspondiente a la original en la imagen downsampleada (apuntada por *dest)
 
 int pix=0;
-
+int i;
 int data=0;
 
 	switch(pppx){
     case 2:
-        for (int i =0; i < width_orig; i+=32)
+    
+        for (i =0; i < width_orig-32; i+=32)
         {
-            if (i> width_orig-32)
-            {
-                i = width_orig-32;
-            }
             pix = i/2;
             _downsample_by2_simd(orig[line]+i,dest[line_down]+pix);
         }
+        for (i; i < width_orig; i+=2)
+        {
+			pix = i/2;
+			dest[line_down][pix] = (orig[line][i]+orig[line][i+1]) >>1;
+		}
 
             break;
         case 4:
