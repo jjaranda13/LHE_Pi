@@ -146,7 +146,8 @@ pthread_create(&streamer_thread[startline], &attr, &mytask_stream, &tsinfo[start
 
 void stream_line(uint8_t ** bits, int bits_lenght, int line, int line_type)
 {
-    uint8_t line_low, line_high, line_size_bytes;
+    uint8_t line_low, line_high;
+    int line_size_bytes;
 
 #if DEBUG_RANDOM_LOSES > 0
     int random = rand() % 100;
