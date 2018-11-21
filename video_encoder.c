@@ -250,16 +250,20 @@ void compute_delta_scanline_simd(int y, int width, unsigned char ** orig_down, u
 
 void encode_video_from_file_sequence(char filename[], int sequence_length)
 {
-
+	struct timeval t_ini, t_fin;
+	double secs = 0.0;
     char local_filename[120];
-    long bits = 0;
-    int status, bytes;
+    long bytes = 0;
+    int status;
 
     sprintf(local_filename,filename,sequence_init);
     init_image_loader_file(local_filename);
     init_framecoder(width_orig_Y,height_orig_Y,pppx,pppy);
-    init_streamer();
+    init_videoencoder();
     send_nal();
+    target_Y=orig_down_Y;
+    target_U=orig_down_U;
+    target_V=orig_down_V;
 
     for (int pic = sequence_init; pic <sequence_init + sequence_length; pic++)
     {
@@ -270,10 +274,22 @@ void encode_video_from_file_sequence(char filename[], int sequence_length)
             fprintf(stderr,"%s:%s:%d:ERR: Could not open the file %s \n", __FILE__,__func__ ,__LINE__, local_filename);
             return;
         }
-        downsample_frame(pppx,pppy);
-        quantize_frame_normal();
-        bits += entropic_enc_frame_normal();
-        stream_frame();
+        gettimeofday(&t_ini, NULL);
+        downsample_frame_simd(pppx,pppy); 
+        quantize_target(frame_encoded_Y,frame_encoded_U,frame_encoded_V);
+        for (int i=0; i< num_threads; i++)
+        {
+            pthread_join(thread[i], NULL);
+        }
+        if (DEBUG) gettimeofday(&t_fin, NULL);
+
+        for (int j=0; j< num_threads*8; j++)
+        {
+            pthread_join(streamer_thread[j], NULL);
+        }
+        gettimeofday(&t_fin, NULL);
+        bytes += frame_byte_counter;
+        secs += timeval_diff(&t_fin, &t_ini);
     }
     send_fake_newline();
     send_fake_newline();
@@ -282,9 +298,9 @@ void encode_video_from_file_sequence(char filename[], int sequence_length)
     send_fake_newline(); 
     fflush(stdout);
 
-    bytes = (bits%8 == 0)? bits/8 : (bits/8)+1;
     bytes /= sequence_length;
-    fprintf(stderr,"INFO: Sucessfully coded %d images using as average %d bytes per image\n", sequence_length, bytes);
+    secs /= sequence_length;
+    fprintf(stderr,"INFO: Sucessfully coded %d images using as average of %d bytes and %lf secs per frame\n", sequence_length, bytes, secs);
     return;
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
