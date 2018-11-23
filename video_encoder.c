@@ -251,7 +251,7 @@ void compute_delta_scanline_simd(int y, int width, unsigned char ** orig_down, u
 void encode_video_from_file_sequence(char filename[], int sequence_length)
 {
 	struct timeval t_ini, t_fin;
-	double secs = 0.0;
+	double secs = 0.0, min_secs = 10000.0, max_secs = 0.0, total_secs = 0.0;
     char local_filename[120];
     long bytes = 0;
     int status;
@@ -275,21 +275,25 @@ void encode_video_from_file_sequence(char filename[], int sequence_length)
             return;
         }
         gettimeofday(&t_ini, NULL);
-        downsample_frame_simd(pppx,pppy); 
+        downsample_frame_simd(pppx,pppy);
         quantize_target(frame_encoded_Y,frame_encoded_U,frame_encoded_V);
         for (int i=0; i< num_threads; i++)
         {
             pthread_join(thread[i], NULL);
         }
+        
         if (DEBUG) gettimeofday(&t_fin, NULL);
-
         for (int j=0; j< num_threads*8; j++)
         {
             pthread_join(streamer_thread[j], NULL);
         }
         gettimeofday(&t_fin, NULL);
+        
         bytes += frame_byte_counter;
-        secs += timeval_diff(&t_fin, &t_ini);
+        secs = timeval_diff(&t_fin, &t_ini);
+        total_secs += secs;
+        min_secs = secs < min_secs? secs :min_secs;
+        max_secs = secs > max_secs? secs : max_secs;
     }
     send_fake_newline();
     send_fake_newline();
@@ -299,8 +303,8 @@ void encode_video_from_file_sequence(char filename[], int sequence_length)
     fflush(stdout);
 
     bytes /= sequence_length;
-    secs /= sequence_length;
-    fprintf(stderr,"INFO: Sucessfully coded %d images using as average of %d bytes and %lf secs per frame\n", sequence_length, bytes, secs);
+    total_secs /= sequence_length;
+    fprintf(stderr,"INFO: Sucessfully coded %d images using as average of %d bytes\n The time per frame average=%lfsec max=%lfsec min=%lfsec\n", sequence_length, bytes, total_secs, max_secs, min_secs);
     return;
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
