@@ -67,9 +67,9 @@ void upsample_frame_edge(yuv_image *img, yuv_image *img_inter, yuv_image *img_up
     {
         for (int y = 0; y< img->height; y++)
         {
-            upsample_line_horizontal(img->Y_data+y*img->width, img_inter->Y_data+y*img_inter->width, img->width, img_inter->width);
+            upsample_line_horizontal2(img->Y_data+y*img->width, img_inter->Y_data+y*img_inter->width, img->width, img_inter->width);
         }
-        upsample_line_vertical(img_inter->Y_data, img_up->Y_data, img_inter->height, img_up->height, img_inter->width);
+        upsample_line_vertical2(img_inter->Y_data, img_up->Y_data, img_inter->height, img_up->height, img_inter->width);
     }
     if (img->color_width*2 == img_up->color_width && img->color_height*2 == img_up->color_height)
     {
@@ -80,11 +80,11 @@ void upsample_frame_edge(yuv_image *img, yuv_image *img_inter, yuv_image *img_up
     {
         for (int y = 0; y< img->height/2; y++)
         {
-            upsample_line_horizontal(img->U_data+y*img->color_width, img_inter->U_data+y*img_inter->color_width, img->color_width,img_inter->color_width);
-            upsample_line_horizontal(img->V_data+y*img->color_width, img_inter->V_data+y*img_inter->color_width, img->color_width,img_inter->color_width);
+            upsample_line_horizontal2(img->U_data+y*img->color_width, img_inter->U_data+y*img_inter->color_width, img->color_width,img_inter->color_width);
+            upsample_line_horizontal2(img->V_data+y*img->color_width, img_inter->V_data+y*img_inter->color_width, img->color_width,img_inter->color_width);
         }
-        upsample_line_vertical(img_inter->U_data, img_up->U_data, img_inter->color_height, img_up->color_height, img_inter->color_width);
-        upsample_line_vertical(img_inter->V_data, img_up->V_data, img_inter->color_height, img_up->color_height, img_inter->color_width);
+        upsample_line_vertical2(img_inter->U_data, img_up->U_data, img_inter->color_height, img_up->color_height, img_inter->color_width);
+        upsample_line_vertical2(img_inter->V_data, img_up->V_data, img_inter->color_height, img_up->color_height, img_inter->color_width);
     }
     return;
 }

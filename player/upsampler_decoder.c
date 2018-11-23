@@ -18,6 +18,7 @@
 #include <omp.h>
 #include "upsampler_decoder.h"
 
+// This is not perfect for bilinear in an image. Use version two for more psnr
 void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_value, int component_value_width, int upsample_value_width) {
 	
 	int prev_part;
@@ -38,6 +39,36 @@ void upsample_line_horizontal(uint8_t * component_value, uint8_t * upsampled_val
 	return;
 }
 
+void upsample_line_horizontal2(uint8_t * component_value, uint8_t * upsampled_value, int component_value_width, int upsample_value_width) {
+	
+	int prev_part;
+	float index, proportion;
+	
+	proportion = upsample_value_width/(float)component_value_width;
+	
+	for (int i = 0; i < proportion; i++)
+	{
+		upsampled_value[i] = component_value[0];
+	}
+	for (int i = proportion; i < upsample_value_width-proportion; i++)
+	{
+		index = i / proportion - (proportion-1)/(proportion*2);
+		prev_part = (int) ((index - floor(index))*100);
+		if (prev_part == 0) {
+			upsampled_value[i] = component_value[(int) index];
+		}
+		else {
+			upsampled_value[i] = (component_value[(int) index]* (100 - prev_part)+ component_value[(int) index+1]* prev_part)/100;
+		}
+	}
+	for (int i = upsample_value_width-proportion; i < upsample_value_width; i++)
+	{
+		upsampled_value[i] = component_value[component_value_width-1];
+	}
+	return;
+}
+
+// This is not perfect for bilinear in an image. Use version two for more psnr
 void upsample_line_vertical(uint8_t * component_value, uint8_t * upsampled_value, int component_value_height, int upsample_value_height, int width)
 {
 	int prev_part;
@@ -60,6 +91,40 @@ void upsample_line_vertical(uint8_t * component_value, uint8_t * upsampled_value
 				upsampled_value[y*width+x] = (component_value[(int)y_source*width+x]* (100 - prev_part)+ component_value[((int)y_source+1)*width+x]* prev_part)/100;
 			}		
 		}
+	}
+	return;
+}
+
+void upsample_line_vertical2(uint8_t * component_value, uint8_t * upsampled_value, int component_value_height, int upsample_value_height, int width)
+{
+	int prev_part;
+	float proportion, y_source;
+	
+	proportion = upsample_value_height/ (float)component_value_height;
+
+	for (int y = 0; y < proportion; y++)
+	{
+		memcpy(upsampled_value + y*width, component_value, width);
+	}
+	for (int y = proportion; y < upsample_value_height-proportion; y++)
+	{
+		y_source = y / proportion - (proportion-1)/(proportion*2);
+		prev_part = (int) ((y_source - floor(y_source))*100);
+		if (prev_part == 0)
+		{
+			memcpy(upsampled_value + y*width, component_value+(int)y_source*width , width);
+		}
+		else
+		{
+			for (int x = 0; x < width; x++)
+			{
+				upsampled_value[y*width+x] = (component_value[(int)y_source*width+x]* (100 - prev_part)+ component_value[((int)y_source+1)*width+x]* prev_part)/100;
+			}		
+		}
+	}
+	for (int y = upsample_value_height-proportion; y < upsample_value_height; y++)
+	{
+		memcpy(upsampled_value + y*width, component_value+(component_value_height-1)*width , width);
 	}
 	return;
 }
