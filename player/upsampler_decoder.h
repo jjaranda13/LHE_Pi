@@ -25,5 +25,5 @@ void upsample_line_vertical(uint8_t * component_value, uint8_t * upsampled_value
 void upsample_line_vertical2(uint8_t * component_value, uint8_t * upsampled_value, int component_value_height, int upsample_value_height, int width);
 void interpolate_scanline_vertical(uint8_t * upsampled_values, int scaline, int prev_scaline, int next_scanline, int img_width);
 void scale_epx(uint8_t *channel, int c_height, int c_width, uint8_t *epx, int umbral);
-void scale_edge_1(uint8_t * destination, uint8_t * origin, int dst_height, int dst_width);
-void scale_edge_2(uint8_t * destination, uint8_t * origin, int dst_height, int dst_width);
+void scale_edge_sps(uint8_t * destination, uint8_t * origin, int dst_height, int dst_width);
+void scale_edge_averaging(uint8_t * destination, uint8_t * origin, int dst_height, int dst_width);

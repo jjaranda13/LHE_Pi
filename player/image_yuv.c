@@ -61,7 +61,7 @@ void upsample_frame_edge(yuv_image *img, yuv_image *img_inter, yuv_image *img_up
 {
     if (img->width*2 == img_up->width && img->height*2 == img_up->height)
     {
-    	scale_edge_2(img_up->Y_data, img->Y_data, img_up->height, img_up->width);
+    	scale_edge_averaging(img_up->Y_data, img->Y_data, img_up->height, img_up->width);
 	}
     else
     {
@@ -73,8 +73,8 @@ void upsample_frame_edge(yuv_image *img, yuv_image *img_inter, yuv_image *img_up
     }
     if (img->color_width*2 == img_up->color_width && img->color_height*2 == img_up->color_height)
     {
-        scale_edge_2(img_up->U_data, img->U_data, img_up->color_height, img_up->color_width);
-        scale_edge_2(img_up->V_data, img->V_data, img_up->color_height, img_up->color_width);
+        scale_edge_averaging(img_up->U_data, img->U_data, img_up->color_height, img_up->color_width);
+        scale_edge_averaging(img_up->V_data, img->V_data, img_up->color_height, img_up->color_width);
     }
     else
     {

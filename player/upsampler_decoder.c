@@ -223,8 +223,8 @@ void scale_epx(uint8_t *channel, int c_height, int c_width, uint8_t *epx, int um
 		}
 	}
 }
-
-void scale_edge_1(uint8_t * destination, uint8_t * origin, int dst_height, int dst_width) {
+// This should be used when the downsapling were sps obtaining the even numbers. 0,0 0,2 2,0 2,2
+void scale_edge_sps(uint8_t * destination, uint8_t * origin, int dst_height, int dst_width) {
 	#pragma omp parallel
 	{
 	int dst_y, dst_x, ori_y, ori_x;
@@ -353,8 +353,8 @@ void scale_edge_1(uint8_t * destination, uint8_t * origin, int dst_height, int d
 		}
 	}
 }
-
-void scale_edge_2(uint8_t * destination, uint8_t * origin, int dst_height, int dst_width) {
+// This should be used when the downsapling were done by averaging in all directions.
+void scale_edge_averaging(uint8_t * destination, uint8_t * origin, int dst_height, int dst_width) {
 	#pragma omp parallel
 	{
 	int ori_y, ori_x, dst_y, dst_x;
