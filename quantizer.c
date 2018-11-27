@@ -188,54 +188,42 @@ quantizer_initialized=true;
 
 }// end function
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void close_quantizer(){
+void close_quantizer()
+{
+    for (int i=0;i<height_down_Y;i++)
+    {
+        free (hops_Y[i]);
+        free(result_Y[i]);
+        free(result2_Y[i]);
+    }
+    for (int i=0;i<height_down_UV;i++)
+    {
+        free(hops_U[i]);
+        free (hops_V[i]);
+        free (result_U[i]);
+        free (result_V[i]);
+        free (result2_U[i]);
+        free (result2_V[i]);
+    }
+    free (hops_Y);
+    free(hops_U);
+    free (hops_V);
 
+    free (result_Y);
+    free(result_U);
+    free(result_V);
 
+    free (result2_Y);
+    free(result2_U);
+    free(result2_V);
 
-// free memory in inverse order than initialization
-// --------------------------------------------------
-for (int i=0;i<height_down_Y;i++)
-  {
-  free (hops_Y[i]);
-  free(result_Y[i]);
-  free(result2_Y[i]);
-  }
+    //inteliigent discard
+    free (inteligent_discard_Y);
+    free (inteligent_discard_U);
+    free (inteligent_discard_V);
 
-for (int i=0;i<height_down_UV;i++)
-  {
-
-  free(hops_U[i]);
-  free (hops_V[i]);
-
-
-  free (result_U[i]);
-  free (result_V[i]);
-
-  free (result2_U[i]);
-  free (result2_V[i]);
-
-  }
-
-free (hops_Y);
-free(hops_U);
-free (hops_V);
-
-free (result_Y);
-free(result_U);
-free(result_V);
-
-free (result2_Y);
-free(result2_U);
-free(result2_V);
-
-//inteliigent discard
-free (inteligent_discard_Y);
-free (inteligent_discard_U);
-free (inteligent_discard_V);
-
-quantizer_initialized=false;
-
-}//end close quantizer
+    quantizer_initialized=false;
+}
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 bool quantize_scanline(unsigned char **orig_YUV, int y,int width, unsigned char **hops,unsigned char **result_YUV) {
@@ -243,271 +231,219 @@ bool quantize_scanline(unsigned char **orig_YUV, int y,int width, unsigned char 
 /// inputs : orig_YUV (which can be orig_down_Y, orig_down_U or orig_down_V), line, width,
 /// outputs: hops, result_YUV (which can be result_Y, result_U or result_V)
 
+	const int max_h1=10;
+	const int min_h1=4;
+	const int start_h1=(max_h1+min_h1)/2;
+	int  h1=start_h1;
 
-//inteligent discard
-bool softline=true;
+	bool last_small_hop=true; //last hop was small
+	bool small_hop=true;//current hop is small
+	bool softline=true; //inteligent discard
 
+	int emin=255;//error min
+	int error=0;//computed error
 
-if (DEBUG) printf ("ENTER in quantize_scanline( %d)...\n",y);
+	unsigned char oc;
+	unsigned char hop0;//prediction
+	unsigned char quantum; //final quantum asigned value
+	unsigned char hop_value;//data from cache
+	unsigned char hop_number;// final assigned hop
 
- const int max_h1=10;
- const int min_h1=4;
- const int start_h1=(max_h1+min_h1)/2;
- int  h1=start_h1;
+	//mejora de prediccion
+	int grad=0;
+ 
+	for (int x=0;x<width;)
+	{
+//--------------------- PHASE 1: PREDICTION---------------------------------------------------------
+		if (x%2 == 0 && x < width-1)
+			oc = (orig_YUV[y][x] + orig_YUV[y][x+1])/2;
+		else
+			oc=orig_YUV[y][x];//original color
 
- bool last_small_hop=true; //last hop was small
- bool small_hop=true;//current hop is small
+		if (x==0)
+			hop0=127;
+		else
+			hop0=quantum;
 
-
- int emin=255;//error min
- int error=0;//computed error
-
- unsigned char oc=127;//orig_YUV[y][0];//original color
- unsigned char hop0=0; //prediction
- unsigned char quantum=oc; //final quantum asigned value
- unsigned char hop_value=0;//data from cache
- unsigned char hop_number=4;// final assigned hop
-
- //mejora de prediccion
- int grad=0;
-
- //unsigned char prev_color=128;
- //char * result_signal=result_YUV[y];
- //char * result_hops=hops[y];
-//this bucle is for only one scanline, excluding first pixel
-//----------------------------------------------------------
-for (int x=0;x<width;)
-  {
-
-  // --------------------- PHASE 1: PREDICTION---------------------------------------------------------
-
-    if (x%2 == 0)
-        oc = (orig_YUV[y][x] + orig_YUV[y][x+1])/2;
-    else
-        oc=orig_YUV[y][x];//original color
-
-  if (y>0 && x>0 && x!=width-1){
-
-    /*if (last_small_hop) hop0=(result_YUV[y][x-1]+result_YUV[y-1][x]+result_YUV[y-1][x+1])/3;
-    else
-    hop0=(result_YUV[y][x-1]+result_YUV[y-1][x+1])>>1;
-*/
-    //prediccion izquierda para scanlines salteadas
-    //hop0=result_YUV[y][x-1];
-    hop0=quantum;//prev_color;
-    }
-  else if (x==0 && y>0){
-    //este caso vamos a usar 128 y no el pixel superior ya que debido al orden de scanlines no lo tendremos
-
-    //hop0=result_YUV[y-1][0];
-    hop0=127;
-
-    }
-  else if (y>0){//x=width-1
-    //hop0=(result_YUV[y][x-1]+result_YUV[y-1][x])>>1;
-
-    //prediccion izquierda para scanlines salteadas
-    //hop0=result_YUV[y][x-1];
-    hop0=quantum;//prev_color;
-    }
-  else{ //y=0
-    //hop0=result_YUV[y][x-1];
-    hop0=quantum;//prev_color;
-   }
-
-  //-------------------------PHASE 2: HOPS COMPUTATION-------------------------------
+//-------------------------PHASE 2: HOPS COMPUTATION-------------------------------
 
         hop0 = hop0+grad > 255? 255: hop0+grad < 1? 1:hop0+grad;
 
-  hop_number=4;// prediction corresponds with hop_number=4
-  quantum=hop0;//this is the initial predicted quantum, the value of prediction
-  small_hop=true;//i supossed initially that hop will be small (3,4,5)
-  emin=oc-hop0 ; if (emin<0) emin=-emin;//minimum error achieved
+		hop_number=4;// prediction corresponds with hop_number=4
+		quantum=hop0;//this is the initial predicted quantum, the value of prediction
+		small_hop=true;//i supossed initially that hop will be small (3,4,5)
+		emin=oc-hop0 ; if (emin<0) emin=-emin;//minimum error achieved
 
-  if (emin>h1/2){ //only enter in computation if emin>threshold
-
-
-  //positive hops
-  //--------------
-  if (oc>=hop0)
-    {
-     //case hop0 (most frequent)
-     //--------------------------
-
-     if ((quantum +h1)>255) goto phase3;
-
-     //case hop1 (frequent)
-     //---------------------
-     error=emin-h1;
-
-     if (error<0) error=-error;
-
-     if (error<emin){
-
-       hop_number=5;
-       emin=error;
-       quantum+=h1;
-
-       //if (emin<4) goto phase3;
-       }
-     else goto phase3;
+        if (emin>h1/2) //only enter in computation if emin>threshold
+        { 
 
 
-      // case hops 6 to 8 (less frequent)
-      // --------------------------------
-      for (int i=3;i<6;i++){
-        //cache normal
-        //hop_value=cache_hops[hop0][h1-4][i];//indexes(i) are 3 to 5
+            //positive hops
+            //--------------
+            if (oc>=hop0)
+            {
+            //case hop0 (most frequent)
+            //--------------------------
 
-        //cache de 5KB simetrica
-        hop_value=255-cache_hops[255-hop0][h1-4][5-i];//indexes are 2 to 0
+                if ((quantum +h1)>255) goto phase3;
 
-        error=oc-hop_value;
-        if (error<0) error=-error;
-        if (error<emin){
+                //case hop1 (frequent)
+                //---------------------
+                error=emin-h1;
 
-          hop_number=i+3;
-          emin=error;
-          quantum=hop_value;
+                if (error<0) error=-error;
 
-          //if (emin<4) break;// go to phase 3
-          }
-         else break;
+                if (error<emin)
+                {
+                    hop_number=5;
+                    emin=error;
+                    quantum+=h1;
+                }
+                else goto phase3;
+
+                // case hops 6 to 8 (less frequent)
+                // --------------------------------
+                for (int i=3;i<6;i++)
+                {
+                    //cache normal
+                    //hop_value=cache_hops[hop0][h1-4][i];//indexes(i) are 3 to 5
+
+                    //cache de 5KB simetrica
+                    hop_value=255-cache_hops[255-hop0][h1-4][5-i];//indexes are 2 to 0
+
+                    error=oc-hop_value;
+                    if (error<0) error=-error;
+                    if (error<emin)
+                    {
+                        hop_number=i+3;
+                        emin=error;
+                        quantum=hop_value;
+                    }
+                    else break;
+                }
+            }
+            //negative hops
+            //--------------
+            else
+            {
+                //case hop0 (most frequent)
+                //--------------------------
+                if ((quantum -h1)<0)    goto phase3;
+
+                //case hop1 (frequent)
+                //-------------------
+                error=emin-h1;
+                if (error<0) error=-error;
+
+                if (error<emin)
+                {
+
+                    hop_number=3;
+                    emin=error;
+                    quantum-=h1;
+                }
+                else goto phase3;
+                // case hops 2 to 0 (less frequent)
+                // --------------------------------
+                for (int i=2;i>=0;i--)
+                {
+                    hop_value=cache_hops[hop0][h1-4][i];//indexes are 2 to 0
+
+                    //hop_value=255-cache_hops[255-hop0][h1-4][5-i];//indexes are 2 to 0
+
+                    error=hop_value-oc;
+                    if (error<0) error=-error;
+                    if (error<emin)
+                    {
+                        hop_number=i;
+                        emin=error;
+                        quantum=hop_value;
+                    }
+                    else break;
+                }
+            }
+
+        }//endif emin
+
+//------------- PHASE 3: assignment of final quantized value --------------------------
+phase3:
+
+        result_YUV[y][x]=quantum;
+        //*result_signal=quantum; result_signal++;
+
+        //prev_color=quantum;
+        //hop_number=5;
+
+
+        hops[y][x]=hop_number;
+        //*result_hops=hop_number; result_hops++;
+        //hops_type[hop_number]++;
+
+//------------- PHASE 4: h1 logic  --------------------------
+        if (hop_number>5 || hop_number<3) 
+            small_hop=false;//true by default
+
+        if (small_hop && last_small_hop)
+        {
+            if (h1>min_h1)
+                h1--;
         }
-
-    }
-
-  //negative hops
-  //--------------
-  else{
-
-
-    //case hop0 (most frequent)
-    //--------------------------
-     if ((quantum -h1)<0)    goto phase3;
-
-     //case hop1 (frequent)
-     //-------------------
-     error=emin-h1;
-     if (error<0) error=-error;
-
-     if (error<emin){
-
-       hop_number=3;
-       emin=error;
-       quantum-=h1;
-       //if (emin<4) goto phase3;
-       }
-      else goto phase3;
-
-      // case hops 2 to 0 (less frequent)
-      // --------------------------------
-      for (int i=2;i>=0;i--){
-
-        hop_value=cache_hops[hop0][h1-4][i];//indexes are 2 to 0
-
-        //hop_value=255-cache_hops[255-hop0][h1-4][5-i];//indexes are 2 to 0
-
-        error=hop_value-oc;
-        if (error<0) error=-error;
-        if (error<emin){
-
-          hop_number=i;
-          emin=error;
-          quantum=hop_value;
-          //if (emin<4) break;// go to phase 3
-          }
-         else break;
+        else 
+        {
+            h1=max_h1;
         }
-    }
+        last_small_hop=small_hop;
 
-}//endif emin
-
-  //------------- PHASE 3: assignment of final quantized value --------------------------
-  phase3:
-
-  result_YUV[y][x]=quantum;
-  //*result_signal=quantum; result_signal++;
-
-  //prev_color=quantum;
- //hop_number=5;
-
-
-  hops[y][x]=hop_number;
-  //*result_hops=hop_number; result_hops++;
-
-
-
-  //hops_type[hop_number]++;
-
-  //------------- PHASE 4: h1 logic  --------------------------
-  if (hop_number>5 || hop_number<3) {small_hop=false; }//true by default
-
-  //if (small_hop==true && last_small_hop==true){
- if (small_hop * last_small_hop){
-
-    if (h1>min_h1) h1--;
-    }
-  else {
-
-    h1=max_h1;
-    }
-
-  last_small_hop=small_hop;
-//  printf("%d,",hop_number);
-//if (h1<min_h1 || h1>max_h1) printf("fatal error %d \n", h1);
-
-   if (hop_number==5) grad=1;
-   else if (hop_number==3) grad=-1;
-   else if (!small_hop) grad=0;
-if (x>2)
-{
-    switch (inteligent_discard_mode)
-    {
-        case 0: // Never soft-line
-            softline=false;
-            break;
-        case 1: // Only Hop0 is soft-line
-            if (hop_number>4 || hop_number<4)
-                softline=false;
-            break;
-        case 2: //  Hop0 & Hop1 is soft-line
-            if (hop_number>5 || hop_number<3)
-                softline=false;
-            break;
-        case 3: // Hop0, Hop1 & Hop2 are softline
-            if (hop_number>6 || hop_number<2)
-                softline=false;
-            break;
-        case 4: // Hop0, Hop1, Hop2 & Hop3 are softline
-            if (hop_number>7 || hop_number<1)
-                softline=false;
-            break;
-        case 5: // Allways everything is softline
-            softline=true;
-            break;
-        default:
-            if (hop_number>6 || hop_number<2)
-                softline=false;
-            break;
-
-    }
-}
+        if (hop_number==5)
+            grad=1;
+        else if (hop_number==3)
+            grad=-1;
+        else if (!small_hop)
+            grad=0;
+        
+        if (x>2)
+        {
+            switch (inteligent_discard_mode)
+            {
+                case 0: // Never soft-line
+                    softline=false;
+                    break;
+                case 1: // Only Hop0 is soft-line
+                    if (hop_number == 4)
+                        softline=false;
+                    break;
+                case 2: //  Hop0 & Hop1 is soft-line
+                    if (hop_number>5 || hop_number<3)
+                        softline=false;
+                    break;
+                case 3: // Hop0, Hop1 & Hop2 are softline
+                    if (hop_number>6 || hop_number<2)
+                        softline=false;
+                    break;
+                case 4: // Hop0, Hop1, Hop2 & Hop3 are softline
+                    if (hop_number>7 || hop_number<1)
+                        softline=false;
+                    break;
+                case 5: // Allways everything is softline
+                    softline=true;
+                    break;
+                default:
+                    if (hop_number>6 || hop_number<2)
+                        softline=false;
+                    break;
+            }
+        }
 
 #ifdef JUMP_TO_EVENS
 
-        if (hop_number>= 5 || hop_number <= 3)
+        if (hop_number != 4)
             x++;
         else
             x = (x + 2) & ~(1);
-#else /* !JUMP_TO_EVENS */
-	x++;
+#else /* JUMP_TO_EVENS */
+        x++;
 #endif /* JUMP_TO_EVENS */
 
-  }
-//  printf("\n");
-//if (softline) fprintf(stderr, "linea descartada \n ");
-
-
-return softline;
+    }
+    return softline;
 }
