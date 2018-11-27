@@ -255,6 +255,7 @@ void encode_video_from_file_sequence(char filename[], int sequence_length)
     char local_filename[120];
     long bytes = 0;
     int status;
+    long sum_discarded_Y=0, sum_discarded_U=0, sum_discarded_V=0 ;
 
     sprintf(local_filename,filename,sequence_init);
     init_image_loader_file(local_filename);
@@ -294,6 +295,26 @@ void encode_video_from_file_sequence(char filename[], int sequence_length)
         total_secs += secs;
         min_secs = secs < min_secs? secs :min_secs;
         max_secs = secs > max_secs? secs : max_secs;
+        
+     
+        for (int line = 0; line < height_down_Y; line++)
+        {
+			if (inteligent_discard_Y[line] == true)
+			{
+				sum_discarded_Y++;
+			}
+		}
+		for (int line = 0; line < height_down_UV; line++)
+		{
+			if (inteligent_discard_U[line] == true)
+			{
+				sum_discarded_U++;
+			}
+			if (inteligent_discard_V[line] == true)
+			{
+				sum_discarded_V++;
+			}
+		}
     }
     send_fake_newline();
     send_fake_newline();
@@ -304,7 +325,13 @@ void encode_video_from_file_sequence(char filename[], int sequence_length)
 
     bytes /= sequence_length;
     total_secs /= sequence_length;
+    sum_discarded_Y /= sequence_length;
+    sum_discarded_U /= sequence_length;
+    sum_discarded_V /= sequence_length;
+    
     fprintf(stderr,"INFO: Sucessfully coded %d images using as average of %d bytes\n The time per frame average=%lfsec max=%lfsec min=%lfsec\n", sequence_length, bytes, total_secs, max_secs, min_secs);
+    fprintf(stderr,"INFO: The time per frame average=%lfsec max=%lfsec min=%lfsec\n", total_secs, max_secs, min_secs);
+    fprintf(stderr,"INFO: The number of scanlines discarded as average are Y=%d U=%d V=%d\n",sum_discarded_Y, sum_discarded_U, sum_discarded_V);
     return;
 }
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -25,7 +25,6 @@ int main(int argc, char* argv[])
     }
     else if (status == 2)
     {
-        fprintf(stderr,"sequence %s %d \n", filename, sequence_length);
         encode_video_from_file_sequence(filename, sequence_length);
     }
 	return 0;
