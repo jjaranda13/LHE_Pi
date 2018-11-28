@@ -409,7 +409,7 @@ phase3:
                     softline=false;
                     break;
                 case 1: // Only Hop0 is soft-line
-                    if (hop_number == 4)
+                    if (hop_number != 4)
                         softline=false;
                     break;
                 case 2: //  Hop0 & Hop1 is soft-line
