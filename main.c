@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
 
     if (status == 0)
     {
-        VideoSimulation();
+        video_recording();
     }
     else if (status == 1)
     {

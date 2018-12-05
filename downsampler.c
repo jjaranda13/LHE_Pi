@@ -22,38 +22,34 @@
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void init_downsampler()
 {
-if (DEBUG) printf("ENTER in init_downsampler...\n");
-if (DEBUG) printf ("pppx=%d, pppy=%d \n ",pppx,pppy);
-width_down_Y=width_orig_Y/pppx;
-height_down_Y=height_orig_Y/pppy;
+	if (DEBUG) printf("ENTER in init_downsampler...\n");
+	if (DEBUG) printf ("pppx=%d, pppy=%d \n ",pppx,pppy);
+	width_down_Y=width_orig_Y/pppx;
+	height_down_Y=height_orig_Y/pppy;
 
-//aqui habria que comprobar el modelo de color con la variable yuv_model
-//-----------------------------------------
-width_down_UV=width_down_Y/2;
-height_down_UV=height_down_Y/2;
+	//aqui habria que comprobar el modelo de color con la variable yuv_model
+	//-----------------------------------------
+	width_down_UV=width_down_Y/2;
+	height_down_UV=height_down_Y/2;
 
-//memory allocation
-//------------------
-orig_down_Y=(unsigned char**) malloc(height_down_Y*sizeof (unsigned char *));
-orig_down_U=(unsigned char**) malloc(height_down_UV*sizeof (unsigned char *));
-orig_down_V=(unsigned char**) malloc(height_down_UV*sizeof (unsigned char *));
-
-
-for (int i=0;i<height_down_Y;i++)
-  {
-  orig_down_Y[i]= (unsigned char *) malloc(width_down_Y* sizeof (unsigned char));
-  }
-for (int i=0;i<height_down_UV;i++)
-  {
-  orig_down_U[i]=(unsigned char *) malloc(width_down_UV* sizeof (unsigned char));
-  orig_down_V[i]=(unsigned char *) malloc(width_down_UV* sizeof (unsigned char));
-  }
+	//memory allocation
+	//------------------
+	orig_down_Y=(unsigned char**) malloc(height_down_Y*sizeof (unsigned char *));
+	orig_down_U=(unsigned char**) malloc(height_down_UV*sizeof (unsigned char *));
+	orig_down_V=(unsigned char**) malloc(height_down_UV*sizeof (unsigned char *));
 
 
-down_quant_flag=malloc(height_down_Y* sizeof (unsigned char));
-
-downsampler_initialized=true;
-if (DEBUG) printf(" downsampler initialized succesfully \n");
+	for (int i=0;i<height_down_Y;i++)
+	{
+		orig_down_Y[i]= (unsigned char *) malloc(width_down_Y* sizeof (unsigned char));
+	}
+	for (int i=0;i<height_down_UV;i++)
+	{
+		orig_down_U[i]=(unsigned char *) malloc(width_down_UV* sizeof (unsigned char));
+		orig_down_V[i]=(unsigned char *) malloc(width_down_UV* sizeof (unsigned char));
+	}
+	downsampler_initialized=true;
+	if (DEBUG) printf(" downsampler initialized succesfully \n");
 
 }
 

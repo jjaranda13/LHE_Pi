@@ -17,6 +17,8 @@
 
 #define JUMP_TO_EVENS
 
+#define NEON
+
 #define YUV444 0
 #define YUV422 1
 #define YUV420 2
@@ -82,29 +84,6 @@ pthread_mutex_t cam_down_mutex;
 pthread_cond_t cam_down_cv;
 unsigned char cam_down_flag;
 
-//Variable condicional para iniciar la cuantización de las scanlines(hace broadcast cuando se tenga una slice)
-unsigned char down_quant_sem;
-
-//comunicacion down y quantizer
-unsigned char *down_quant_flag;
-
-pthread_mutex_t *down_quant_mutex_Y;
-pthread_cond_t *down_quant_cv_Y;
-pthread_mutex_t *down_quant_mutex_UV;
-pthread_cond_t *down_quant_cv_UV;
-
-//Flags de lineas ent y stream
-unsigned char *ent_stream_flag;
-
-//Semaforo para comprobar la transmision y enviar si se puede
-unsigned char ent_stream_sem;
-
-pthread_mutex_t *ent_stream_mutex_Y;
-pthread_cond_t *ent_stream_cv_Y;
-pthread_mutex_t *ent_stream_mutex_UV;
-pthread_cond_t *ent_stream_cv_UV;
-
-
 //arays de imagen delta para video diferencial
 unsigned char **delta_Y;
 unsigned char **delta_U;
@@ -135,46 +114,12 @@ unsigned char rlc_length, condition_length;
 
 unsigned int hops_type[9];
 
+//descarte inteligente de scanlines
+bool *inteligent_discard_Y;
+bool *inteligent_discard_U;
+bool *inteligent_discard_V;
 
-
-
-// imagen expandida por EPX ( o por lo que sea)
-// su ancho y alto va a ser el de la imagen original. no hace falta explicitarlos
-unsigned char **scaled_Y;
-unsigned char **scaled_U;
-unsigned char **scaled_V;
-
-
-
-
-// bufferes necesarios para video
-//------------------------------------
-//arrays downsampleados. necesitan ser alocados
-unsigned char **last_frame_player_Y;
-unsigned char **last_frame_player_U;
-unsigned char **last_frame_player_V;
-
-//esto es solo un puntero. no hay que alocarlo. apunta a orig_down o a dif
-unsigned char **target_Y;
-unsigned char **target_U;
-unsigned char **target_V;
-
-
-
-//arays de imagen resultante tras cuantizar (necesaria para la prediccion de LHE) y para calcular el siguiente delta
-//hay que allocarlos
-unsigned char **result2_Y;
-unsigned char **result2_U;
-unsigned char **result2_V;
-
-//esto es solo un puntero conmutador, no hay que alocarlo. apunta a result o a result2
-unsigned char **frame_encoded_Y;
-unsigned char **frame_encoded_U;
-unsigned char **frame_encoded_V;
-
-
-//esto lo hacemos global para poder recoger la cantidad de bits del entropico
-
+// Coding threads: Information to pass to the the coding threads.
 struct thread_info
 {
 int start;
@@ -187,39 +132,37 @@ int id;
 };
 struct thread_info *tinfo;
 
-struct thread_streamer_info
-{
-int start;
-int separation;
-};
-
-struct thread_streamer_info *tsinfo;
-
-//threads de codificacion (quantizer + entropic)
+//coding threds: Declaration
 pthread_mutex_t th_done[num_threads];
 pthread_t thread[num_threads];
 
+//Streamer: globals variables TODO-> Are those neccesary?
+int nal_byte_counter;
+int frame_byte_counter;
+int total_frames;
+int total_bytes;
+bool newframe;
 
-//threads de streaming y mutex de esos threads
+// Streamer: threads and mutex for stdout
 pthread_t streamer_thread[num_threads*8];
 pthread_mutex_t stream_subframe_mutex;
 
-// Mutex, flags and conditional variables to sync the streamer.
+// Streamer:Mutex, flags and conditional variables to sync the streamer.
 pthread_cond_t stream_subframe_sync_cv[8];
 uint8_t stream_subframe_sync[8];
 pthread_mutex_t stream_subframe_sync_mtx;
 
-//contador de bytes de NAL y de frame
-int nal_byte_counter;
-int frame_byte_counter;
+// Streamer: Information to pass to the the streamer threads
+struct thread_streamer_info
+{
+	int start;
+	int separation;
+};
+struct thread_streamer_info *tsinfo;
 
 
-//descarte inteligente de scanlines
-bool *inteligent_discard_Y;
-bool *inteligent_discard_U;
-bool *inteligent_discard_V;
 
-// HTTP API
+// HTTP API: Type for the data and variable to hold it
 struct http_socket_info {
 	int listener;
 	int client_listener;
@@ -231,6 +174,7 @@ struct http_socket_info {
 };
 struct http_socket_info http_info;
 
+// Main comand line arguments
 bool is_rtp;
 int sequence_length;
 int sequence_init;

@@ -113,18 +113,10 @@ result_Y=malloc(height_down_Y*sizeof (unsigned char *));
 result_U=malloc(height_down_UV*sizeof (unsigned char *));
 result_V=malloc(height_down_UV*sizeof (unsigned char *));
 
-
-result2_Y=malloc(height_down_Y*sizeof (unsigned char *));
-result2_U=malloc(height_down_UV*sizeof (unsigned char *));
-result2_V=malloc(height_down_UV*sizeof (unsigned char *));
-
-
-
 for (int i=0;i<height_down_Y;i++)
   {
   hops_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
   result_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
-  result2_Y[i]=malloc(width_down_Y* sizeof (unsigned char));
   }
 
 for (int i=0;i<height_down_UV;i++)
@@ -137,12 +129,7 @@ for (int i=0;i<height_down_UV;i++)
   result_U[i]=malloc(width_down_UV* sizeof (unsigned char));
   result_V[i]=malloc(width_down_UV* sizeof (unsigned char));
 
-  result2_U[i]=malloc(width_down_UV* sizeof (unsigned char));
-  result2_V[i]=malloc(width_down_UV* sizeof (unsigned char));
-
   }
-
-ent_stream_flag=malloc(height_down_Y* sizeof (unsigned char));
 
 // these lines print the cache, for debug purposes
 //----------------------------------
@@ -186,15 +173,14 @@ inteligent_discard_mode = DEFAULT_INTELIGENT_DISCARD_MODE;
 
 quantizer_initialized=true;
 
-}// end function
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+}
+
 void close_quantizer()
 {
     for (int i=0;i<height_down_Y;i++)
     {
         free (hops_Y[i]);
         free(result_Y[i]);
-        free(result2_Y[i]);
     }
     for (int i=0;i<height_down_UV;i++)
     {
@@ -202,8 +188,6 @@ void close_quantizer()
         free (hops_V[i]);
         free (result_U[i]);
         free (result_V[i]);
-        free (result2_U[i]);
-        free (result2_V[i]);
     }
     free (hops_Y);
     free(hops_U);
@@ -213,11 +197,6 @@ void close_quantizer()
     free(result_U);
     free(result_V);
 
-    free (result2_Y);
-    free(result2_U);
-    free(result2_V);
-
-    //inteliigent discard
     free (inteligent_discard_Y);
     free (inteligent_discard_U);
     free (inteligent_discard_V);

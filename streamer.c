@@ -27,11 +27,7 @@
 
 #include "include/globals.h"
 #include "include/streamer.h"
-int total_frames=0;
-int total_bytes=0;
-bool newframe=false;
 
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void init_streamer()
 {
     pthread_mutex_init(&stream_subframe_mutex,NULL);
@@ -49,12 +45,13 @@ void init_streamer()
     frame_byte_counter=0;
     total_bytes=0;
     total_frames=0;
+    newframe = false;
 }
 
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void *mytask_stream(void *arg)
+
+void *threaded_stream(void *arg)
 {
-    struct thread_streamer_info *tinfo = arg; //(int start, int separation, int num_threads)
+    struct thread_streamer_info *tinfo = arg;
     int start=tinfo->start;
     int separation=tinfo->separation;
 
@@ -63,15 +60,13 @@ void *mytask_stream(void *arg)
     previous_subframe = previous_subframe < 0 ? 8 + previous_subframe: previous_subframe;
 
     pthread_mutex_lock(&stream_subframe_sync_mtx);
-    if(stream_subframe_sync[previous_subframe] != num_threads)
+    while(stream_subframe_sync[previous_subframe] != num_threads)
     {
         pthread_cond_wait (&stream_subframe_sync_cv[previous_subframe],&stream_subframe_sync_mtx);
     }
     pthread_mutex_unlock(&stream_subframe_sync_mtx);
 
     pthread_mutex_lock(&stream_subframe_mutex);
-    //inteligent discard
-    bool discard=true;
 
     //luminancias
     int line=start;
@@ -80,7 +75,7 @@ void *mytask_stream(void *arg)
 
     while (line<height_down_Y)
     {
-        if (!discard || line%2==0|| inteligent_discard_Y[line]==false)
+        if (line%2==0|| inteligent_discard_Y[line]==false)
         {
             stream_line(bits_Y, tam_bits_Y[line],line, Y_COMPONENT);
         }
@@ -91,11 +86,11 @@ void *mytask_stream(void *arg)
     line=start;
     while (line<height_down_UV)
     {
-        if (!discard || line%2==1 || inteligent_discard_U[line]==false);
+        if (line%2==1 || inteligent_discard_U[line]==false);
         {
             stream_line(bits_U, tam_bits_U[line],line, U_COMPONENT);
         }
-        if (!discard && line%2==1 || inteligent_discard_V[line]==false);
+        if (line%2==1 || inteligent_discard_V[line]==false);
         {
             stream_line(bits_V, tam_bits_V[line],line, V_COMPONENT);
         }
@@ -119,27 +114,16 @@ void *mytask_stream(void *arg)
 
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void lanza_streamer_subframe(int startline,int separation)
+void stream_slice(int startline,int separation)
 {
-pthread_attr_t attr;
-pthread_attr_init(&attr);
-pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-//struct thread_streamer_info tinfo;
+	tsinfo[startline].start=startline;
+	tsinfo[startline].separation=separation;
 
-tsinfo[startline].start=startline;
-tsinfo[startline].separation=separation;
-
-//crear thread
-//pthread_t mithread;
-
-//printf ("streaming %d \n", startline);
-//pthread_create(&mithread, &attr, &mytask_stream, &tsinfo[startline]);
-
-pthread_create(&streamer_thread[startline], &attr, &mytask_stream, &tsinfo[startline]);
-//pthread_join(mithread, NULL);
-
-
+	pthread_create(&streamer_thread[startline], &attr, &threaded_stream, &tsinfo[startline]);
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -174,13 +158,6 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line, int line_type)
     {
         line_high |= 0x20;
     }
-
-     //if (line_high==0) line_high=1;
-     //if (line_low==0) line_low=1;
-
-    //line_high=1;
-    //line_low=1;
-
     line_size_bytes = (bits_lenght%8 == 0)? bits_lenght/8 : (bits_lenght/8)+1;
 
     if (newframe)
@@ -210,8 +187,6 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line, int line_type)
     fwrite(&line_high,sizeof(uint8_t),1,stdout);
     fwrite(&line_low,sizeof(uint8_t),1,stdout);
     fwrite(bits[line], sizeof(uint8_t), line_size_bytes, stdout);
-    //fflush(stdout);
-    //fclose(stdout);
 
 }
 
@@ -226,7 +201,8 @@ void send_nal()
 
     send_frame_header(width_orig_Y, height_orig_Y , pppx, pppy);
 }
-int count = 0;
+
+
 void send_frame_header(int width, int height , int pppx, int pppy)
 {
     uint8_t header;
@@ -243,25 +219,17 @@ void send_frame_header(int width, int height , int pppx, int pppy)
 
     header = (uint8_t) (pppx << 4);
     header |= (uint8_t) pppy;
-
     fwrite(&header,sizeof(uint8_t),1,stdout);
-    //fprintf (stderr,"Sent %x", header);
-
+    
     header = (uint8_t) (width >> 4);
-
     fwrite(&header,sizeof(uint8_t),1,stdout);
-    //fprintf (stderr,"-%x", header);
 
     header = (uint8_t) (width << 4);
     header |= (uint8_t) (height >> 8);
-
     fwrite(&header,sizeof(uint8_t),1,stdout);
-    //fprintf (stderr,"-%x", header);
 
     header = (uint8_t) height;
     fwrite(&header,sizeof(uint8_t),1,stdout);
-    //fprintf (stderr,"-%x", header);
-    //fprintf (stderr," -> width=%d height=%d pppx=%d pppy=%d\n", width, height , pppx, pppy);
 }
 
 void stream_frame()
