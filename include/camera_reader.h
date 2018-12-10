@@ -17,6 +17,15 @@
 #include <interface/mmal/mmal.h>
 
  /**
+  * @brief Prints the camera delay to the stderr.
+  * 
+  * This delay is the difference between the CSI interrruption. This 
+  * corresponds to the time were the first line arrived at the GPU. and 
+  * the time where the code actually adquired the image to process it.
+  */
+//#define PRINT_CAMERA_DELAY
+
+ /**
   * @brief Camera Options.
   *
   * Options to pass to the camera. An instance of this struct must be send in

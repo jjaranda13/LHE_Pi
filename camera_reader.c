@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "include/camera_reader.h"
 #include "include/globals.h"
@@ -24,7 +25,6 @@
 #define VIDEO_FRAME_RATE_DEN 1
 #define VIDEO_OUTPUT_BUFFERS_NUM 5
 
-int frame_counter=0;
 
 void camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
@@ -117,7 +117,7 @@ MMAL_COMPONENT_T * init_camera(CAMERA_OPTIONS *options)
         .num_preview_video_frames = 3,
         .stills_capture_circular_buffer_height = 0,
         .fast_preview_resume = 0,
-        .use_stc_timestamp = MMAL_PARAM_TIMESTAMP_MODE_RESET_STC
+        .use_stc_timestamp = MMAL_PARAM_TIMESTAMP_MODE_RAW_STC
     };
     status = mmal_port_parameter_set(camera->control, &cam_config.hdr);
 
@@ -246,10 +246,24 @@ void camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 
 void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
-    //if (DEBUG) printf ("DEBUG:camera_buffer_callback: Called camera_buffer_callback\n");
+    static unsigned int frame_counter = 0;
+    static uint64_t delay = 0;
     PORT_USERDATA *callback_data;
     callback_data = (PORT_USERDATA *)port->userdata;
-    frame_counter++;
+
+#ifdef PRINT_CAMERA_DELAY
+	uint64_t recieved_time;
+	int status = mmal_port_parameter_get_uint64(port, MMAL_PARAMETER_SYSTEM_TIME, &recieved_time);
+	if (status != MMAL_SUCCESS)
+        fprintf(stderr,"%s:%s:%d:ERROR: Failed to obtain the GPU time\n", __FILE__,__func__ ,__LINE__);
+	if (delay == 0)
+		delay = (recieved_time - buffer->pts);
+	else
+		delay = (delay + (recieved_time - buffer->pts))/2;
+	if (frame_counter%120 == 0)
+		fprintf(stderr,"%s:%s:%d:INFO: Camera delay is: %llu\n", __FILE__,__func__ ,__LINE__, recieved_time - buffer->pts);
+	
+#endif
 
     if (!pthread_mutex_trylock(&cam_down_mutex)) // Downsampler finished its work so the global pointers can b modified.
     {
@@ -313,6 +327,7 @@ void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
             fprintf(stderr,"%s:%s:%d:ERROR: Unable to return a buffer to the camera port\n", __FILE__,__func__ ,__LINE__);
         }
     }
+    frame_counter++;
 }
 
 
