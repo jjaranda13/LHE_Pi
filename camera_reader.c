@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include "include/camera_reader.h"
 #include "include/globals.h"
@@ -30,8 +32,9 @@ void camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 typedef struct
 {
-   MMAL_POOL_T *pool ;                    // Pool which contains the buffers we are using.
-   MMAL_BUFFER_HEADER_T *previous_buffer; // Buffer of the previous frame. Passed in order to release it.
+   MMAL_POOL_T *pool ;                    /// Pool which contains the buffers we are using.
+   MMAL_BUFFER_HEADER_T *previous_buffer; /// Buffer of the previous frame. Passed in order to release it.
+   int framerate_div;                     /// Divisor of the fps requested.
 } PORT_USERDATA;
 
 
@@ -194,6 +197,7 @@ MMAL_COMPONENT_T * init_camera(CAMERA_OPTIONS *options)
 
     callback_data->pool = pool;
     callback_data->previous_buffer= NULL;
+    callback_data->framerate_div= options->framerate_div;
     video_port->userdata = (struct MMAL_PORT_USERDATA_T *)callback_data;
 
     if (DEBUG) printf ("%s:%s:%d:DEBUG: Callback data introduced into the output port \n", __FILE__,__func__ ,__LINE__);
@@ -265,9 +269,22 @@ void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 	
 #endif
 
-    if (!pthread_mutex_trylock(&cam_down_mutex)) // Downsampler finished its work so the global pointers can b modified.
-    {
+#ifdef PRINT_PERIOD_FRAMES
+	static struct timeval start, end;
+	gettimeofday(&end, NULL);
+	unsigned long delta = (end.tv_sec-start.tv_sec)*1000000 + (end.tv_usec-start.tv_usec);
+	if (frame_counter%130 == 0)
+		fprintf(stderr,"Time between frames is %lu us\n", delta);
+	gettimeofday(&start, NULL);
+	
+#endif
 
+	/* Downsampler finished its work so the global pointers can be
+	 * modified. And the fram shouldnt be skipped by configuration
+	 */
+    if (frame_counter%(callback_data->framerate_div) == 0 && (!pthread_mutex_trylock(&cam_down_mutex))) 
+    {
+		
         int index = 0;
         int y=0;
 

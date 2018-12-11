@@ -26,6 +26,12 @@
 //#define PRINT_CAMERA_DELAY
 
  /**
+  * @brief Prints the time between frames.
+  * 
+  */
+//#define PRINT_PERIOD_FRAMES
+
+ /**
   * @brief Camera Options.
   *
   * Options to pass to the camera. An instance of this struct must be send in
@@ -36,6 +42,7 @@ typedef struct CAMERA_OPTIONS
   int width;                          /// Requested width of the image
   int height;                         /// requested height of the image
   int framerate;                      /// Requested frame rate (fps)
+  int framerate_div;                      /// Skipping frames. Used to set a hight fps and then divide it by this number.
   int cameraNum;                      /// Camera number. Set it to 0 as default.
   int sensor_mode;                    /// Sensor mode. 0=auto. @see https://www.raspberrypi.org/documentation/raspbian/applications/camera.md
 } CAMERA_OPTIONS;

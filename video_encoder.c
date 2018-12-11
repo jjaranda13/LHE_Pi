@@ -167,9 +167,10 @@ void video_recording()
 
     options.width = 640;
     options.height = 480;
-    options.framerate = 30;
+    options.framerate = 60;
+    options.framerate_div = 2;
     options.cameraNum = 0;
-    options.sensor_mode = 5;
+    options.sensor_mode = 7;
     DEBUG = false;
     yuv_model = YUV420;
 
