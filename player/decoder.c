@@ -31,23 +31,19 @@ double timeval_diff(struct timeval *a, struct timeval *b);
 
 
 int decode_stream(bool fullscreen, get_bits_context * ctx,  char * output_file) {
-
 	bool is_output_file;
 	char filename[120];
-	int status, subframe = 0, component_state = Y_STATE, frame_counter = 0,
-        width, height, pppx, pppy;
-	unsigned int subframe_counter[8] = { 0 };
-	bool is_Y[1080] = { false }, is_U[1080] = { false },
-		is_V[1080] = { false }, first = true;
+	int status, subframe = 0,frame, component_state = Y_STATE, frame_counter = 0, line_counter = 0, width, height, pppx, pppy;
+	bool *is_Y = NULL, *is_U = NULL, *is_V = NULL, first = true;
 	uint8_t *hops = NULL;
 	uint32_t headers = 0;
 	yuv_image *img, *img_up, *img_inter;
 	struct timeval t_ini, t_fin;
 
 	build_hop_cache();
-	
+
 	if(strcmp(output_file, "NULL") == 0) {
-		is_output_file = false;	
+		is_output_file = false;
 	} else {
 		is_output_file = true;
 	}
@@ -65,36 +61,41 @@ int decode_stream(bool fullscreen, get_bits_context * ctx,  char * output_file) 
 
 	init_player(width, height, fullscreen);
 	hops = (uint8_t *)malloc(sizeof(uint8_t)* width/pppx);
+	is_Y = (bool *)malloc (sizeof(bool)* height);
+	is_U = (bool *)malloc (sizeof(bool)* height/pppy);
+	is_V = (bool *)malloc (sizeof(bool)* height/pppy);
 	img = allocate_yuv_image(width/pppx, height/pppy);
 	img_inter = allocate_yuv_image(width, height/pppy);
 	img_up = allocate_yuv_image(width, height);
 
-	if (hops == NULL || img == NULL || img_up == NULL) {
+	if (hops == NULL || img == NULL || img_up == NULL || is_Y == NULL || is_U == NULL|| is_V == NULL) {
 		printf("Cannot allocate memory\n");
 		return(-1);
 	}
 	gettimeofday(&t_ini, NULL);
-	
+
 	// Player loop, never ends until process is killed.
 	while (true) {
 
-		int readed_hops, line_num, past_subframe;
+		int readed_hops, line_num = -1, past_subframe, past_frame;
 		double secs;
-		
+
 		uint16_t headers = 0;
 
-		headers = get_aligned_byte(ctx);
-		headers = get_aligned_byte(ctx) + (headers << 8);
+        headers = get_aligned_byte(ctx);
+        headers = (get_aligned_byte(ctx)<<8) + headers;
+
 		// In the first iteration fill the variables with the same values.
 		if (first) {
-			status = get_header(headers, &component_state, &line_num, &subframe);
+			status = get_header(headers, height/pppy, &component_state, &line_num, &subframe, &frame);
 			if (status != 0) {
 				printf("Wrong header\n");
 			}
 			first = false;
 		}
 		past_subframe = subframe;
-		status = get_header(headers, &component_state, &line_num, &subframe);
+		past_frame = frame;
+		status = get_header(headers, height/pppy, &component_state, &line_num, &subframe, &frame);
 
 		if (status == 1) {
 			get_aligned_byte(ctx); // Trash the 0
@@ -105,25 +106,29 @@ int decode_stream(bool fullscreen, get_bits_context * ctx,  char * output_file) 
 			get_aligned_byte(ctx); // Trash the Stream header 3
 			get_aligned_byte(ctx); // Trash the Stream header 4
 
-			headers = get_aligned_byte(ctx);
-			headers = get_aligned_byte(ctx) + (headers << 8);
-			status = get_header(headers, &component_state, &line_num, &subframe);
+            headers = get_aligned_byte(ctx);
+            headers = (get_aligned_byte(ctx)<<8) + headers;
+			status = get_header(headers, height/pppy, &component_state, &line_num, &subframe, &frame);
 
 		}
+
 		if (status != 0 || line_num > height) {
-			printf("Wrong header or line_num too high ");
+			printf("Wrong header or line_num too high status=%d line_num=%d",status, line_num);
 			line_num = 0;
 		}
 
-		if (is_frame_completed(subframe, past_subframe)) {
+		if (is_frame_completed(subframe, past_subframe, frame, past_frame)) {
 			frame_counter++;
-			reconstruct_frame(img, is_Y, is_U, is_V, height/pppy, width/pppx);
-			upsample_frame_edge(img, img_inter, img_up);
+			if (line_counter <= height && line_counter >= 0.2 * height){
+                reconstruct_frame(img, is_Y, is_U, is_V, height/pppy, width/pppx);
+                upsample_frame_edge(img, img_inter, img_up);
 
-			handle_window();
-			play_frame(img_up->Y_data, img_up->U_data, img_up->V_data, width, width/2);
-			reset_control_arrays(subframe_counter, is_Y, is_U, is_V);
-			
+                handle_window();
+                play_frame(img_up->Y_data, img_up->U_data, img_up->V_data, width, width/2);
+			}
+			reset_control_arrays(is_Y, is_U, is_V, height, pppy);
+			line_counter = 0;
+
 			if (frame_counter % 60 == 0) {
 				gettimeofday(&t_fin, NULL);
 				secs = timeval_diff(&t_fin, &t_ini);
@@ -134,28 +139,26 @@ int decode_stream(bool fullscreen, get_bits_context * ctx,  char * output_file) 
 				sprintf(filename,output_file,frame_counter);
 				status = save_to( filename, img_up);
 				if (status != 0) {
-					return 1;	
+					return 1;
 				}
 			}
 		}
+		line_counter++;
 		switch (component_state) {
 		case Y_STATE:
 			readed_hops = obtain_symbols_entropic(ctx, hops, width/pppx);
 			decode_line_quantizer(hops, img->Y_data + (width/pppx) * line_num, readed_hops);
 			is_Y[line_num] = true;
-			subframe_counter[subframe]++;
 			break;
 		case U_STATE:
 			readed_hops = obtain_symbols_entropic(ctx, hops, width/(pppx*2));
 			decode_line_quantizer(hops, img->U_data + (width/(pppx*2))*line_num, readed_hops);
 			is_U[line_num] = true;
-			subframe_counter[subframe]++;
 			break;
 		case V_STATE:
 			readed_hops = obtain_symbols_entropic(ctx, hops, width/(pppx*2));
 			decode_line_quantizer(hops, img->V_data + (width/(pppx*2))*line_num, readed_hops);
 			is_V[line_num] = true;
-			subframe_counter[subframe]++;
 			break;
 		}
 	}
@@ -171,6 +174,7 @@ int decode_stream_stdin(bool fullscreen, char * output_file) {
 			return(-1);
 		}
 	#endif
+	freopen(NULL, "rb", stdin);
 
 	init_get_bits(stdin, &ctx);
 
@@ -202,30 +206,29 @@ int decode_stream_file(bool fullscreen, char * filename, char * output_file) {
 	return decode_stream(fullscreen, &ctx, output_file);
 }
 
-int get_header(uint16_t header, int *state, int *line_num, int *subframe) {
-	int frame_type;
+int get_header(uint16_t header, int max_line_num, int *line_type, int *line_num, int *subframe, int *frame){
 
-	frame_type = header >> 13;
-	*line_num = header & ~(0xE000);
-	*subframe = *line_num % 8;
-	
-	if (frame_type == 3) {
-		*state = Y_STATE;
-	}
-	else if (frame_type == 2) {
-		*state = U_STATE;
-	}
-	else if (frame_type == 1) {
-		*state = V_STATE;
-	}
-	else if (frame_type == 0 && *line_num == 0) {
-		// It everything is 0 it means that we found the first two bytes of a NAL.
-		return 1;
-	}
-	else {
-		printf("Inconsistent line number found.\n");
-		return -1;
-	}
+    int aux = header / (max_line_num/2);
+
+    *frame = aux/4; //header / (max_line_num*2);
+
+    if(aux % 4 == 0 || aux % 4 == 1) {
+        *line_type = Y_STATE;
+        *line_num = header - 2*max_line_num*(*frame);
+    }
+    else if (aux % 4 == 2) {
+        *line_type = U_STATE;
+        *line_num = header - 2*max_line_num*(*frame) - max_line_num;
+    }
+    else if (aux % 4 == 3) {
+        *line_type = V_STATE;
+        *line_num = header - 2*max_line_num*(*frame) - 3*max_line_num/2;
+    }
+    *subframe = *line_num%8;
+    if (header == 0)
+    {
+        return 1;
+    }
 	return 0;
 }
 
@@ -252,13 +255,15 @@ int get_stream_header(uint32_t headers, int *width, int *height , int *pppx, int
     return 0;
 }
 
-bool is_frame_completed(int subframe, int past_subframe) {
+bool is_frame_completed(int subframe, int past_subframe,int frame,int past_frame) {
 
-	bool cond1 = subframe < past_subframe - 5;
-	if (cond1)
+	//bool cond1 = subframe < past_subframe - 5;
+	bool cond2 = frame != past_frame;
+
+	if (cond2){
 		return true;
-	else
-		return false;
+	}
+    return false;
 }
 
 void reconstruct_frame(yuv_image *img, bool is_Y[1080], bool is_U[1080], bool is_V[1080], int height, int width) {
@@ -281,7 +286,9 @@ void reconstruct_frame(yuv_image *img, bool is_Y[1080], bool is_U[1080], bool is
 				// Leave past scanline, wont be too bad as images have temporal coorelation.
 			}
 		}
+
 	}
+
 	for (int i = 0; i < UVheight; i++) {
 		if (!is_U[i]) {
 			find_available_lines(i, is_U, UVheight, &upper_line, &lower_line);
@@ -335,12 +342,11 @@ void find_available_lines(int line, bool is_component[1080], int line_lenght, in
 	return;
 }
 
-void reset_control_arrays(unsigned int subframe_counter[8], bool is_Y[1080], bool is_U[1080], bool is_V[1080]) {
+void reset_control_arrays(bool is_Y[], bool is_U[], bool is_V[], int height,int pppy) {
 
-	memset((void *)subframe_counter, false, sizeof(unsigned int) * 8);
-	memset((void *)is_Y, false, sizeof(bool) * 1080);
-	memset((void *)is_U, false, sizeof(bool) * 1080);
-	memset((void *)is_V, false, sizeof(bool) * 1080);
+	memset((void *)is_Y, false, sizeof(bool) * height);
+	memset((void *)is_U, false, sizeof(bool) * height/pppy);
+	memset((void *)is_V, false, sizeof(bool) * height/pppy);
 	return;
 }
 

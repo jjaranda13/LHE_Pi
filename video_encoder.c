@@ -212,6 +212,7 @@ void video_recording()
 		pthread_mutex_unlock (&cam_down_mutex);
 
         process_http_api();
+        newframe=true;//flag de nuevo frame
         encode_frame(result_Y,result_U,result_V);
 
         for (int i=0; i< num_threads; i++)

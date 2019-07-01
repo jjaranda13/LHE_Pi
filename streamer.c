@@ -15,6 +15,7 @@
 
 #include <time.h>
 #include <unistd.h>
+#include <math.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -44,7 +45,7 @@ void init_streamer()
 
     frame_byte_counter=0;
     total_bytes=0;
-    total_frames=0;
+    total_frames=1;
     newframe = false;
 }
 
@@ -70,9 +71,6 @@ void *threaded_stream(void *arg)
 
     //luminancias
     int line=start;
-
-    if (line==0 ) newframe=true;//flag de nuevo frame
-
     while (line<height_down_Y)
     {
         if (line%2==0|| inteligent_discard_Y[line]==false)
@@ -130,8 +128,9 @@ void stream_slice(int startline,int separation)
 
 void stream_line(uint8_t ** bits, int bits_lenght, int line, int line_type)
 {
-    uint8_t line_low, line_high;
+    uint16_t header;
     int line_size_bytes;
+    int max_frame = pow(2, 15)/ (height_down_Y*2);
 
 #if DEBUG_RANDOM_LOSES > 0
     int random = rand() % 100;
@@ -141,40 +140,47 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line, int line_type)
     }
 #endif /* DEBUG_RANDOM_LOSES > 0 */
 
-    int line_aux = line;
-
-    line_low = (uint8_t) line_aux;
-    line_high = (uint8_t) (line_aux >> 8);
-
-    if (line_type == Y_COMPONENT)
-    {
-        line_high |= 0x60;
-    }
-    else if (line_type == U_COMPONENT)
-    {
-        line_high |= 0x40;
-    }
-    else // When line_type == V_COMPONENT  V component
-    {
-        line_high |= 0x20;
-    }
-    line_size_bytes = (bits_lenght%8 == 0)? bits_lenght/8 : (bits_lenght/8)+1;
 
     if (newframe)
     {
         total_frames += 1;
         total_bytes += frame_byte_counter;
 
-        if (total_frames==30)
+        if (total_frames%30 == 0)
         {
             fprintf (stderr,"INFO: Frame Stats-> Bytes: %5d ", total_bytes/30);
-            total_frames = 0;
             total_bytes = 0;
+        }
+        if (total_frames == max_frame)
+        {
+            total_frames = 1;
         }
         frame_byte_counter=0;
 
         newframe=false;
     }
+
+
+    if (line_type == Y_COMPONENT)
+    {
+        header = line + 2*total_frames * height_down_Y;
+    }
+    else if (line_type == U_COMPONENT)
+    {
+        header = line + (2*total_frames+1) * height_down_Y;
+    }
+    else if (line_type == V_COMPONENT)
+    {
+        header = line + (2*total_frames+1) * height_down_Y + (height_down_Y/2);
+    }
+    else
+    {
+        fprintf(stderr, "Recieved a line_type uncorrect value");
+    }
+    line_size_bytes = (bits_lenght%8 == 0)? bits_lenght/8 : (bits_lenght/8)+1;
+    //fprintf(stderr, "Line=%d total_frames=%d height_down_Y=%d line_type=%d header=%x\n",line,total_frames,height_down_Y,line_type, header);
+
+
     frame_byte_counter+=line_size_bytes;
 
     if (nal_byte_counter>1000)
@@ -183,11 +189,8 @@ void stream_line(uint8_t ** bits, int bits_lenght, int line, int line_type)
         nal_byte_counter=line_size_bytes;
     }
     else nal_byte_counter+=line_size_bytes;
-
-    fwrite(&line_high,sizeof(uint8_t),1,stdout);
-    fwrite(&line_low,sizeof(uint8_t),1,stdout);
+    fwrite(&header,sizeof(uint16_t),1,stdout);
     fwrite(bits[line], sizeof(uint8_t), line_size_bytes, stdout);
-
 }
 
 void send_nal()

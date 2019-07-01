@@ -155,16 +155,33 @@ void load_new_buffer(get_bits_context * ctx) {
 
     uint8_t bytes[4] = {0};
     uint32_t buffer = 0;
+    int bytes_readed = 0;
 	ctx->buffer = ctx->next_buffer;
-	if (!feof(stdin) && fread(bytes, sizeof(uint8_t), 4, ctx->handler) != 4) {
-		//printf("INFO: Finished reading the streamWOWO\n");
-        printf("Press Enter to Continue");
-		while (getchar() != '\n')
-		{
-			handle_window();
-		}
-		close_player();
-		exit(1);
+
+	while (bytes_readed != 1)
+	{
+		bytes_readed = fread(bytes, sizeof(bytes), 1, ctx->handler);
+        if (feof((ctx->handler))){
+            printf("INFO: Finished reading the stream due eof\n");
+            printf("Press Enter to Continue");
+            while (getchar() != '\n')
+            {
+                handle_window();
+            }
+            close_player();
+            exit(1);
+        }
+        if (ferror((ctx->handler))){
+            perror("INFO: Got an error reading the file");
+            printf("the %d, %d", stdin, ctx->handler);
+            printf("Press Enter to Continue");
+            while (getchar() != '\n')
+            {
+                handle_window();
+            }
+            close_player();
+            exit(1);
+        }
 	}
 	buffer |= (uint32_t) bytes[0] << 24;
 	buffer |= (uint32_t) bytes[1] << 16;

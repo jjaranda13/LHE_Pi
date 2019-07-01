@@ -139,7 +139,7 @@ pthread_t thread[num_threads];
 //Streamer: globals variables TODO-> Are those neccesary?
 int nal_byte_counter;
 int frame_byte_counter;
-int total_frames;
+unsigned int total_frames;
 int total_bytes;
 bool newframe;
 
